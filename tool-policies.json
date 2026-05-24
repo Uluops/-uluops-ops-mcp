@@ -1,0 +1,96 @@
+{
+  "version": "2.0",
+  "tools": {
+    "save_run": {
+      "level": "STORAGE",
+      "relaxedFields": ["description", "title", "recommendations", "file_path", "raw_markdown"],
+      "description": "Stores validation results - may contain code snippets in markdown"
+    },
+    "validate_run": {
+      "level": "STORAGE",
+      "relaxedFields": ["description", "title", "recommendations", "file_path", "raw_markdown"],
+      "description": "Previews validation results - may contain code snippets in markdown"
+    },
+    "create_issue": {
+      "level": "STORAGE",
+      "relaxedFields": ["description", "title", "file_path"],
+      "description": "Creates issues - file paths may reference sensitive files being reported on"
+    },
+    "add_issue_note": {
+      "level": "STORAGE",
+      "relaxedFields": ["content", "issue_id"],
+      "description": "Issue notes may contain code snippets. issue_id is UUID (can trigger CC false positive)"
+    },
+    "update_status": {
+      "level": "STORAGE",
+      "relaxedFields": ["updates", "id", "issue_id", "fingerprint", "reason"],
+      "description": "Status updates contain UUIDs that can trigger credit card pattern false positives"
+    },
+    "bulk_update_status": {
+      "level": "STORAGE",
+      "relaxedFields": ["updates", "id", "issue_id", "reason"],
+      "description": "Bulk status updates contain UUIDs that can trigger credit card pattern false positives"
+    },
+    "get_issue_details": {
+      "level": "QUERY",
+      "relaxedFields": ["id"],
+      "description": "Issue ID is UUID that can trigger credit card pattern false positives"
+    },
+    "get_issue_history": {
+      "level": "QUERY",
+      "relaxedFields": ["issue_id"],
+      "description": "Issue ID is UUID that can trigger credit card pattern false positives"
+    },
+    "edit_issue": {
+      "level": "STORAGE",
+      "relaxedFields": ["issue_id", "title", "file_path", "category"],
+      "description": "Edit issue metadata - issue_id is UUID"
+    },
+    "merge_issues": {
+      "level": "STORAGE",
+      "relaxedFields": ["target_issue_id", "source_issue_ids"],
+      "description": "Merge issues - IDs are UUIDs that can trigger credit card pattern false positives"
+    },
+    "update_run": {
+      "level": "STORAGE",
+      "relaxedFields": ["raw_markdown", "validators"],
+      "description": "Update run metadata - raw_markdown may contain code snippets"
+    },
+    "soft_delete_project": {
+      "level": "STORAGE",
+      "relaxedFields": ["confirmation_phrase"],
+      "description": "Soft delete project - confirmation_phrase is user-provided text"
+    },
+    "delete_run": {
+      "level": "STORAGE",
+      "relaxedFields": ["run_id"],
+      "description": "Delete run - run_id is UUID that can trigger false positives"
+    },
+    "get_run": {
+      "level": "QUERY",
+      "relaxedFields": ["run_id"],
+      "description": "Get run by UUID - run_id can trigger credit card pattern false positives"
+    },
+    "update_issue_by_fingerprint": {
+      "level": "STORAGE",
+      "relaxedFields": ["fingerprint", "reason"],
+      "description": "Update issue by fingerprint - fingerprint is SHA-256 hash"
+    },
+    "get_issue_by_fingerprint": {
+      "level": "QUERY",
+      "relaxedFields": ["fingerprint"],
+      "description": "Get issue by fingerprint - fingerprint is SHA-256 hash"
+    },
+    "restore_issue": {
+      "level": "STORAGE",
+      "relaxedFields": ["issue_id"],
+      "description": "Restore issue - issue_id is UUID"
+    },
+    "undo_issue_status": {
+      "level": "STORAGE",
+      "relaxedFields": ["issue_id"],
+      "description": "Undo issue status - issue_id is UUID"
+    }
+  },
+  "defaultLevel": "QUERY"
+}
