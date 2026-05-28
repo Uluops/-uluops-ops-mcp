@@ -42,7 +42,7 @@ describe('config', () => {
 
     it('should use production default if API URL is missing', () => {
       const { config } = loadConfig();
-      expect(config.api.baseUrl).toBe('https://api.uluops.ai/api/v1/ops');
+      expect(config.api.baseUrl).toBe('https://api.uluops.ai/api/v1');
     });
 
     it('should use default timeout if not specified', () => {

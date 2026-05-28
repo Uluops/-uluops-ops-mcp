@@ -6,7 +6,7 @@
 
 import type { UluopsTrackerConfig, LogLevel } from '../types/index.js';
 
-const DEFAULT_BASE_URL = 'https://api.uluops.ai/api/v1/ops';
+const DEFAULT_BASE_URL = 'https://api.uluops.ai/api/v1';
 const DEFAULT_TIMEOUT = 30000;
 const DEFAULT_RETRIES = 3;
 const DEFAULT_LOG_LEVEL: LogLevel = 'info';
