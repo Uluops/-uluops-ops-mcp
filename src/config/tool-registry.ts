@@ -159,8 +159,11 @@ export const toolRegistry: ToolSpec[] = [
   {
     name: 'add_issue_note',
     sideEffects: 'write',
-    maxArgsSize: 50 * KB,
-    maxEgressBytes: 20 * KB,
+    // content column is MySQL TEXT (64KB max). Combined with the response
+    // payload (the note + issue context), 20KB was too tight for legitimate
+    // stack-trace-heavy notes. Bumped to 100KB.
+    maxArgsSize: 80 * KB,
+    maxEgressBytes: 100 * KB,
     quotaPerMinute: 120,
     quotaPerHour: 2000,
   },
@@ -333,6 +336,14 @@ export const toolRegistry: ToolSpec[] = [
     sideEffects: 'write',
     maxArgsSize: 10 * KB,
     maxEgressBytes: 100 * KB,
+    quotaPerMinute: 60,
+    quotaPerHour: 1000,
+  },
+  {
+    name: 'soft_delete_issue',
+    sideEffects: 'write',
+    maxArgsSize: 10 * KB,
+    maxEgressBytes: 10 * KB,
     quotaPerMinute: 60,
     quotaPerHour: 1000,
   },

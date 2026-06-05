@@ -50,6 +50,7 @@ import { registerDeleteRunTool } from './delete-run.js';
 import { registerGetIssueByFingerprintTool } from './get-issue-by-fingerprint.js';
 import { registerUpdateIssueByFingerprintTool } from './update-issue-by-fingerprint.js';
 import { registerRestoreIssueTool } from './restore-issue.js';
+import { registerSoftDeleteIssueTool } from './soft-delete-issue.js';
 import { registerUndoIssueStatusTool } from './undo-issue-status.js';
 
 // P2 Analysis Tools
@@ -118,6 +119,7 @@ export function registerAllTools(
   registerGetIssueByFingerprintTool(server, opsClient);
   registerUpdateIssueByFingerprintTool(server, opsClient);
   registerRestoreIssueTool(server, opsClient);
+  registerSoftDeleteIssueTool(server, opsClient);
   registerUndoIssueStatusTool(server, opsClient);
 
   // P2 Analysis tools

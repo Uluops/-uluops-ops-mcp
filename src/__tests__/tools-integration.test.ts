@@ -51,6 +51,7 @@ const EXPECTED_TOOLS = [
   'get_issue_by_fingerprint',
   'update_issue_by_fingerprint',
   'restore_issue',
+  'soft_delete_issue',
   'undo_issue_status',
   // P2 Taxonomy Tools
   'get_taxonomy',
@@ -62,7 +63,7 @@ const EXPECTED_TOOLS = [
 ];
 
 describe('registerAllTools', () => {
-  it('should register all 42 tools', () => {
+  it('should register all 48 tools', () => {
     const registeredTools: string[] = [];
 
     // Mock server that captures tool registrations
@@ -79,7 +80,7 @@ describe('registerAllTools', () => {
     registerAllTools(mockServer, mockApiClient);
 
     // Verify count
-    expect(registeredTools.length).toBe(47);
+    expect(registeredTools.length).toBe(48);
   });
 
   it('should register all expected tools by name', () => {
@@ -126,7 +127,7 @@ describe('registerAllTools', () => {
 
     // Verify tool() was called with expected arguments pattern
     // Each call should have: name (string), description (string), schema (object), handler (function)
-    expect(mockServer.tool).toHaveBeenCalledTimes(47);
+    expect(mockServer.tool).toHaveBeenCalledTimes(48);
 
     const firstCall = vi.mocked(mockServer.tool).mock.calls[0];
     expect(typeof firstCall[0]).toBe('string'); // name

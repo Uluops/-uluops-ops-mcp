@@ -68,8 +68,8 @@ describe('toolRegistry', () => {
     }
   });
 
-  it('should have exactly 47 tools', () => {
-    expect(toolRegistry.length).toBe(47);
+  it('should have exactly 48 tools', () => {
+    expect(toolRegistry.length).toBe(48);
   });
 
   it('should have no duplicate tool names', () => {

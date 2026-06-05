@@ -1,6 +1,6 @@
 {
   "name": "@uluops/ops-mcp",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "MCP server for the UluOps Platform API — validation tracking, analytics, and issue management",
   "type": "module",
   "main": "dist/index.js",
@@ -61,22 +61,22 @@
     "node": ">=18.0.0"
   },
   "dependencies": {
-    "@modelcontextprotocol/sdk": "^1.24.0",
-    "@uluops/ops-sdk": "^2.0.0",
-    "mcp-secure-server": "^0.0.14-security",
-    "zod": "^3.23.0"
+    "@modelcontextprotocol/sdk": "1.29.0",
+    "@uluops/ops-sdk": "3.1.0",
+    "mcp-secure-server": "0.0.14-security",
+    "zod": "3.25.76"
   },
   "devDependencies": {
-    "@eslint/js": "^9.0.0",
-    "@types/node": "^22.10.0",
-    "@typescript-eslint/eslint-plugin": "^8.0.0",
-    "@typescript-eslint/parser": "^8.0.0",
-    "@vitest/coverage-v8": "^2.1.0",
-    "eslint": "^9.0.0",
-    "prettier": "^3.0.0",
-    "tsx": "^4.0.0",
-    "typescript": "^5.7.0",
-    "typescript-eslint": "^8.52.0",
-    "vitest": "^2.1.0"
+    "@eslint/js": "9.39.4",
+    "@types/node": "22.19.19",
+    "@typescript-eslint/eslint-plugin": "8.59.4",
+    "@typescript-eslint/parser": "8.59.4",
+    "@vitest/coverage-v8": "2.1.9",
+    "eslint": "9.39.4",
+    "prettier": "3.8.3",
+    "tsx": "4.22.3",
+    "typescript": "5.9.3",
+    "typescript-eslint": "8.59.4",
+    "vitest": "2.1.9"
   }
 }

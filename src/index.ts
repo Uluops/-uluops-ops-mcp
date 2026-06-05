@@ -196,6 +196,7 @@ async function main(): Promise<void> {
         'get_issue_by_fingerprint',
         'update_issue_by_fingerprint',
         'restore_issue',
+        'soft_delete_issue',
         'undo_issue_status',
       ],
       p2_taxonomy: [

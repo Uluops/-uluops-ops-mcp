@@ -7,6 +7,31 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.0] - 2026-06-05
+
+First release under the scoped name `@uluops/ops-mcp`. Forward-ports the
+operational drift from the legacy `uluops-ops-mcp-client` 1.22.0 codebase
+and aligns the package with the broader UluOps supply-chain policy.
+
+### Added
+
+- **`soft_delete_issue` tool** — write-side tool for soft-deleting issues
+  with standard 10KB/10KB size budgets and 60/min, 1000/hr rate limits.
+  Brings total tool count to 48.
+- **`add_issue_note` size relaxation** — `maxArgsSize` 50→80 KB and
+  `maxEgressBytes` 20→100 KB. The MySQL `TEXT` content column tolerates
+  64KB; the prior 20KB egress was too tight for stack-trace-heavy notes.
+
+### Changed
+
+- **`@uluops/ops-sdk` bumped `^2.0.0` → `3.1.0`** (two major versions).
+  All tool source compiles unchanged against the new SDK surface.
+- **All runtime and dev dependencies pinned to exact versions** — removed
+  caret ranges across the board per the 2026-06-01 UluOps supply-chain
+  hardening policy.
+
+### Historical lineage (legacy `uluops-ops-mcp-client` versions below)
+
 ## [1.21.0] - 2026-05-21
 
 ### Changed
