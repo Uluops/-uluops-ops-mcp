@@ -144,6 +144,35 @@ describe('Tool Handlers', () => {
       expect(mockOpsClient.projects.listIssues).not.toHaveBeenCalled();
     });
 
+    it('should coerce string-typed numeric params to numbers (MCP JSON-RPC quirk)', async () => {
+      mockOpsClient.projects.listIssues.mockResolvedValue({ data: [], count: 0 });
+
+      // MCP clients sometimes serialize numbers as strings.
+      // coerceNumericFields runs before Zod, so this must not fail validation.
+      await handler({
+        project: 'test-project',
+        limit: '25' as unknown as number,
+        min_times_seen: '3' as unknown as number,
+      });
+
+      expect(mockOpsClient.projects.listIssues).toHaveBeenCalledWith(
+        'test-project',
+        expect.objectContaining({ limit: 25, minTimesSeen: 3 }),
+      );
+    });
+
+    it('should reject Infinity / NaN from string coercion', async () => {
+      // Number("Infinity") === Infinity; Number.isFinite rejects it.
+      const result = (await handler({
+        project: 'test-project',
+        limit: 'Infinity' as unknown as number,
+      })) as any;
+
+      // Coercion drops the value; Zod then rejects "Infinity" as a string.
+      expect(result.isError).toBe(true);
+      expect(result.content[0].text).toContain('Validation failed');
+    });
+
     it('should return validation error for invalid enum value', async () => {
       const result = (await handler({
         project: 'test',
@@ -393,6 +422,46 @@ describe('Tool Handlers', () => {
 
       expect(mockOpsClient.runs.save).toHaveBeenCalled();
       expect(result).not.toHaveProperty('isError');
+    });
+
+    it('should inject an ISO timestamp when the caller omits one', async () => {
+      mockOpsClient.runs.save.mockResolvedValue({
+        run_id: TEST_UUID_1,
+        run_number: 1,
+        issues_created: 0,
+        issues_updated: 0,
+      });
+
+      await handler({
+        project: 'test-project',
+        workflow_type: 'ship',
+        agents: [{ name: 'code-validator', score: 85, decision: 'PASS' }],
+      });
+
+      const call = mockOpsClient.runs.save.mock.calls[0][0] as { timestamp?: string };
+      expect(typeof call.timestamp).toBe('string');
+      // ISO 8601: 2026-06-05T18:58:16.000Z or similar
+      expect(call.timestamp).toMatch(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}/);
+    });
+
+    it('should preserve a caller-supplied timestamp instead of overwriting', async () => {
+      mockOpsClient.runs.save.mockResolvedValue({
+        run_id: TEST_UUID_1,
+        run_number: 1,
+        issues_created: 0,
+        issues_updated: 0,
+      });
+
+      const supplied = '2026-01-15T12:00:00.000Z';
+      await handler({
+        project: 'test-project',
+        workflow_type: 'ship',
+        timestamp: supplied,
+        agents: [{ name: 'code-validator', score: 85, decision: 'PASS' }],
+      });
+
+      const call = mockOpsClient.runs.save.mock.calls[0][0] as { timestamp: string };
+      expect(call.timestamp).toBe(supplied);
     });
 
     it('should save with recommendations', async () => {

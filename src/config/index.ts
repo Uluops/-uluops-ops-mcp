@@ -1,12 +1,11 @@
 /**
- * Configuration loader for uluops-tracker MCP client
+ * Configuration loader for @uluops/ops-mcp.
  *
  * Loads configuration from environment variables with sensible defaults.
  */
 
 import type { UluopsTrackerConfig, LogLevel } from '../types/index.js';
 
-const DEFAULT_BASE_URL = 'https://api.uluops.ai/api/v1';
 const DEFAULT_TIMEOUT = 30000;
 const DEFAULT_RETRIES = 3;
 const DEFAULT_LOG_LEVEL: LogLevel = 'info';
@@ -55,7 +54,10 @@ function parseInteger(value: string | undefined, defaultValue: number): number {
 export function loadConfig(): { config: UluopsTrackerConfig; warnings: string[] } {
   const warnings: string[] = [];
 
-  const apiUrl = process.env['ULUOPS_BASE_URL'] ?? DEFAULT_BASE_URL;
+  // ULUOPS_BASE_URL is optional. When unset, OpsClient falls back to
+  // @uluops/ops-sdk's DEFAULT_BASE_URL (prod by default, localhost when
+  // NODE_ENV=development).
+  const apiUrl = process.env['ULUOPS_BASE_URL'];
   const apiKey = process.env['ULUOPS_API_KEY'];
 
   const orgSlug = process.env['ULUOPS_ORG_SLUG'];
@@ -68,40 +70,69 @@ export function loadConfig(): { config: UluopsTrackerConfig; warnings: string[] 
       timeout: parseInteger(process.env['ULUOPS_TRACKER_TIMEOUT'], DEFAULT_TIMEOUT),
       retries: parseInteger(process.env['ULUOPS_TRACKER_RETRIES'], DEFAULT_RETRIES),
     },
-    server: {
-      name: 'uluops-tracker-client',
-      version: '1.0.0',
-    },
     security: {
       logLevel: parseLogLevel(process.env['LOG_LEVEL']),
-      enableLogging: parseBoolean(process.env['ENABLE_FILE_LOGGING'], true),
+      enableLogging: parseBoolean(process.env['ENABLE_FILE_LOGGING'], false),
       logDir: process.env['LOG_DIR'],
-      verboseLogging: parseBoolean(process.env['VERBOSE_LOGGING'], true),
-      logPerformanceMetrics: parseBoolean(process.env['LOG_PERFORMANCE_METRICS'], true),
+      verboseLogging: parseBoolean(process.env['VERBOSE_LOGGING'], false),
+      logPerformanceMetrics: parseBoolean(process.env['LOG_PERFORMANCE_METRICS'], false),
     },
   };
+
+  // Warn on non-HTTPS base URL outside development — ULUOPS_API_KEY would be
+  // transmitted in cleartext. Only checks when the operator explicitly set
+  // a URL; the SDK default is HTTPS in prod.
+  if (apiUrl !== undefined) {
+    try {
+      const parsed = new URL(apiUrl);
+      if (parsed.protocol !== 'https:' && process.env['NODE_ENV'] !== 'development') {
+        warnings.push(
+          `ULUOPS_BASE_URL uses ${parsed.protocol} (not HTTPS). Your API key will be transmitted in cleartext. Set NODE_ENV=development to silence this warning for local testing.`,
+        );
+      }
+    } catch {
+      // URL parse failure is handled in validateConfig with a clearer error.
+    }
+  }
 
   return { config, warnings };
 }
 
 /**
+ * Build a short, redacted fingerprint for the API key so operators can
+ * distinguish which key the server loaded across multiple deployments
+ * without leaking the secret. Returns "ulr_…XXXX" using the last 4 chars.
+ */
+export function apiKeyFingerprint(apiKey: string | undefined): string {
+  if (apiKey === undefined || apiKey.length < 4) return 'unknown';
+  return `ulr_…${apiKey.slice(-4)}`;
+}
+
+/**
  * Validate that required configuration is present and well-formed.
+ *
+ * `baseUrl` is optional — when undefined, OpsClient falls back to
+ * `@uluops/ops-sdk`'s `DEFAULT_BASE_URL` (prod by default, localhost
+ * when `NODE_ENV=development`). When set, it must be a valid URL.
  */
 export function validateConfig(config: UluopsTrackerConfig): void {
-  if (!config.api.baseUrl) {
-    throw new Error('API base URL is required');
-  }
-
-  // Validate URL format
-  try {
-    new URL(config.api.baseUrl);
-  } catch {
-    throw new Error(`Invalid API URL: ${config.api.baseUrl}`);
+  if (config.api.baseUrl !== undefined) {
+    try {
+      new URL(config.api.baseUrl);
+    } catch {
+      throw new Error(`Invalid API URL: ${config.api.baseUrl}`);
+    }
   }
 
   if (config.api.apiKey === undefined || config.api.apiKey === '') {
     throw new Error(
-      'API key is required. Set ULUOPS_API_KEY'
+      'API key is required. Set ULUOPS_API_KEY to a value starting with "ulr_" (min 20 chars).'
+    );
+  }
+
+  if (!/^ulr_[A-Za-z0-9_-]{16,}$/.test(config.api.apiKey)) {
+    throw new Error(
+      'ULUOPS_API_KEY must start with "ulr_" and be at least 20 characters. Check for typos or leading whitespace.'
     );
   }
 

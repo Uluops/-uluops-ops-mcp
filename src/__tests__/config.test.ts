@@ -32,7 +32,7 @@ describe('config', () => {
   });
 
   describe('loadConfig', () => {
-    it('should load config with required API URL', () => {
+    it('should pass through ULUOPS_BASE_URL when explicitly set', () => {
       process.env.ULUOPS_BASE_URL = 'https://api.example.com';
 
       const { config } = loadConfig();
@@ -40,9 +40,9 @@ describe('config', () => {
       expect(config.api.baseUrl).toBe('https://api.example.com');
     });
 
-    it('should use production default if API URL is missing', () => {
+    it('should leave baseUrl undefined when ULUOPS_BASE_URL is unset (SDK resolves default)', () => {
       const { config } = loadConfig();
-      expect(config.api.baseUrl).toBe('https://api.uluops.ai/api/v1');
+      expect(config.api.baseUrl).toBeUndefined();
     });
 
     it('should use default timeout if not specified', () => {
@@ -88,24 +88,15 @@ describe('config', () => {
       expect(config.api.apiKey).toBe('secret-key');
     });
 
-    it('should load server config with defaults', () => {
-      process.env.ULUOPS_BASE_URL = 'https://api.example.com';
-
-      const { config } = loadConfig();
-
-      expect(config.server.name).toBe('uluops-tracker-client');
-      expect(config.server.version).toBe('1.0.0');
-    });
-
     it('should load security config with defaults', () => {
       process.env.ULUOPS_BASE_URL = 'https://api.example.com';
 
       const { config } = loadConfig();
 
       expect(config.security.logLevel).toBe('info');
-      expect(config.security.enableLogging).toBe(true);
-      expect(config.security.verboseLogging).toBe(true);
-      expect(config.security.logPerformanceMetrics).toBe(true);
+      expect(config.security.enableLogging).toBe(false);
+      expect(config.security.verboseLogging).toBe(false);
+      expect(config.security.logPerformanceMetrics).toBe(false);
     });
 
     it('should parse log level from env', () => {
@@ -167,11 +158,29 @@ describe('config', () => {
   describe('validateConfig', () => {
     it('should pass for valid config', () => {
       process.env.ULUOPS_BASE_URL = 'https://api.example.com';
-      process.env.ULUOPS_API_KEY = 'test-key';
+      process.env.ULUOPS_API_KEY = 'ulr_test_api_key_for_unit_tests';
 
       const { config } = loadConfig();
 
       expect(() => validateConfig(config)).not.toThrow();
+    });
+
+    it('should throw when ULUOPS_API_KEY is missing the ulr_ prefix', () => {
+      process.env.ULUOPS_BASE_URL = 'https://api.example.com';
+      process.env.ULUOPS_API_KEY = 'wrong_prefix_abcdef1234567890';
+
+      const { config } = loadConfig();
+
+      expect(() => validateConfig(config)).toThrow(/must start with "ulr_"/);
+    });
+
+    it('should throw when ULUOPS_API_KEY is too short', () => {
+      process.env.ULUOPS_BASE_URL = 'https://api.example.com';
+      process.env.ULUOPS_API_KEY = 'ulr_short';
+
+      const { config } = loadConfig();
+
+      expect(() => validateConfig(config)).toThrow(/must start with "ulr_"/);
     });
 
     it('should throw for invalid URL format', () => {
@@ -181,7 +190,6 @@ describe('config', () => {
           timeout: 30000,
           retries: 3,
         },
-        server: { name: 'test', version: '1.0.0' },
         security: {
           logLevel: 'info' as const,
           enableLogging: false,
@@ -197,11 +205,10 @@ describe('config', () => {
       const config = {
         api: {
           baseUrl: 'https://api.example.com',
-          apiKey: 'test-key',
+          apiKey: 'ulr_test_api_key_for_unit_tests',
           timeout: 0,
           retries: 3,
         },
-        server: { name: 'test', version: '1.0.0' },
         security: {
           logLevel: 'info' as const,
           enableLogging: false,
@@ -217,11 +224,10 @@ describe('config', () => {
       const config = {
         api: {
           baseUrl: 'https://api.example.com',
-          apiKey: 'test-key',
+          apiKey: 'ulr_test_api_key_for_unit_tests',
           timeout: -1000,
           retries: 3,
         },
-        server: { name: 'test', version: '1.0.0' },
         security: {
           logLevel: 'info' as const,
           enableLogging: false,
@@ -237,11 +243,10 @@ describe('config', () => {
       const config = {
         api: {
           baseUrl: 'https://api.example.com',
-          apiKey: 'test-key',
+          apiKey: 'ulr_test_api_key_for_unit_tests',
           timeout: 30000,
           retries: -1,
         },
-        server: { name: 'test', version: '1.0.0' },
         security: {
           logLevel: 'info' as const,
           enableLogging: false,
@@ -260,7 +265,6 @@ describe('config', () => {
           timeout: 30000,
           retries: 3,
         },
-        server: { name: 'test', version: '1.0.0' },
         security: {
           logLevel: 'info' as const,
           enableLogging: false,
@@ -280,7 +284,6 @@ describe('config', () => {
           timeout: 30000,
           retries: 3,
         },
-        server: { name: 'test', version: '1.0.0' },
         security: {
           logLevel: 'info' as const,
           enableLogging: false,
@@ -296,11 +299,10 @@ describe('config', () => {
       const config = {
         api: {
           baseUrl: 'https://api.example.com',
-          apiKey: 'test-key',
+          apiKey: 'ulr_test_api_key_for_unit_tests',
           timeout: 30000,
           retries: 0,
         },
-        server: { name: 'test', version: '1.0.0' },
         security: {
           logLevel: 'info' as const,
           enableLogging: false,

@@ -8,12 +8,12 @@
 import { z } from 'zod';
 import type { OpsClient } from '@uluops/ops-sdk';
 import { createErrorResponse, type McpServerToolRegistration } from '../types/index.js';
-import { createToolHandler } from '../utils/tool-handler.js';
+import { createToolHandler, shortCircuit } from '../utils/tool-handler.js';
 
 export const DeleteProjectInputSchema = z.object({
-  project: z.string().min(1),
+  project: z.string().min(1).max(200),
   confirm: z.boolean(),
-  confirmation_phrase: z.string(),
+  confirmation_phrase: z.string().max(200),
 });
 
 export type DeleteProjectInput = z.infer<typeof DeleteProjectInputSchema>;
@@ -38,14 +38,14 @@ export function registerDeleteProjectTool(
         toolName: 'delete_project',
         preProcess: (input) => {
           if (!input.confirm) {
-            return createErrorResponse(
+            return shortCircuit(createErrorResponse(
               'Deletion requires confirm=true. This action is irreversible.'
-            );
+            ));
           }
           if (input.confirmation_phrase !== input.project) {
-            return createErrorResponse(
+            return shortCircuit(createErrorResponse(
               `Confirmation phrase must exactly match project name "${input.project}"`
-            );
+            ));
           }
           return input;
         },

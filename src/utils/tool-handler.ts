@@ -19,14 +19,15 @@ function coerceNumericFields(args: unknown, schema: z.ZodSchema): unknown {
   if (typeof args !== 'object' || args === null) return args;
   if (!(schema instanceof z.ZodObject)) return args;
 
-  const shape = schema.shape as Record<string, z.ZodTypeAny>;
+  const shape: Record<string, z.ZodTypeAny> = schema.shape;
   const obj = { ...(args as Record<string, unknown>) };
 
   for (const [key, fieldSchema] of Object.entries(shape)) {
     if (key in obj && typeof obj[key] === 'string') {
       if (isNumericSchema(fieldSchema)) {
         const num = Number(obj[key]);
-        if (!isNaN(num)) {
+        // Number.isFinite rejects NaN, Infinity, and -Infinity
+        if (Number.isFinite(num)) {
           obj[key] = num;
         }
       }
@@ -38,10 +39,45 @@ function coerceNumericFields(args: unknown, schema: z.ZodSchema): unknown {
 /** Check if a Zod schema (possibly wrapped in optional/nullable/default) expects a number. */
 function isNumericSchema(schema: z.ZodTypeAny): boolean {
   if (schema instanceof z.ZodNumber) return true;
-  if (schema instanceof z.ZodOptional || schema instanceof z.ZodNullable || schema instanceof z.ZodDefault) {
-    return isNumericSchema((schema as any)._def.innerType);
+  if (schema instanceof z.ZodOptional || schema instanceof z.ZodNullable) {
+    return isNumericSchema(schema.unwrap());
+  }
+  if (schema instanceof z.ZodDefault) {
+    return isNumericSchema(schema.removeDefault());
   }
   return false;
+}
+
+/**
+ * Sentinel used by preProcess hooks to short-circuit the handler with a
+ * tool response (typically an error). Discriminating on a dedicated symbol
+ * avoids accidental collision with tool input schemas that may legitimately
+ * contain a top-level `content` field.
+ */
+const SHORT_CIRCUIT = Symbol('mcp.tool.short-circuit');
+
+type ShortCircuit = McpToolResponse & { readonly [SHORT_CIRCUIT]: true };
+
+/**
+ * Construct a short-circuit response from a preProcess hook. The returned
+ * value is a normal MCP tool response plus a non-enumerable marker symbol
+ * that createToolHandler recognises.
+ */
+export function shortCircuit(response: McpToolResponse): ShortCircuit {
+  return Object.defineProperty({ ...response }, SHORT_CIRCUIT, {
+    value: true,
+    enumerable: false,
+    writable: false,
+    configurable: false,
+  }) as ShortCircuit;
+}
+
+function isShortCircuit(value: unknown): value is ShortCircuit {
+  return (
+    typeof value === 'object' &&
+    value !== null &&
+    (value as { [SHORT_CIRCUIT]?: unknown })[SHORT_CIRCUIT] === true
+  );
 }
 
 /**
@@ -55,10 +91,9 @@ function isNumericSchema(schema: z.ZodTypeAny): boolean {
  * 4. Return success response or mapped error
  *
  * @param schema - Zod schema for input validation (snake_case fields)
- * @param sdkCall - Function that receives normalized (camelCase) input and calls SDK.
- *   Uses `any` deliberately: Zod validates input structure, normalizeKeys transforms
- *   keys from snake_case to camelCase. TypeScript cannot track the key transformation
- *   statically, so we trust the runtime validation boundary.
+ * @param sdkCall - Function that receives the normalized (camelCase) input as
+ *   `Record<string, unknown>` and calls the SDK. The runtime contract is upheld
+ *   by Zod validation immediately upstream.
  * @returns MCP-compatible handler function
  *
  * @example
@@ -68,19 +103,30 @@ function isNumericSchema(schema: z.ZodTypeAny): boolean {
  *   'Query issues...',
  *   QueryIssuesInputSchema.shape,
  *   createToolHandler(QueryIssuesInputSchema, (n) =>
- *     opsClient.projects.listIssues(n.project, n)
+ *     opsClient.projects.listIssues(n['project'] as string, n)
  *   )
  * );
  * ```
  */
 export function createToolHandler<TInput>(
   schema: z.ZodSchema<TInput>,
+  // SAFETY: `normalized` is `any` because normalizeKeys performs a runtime
+  // snake_case → camelCase key transformation that TypeScript cannot track
+  // statically. Zod validation immediately upstream enforces the shape; the
+  // SDK call signatures further constrain field types. createToolHandler is
+  // an internal utility (not re-exported from src/index.ts), so this `any`
+  // does not leak to the public npm surface.
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   sdkCall: (normalized: any) => Promise<unknown>,
   options?: {
     /** Tool name for error context. Included in error responses to help MCP clients diagnose failures. */
     toolName?: string;
-    /** Transform parsed input before normalization. Return McpToolResponse to short-circuit. */
-    preProcess?: (input: TInput) => TInput | McpToolResponse;
+    /**
+     * Transform parsed input before normalization. Return the value produced
+     * by `shortCircuit(response)` to bypass the SDK call and return `response`
+     * directly to the caller.
+     */
+    preProcess?: (input: TInput) => TInput | ShortCircuit;
   }
 ): (args: unknown) => Promise<McpToolResponse> {
   const toolName = options?.toolName;
@@ -91,11 +137,10 @@ export function createToolHandler<TInput>(
 
       if (options?.preProcess) {
         const preResult = options.preProcess(input);
-        // Short-circuit if preProcess returns an MCP response (has 'content' property)
-        if ('content' in (preResult as McpToolResponse)) {
-          return preResult as McpToolResponse;
+        if (isShortCircuit(preResult)) {
+          return preResult;
         }
-        input = preResult as TInput;
+        input = preResult;
       }
 
       const normalized = normalizeKeys(input) as Record<string, unknown>;

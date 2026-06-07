@@ -222,6 +222,111 @@ describe('SDK Error Mapper', () => {
     });
   });
 
+  describe('402 Subscription Required tier-gating', () => {
+    it('should map well-formed 402 with definitions, currentTier, upgradeUrl', () => {
+      const error = new OpsApiError(402, 'Subscription required', undefined, {
+        definitions: [
+          { name: 'advanced-validator', requiredTier: 'pro' },
+          { name: 'enterprise-only-tool', requiredTier: 'enterprise' },
+        ],
+        currentTier: 'free',
+        upgradeUrl: 'https://uluops.ai/upgrade',
+      });
+      const result = mapSdkErrorToMcp(error);
+      const payload = getErrorPayload(result);
+
+      expect(result.isError).toBe(true);
+      expect(payload.status).toBe(402);
+      expect(payload.current_tier).toBe('free');
+      expect(payload.rejected_definitions).toEqual([
+        { name: 'advanced-validator', requiredTier: 'pro' },
+        { name: 'enterprise-only-tool', requiredTier: 'enterprise' },
+      ]);
+      expect(payload.upgrade_url).toBe('https://uluops.ai/upgrade?source=mcp');
+
+      const text = getErrorText(result);
+      expect(text).toContain('Subscription required');
+      expect(text).toContain('advanced-validator (requires pro)');
+      expect(text).toContain('enterprise-only-tool (requires enterprise)');
+      expect(text).toContain('Your current tier: free');
+      expect(text).toContain('Upgrade: https://uluops.ai/upgrade?source=mcp');
+    });
+
+    it('should append ?source=mcp when upgradeUrl has no query params', () => {
+      const error = new OpsApiError(402, 'Subscription required', undefined, {
+        upgradeUrl: 'https://uluops.ai/pricing',
+      });
+      const payload = getErrorPayload(mapSdkErrorToMcp(error));
+      expect(payload.upgrade_url).toBe('https://uluops.ai/pricing?source=mcp');
+    });
+
+    it('should append &source=mcp when upgradeUrl already has query params', () => {
+      const error = new OpsApiError(402, 'Subscription required', undefined, {
+        upgradeUrl: 'https://uluops.ai/pricing?ref=signup',
+      });
+      const payload = getErrorPayload(mapSdkErrorToMcp(error));
+      expect(payload.upgrade_url).toBe('https://uluops.ai/pricing?ref=signup&source=mcp');
+    });
+
+    it('should degrade gracefully when details is missing', () => {
+      const error = new OpsApiError(402, 'Subscription required');
+      const result = mapSdkErrorToMcp(error);
+      const payload = getErrorPayload(result);
+
+      expect(payload.status).toBe(402);
+      expect(payload.current_tier).toBeUndefined();
+      expect(payload.rejected_definitions).toBeUndefined();
+      expect(payload.upgrade_url).toBeUndefined();
+      expect(getErrorText(result)).toContain('above-tier definitions');
+    });
+
+    it('should tolerate malformed definitions shape without crashing', () => {
+      const error = new OpsApiError(402, 'Subscription required', undefined, {
+        definitions: [
+          { name: 'partial' },
+          { requiredTier: 'pro' },
+          { unrelated: 'field' },
+        ],
+        currentTier: 'free',
+      });
+      const text = getErrorText(mapSdkErrorToMcp(error));
+      expect(text).toContain('partial (requires unknown)');
+      expect(text).toContain('unknown (requires pro)');
+      expect(text).toContain('unknown (requires unknown)');
+    });
+
+    it('should ignore non-array definitions and non-string fields', () => {
+      const error = new OpsApiError(402, 'Subscription required', undefined, {
+        definitions: 'not-an-array',
+        currentTier: 42,
+        upgradeUrl: { not: 'a string' },
+      });
+      const result = mapSdkErrorToMcp(error);
+      const payload = getErrorPayload(result);
+
+      expect(payload.status).toBe(402);
+      expect(payload.current_tier).toBeUndefined();
+      expect(payload.upgrade_url).toBeUndefined();
+      expect(payload.rejected_definitions).toBeUndefined();
+      expect(getErrorText(result)).toContain('above-tier definitions');
+    });
+
+    it('should redact credentials in 402 message text via sanitizeErrorMessage path', () => {
+      // 402 path doesn't pass through sanitizeErrorMessage today, but verify the
+      // structured message itself doesn't echo arbitrary error.message content
+      const error = new OpsApiError(
+        402,
+        'Subscription required: api_key=ulr_should_not_appear',
+        undefined,
+        { currentTier: 'free' },
+      );
+      const text = getErrorText(mapSdkErrorToMcp(error));
+      // The 402 branch builds a structured message and does not include error.message
+      expect(text).not.toContain('ulr_should_not_appear');
+      expect(text).not.toContain('api_key=');
+    });
+  });
+
   describe('Zod error mapping', () => {
     it('should map ZodError with field details', () => {
       const error = Object.assign(new Error('Validation'), {

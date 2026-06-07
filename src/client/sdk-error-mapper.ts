@@ -137,7 +137,7 @@ export function mapSdkErrorToMcp(error: unknown, toolName?: string): McpToolResp
 
   if (isNotFoundError(error)) {
     return buildErrorResponse(
-      (error as Error).message || 'Resource not found',
+      sanitizeErrorMessage((error as Error).message || 'Resource not found'),
       context,
     );
   }
@@ -146,7 +146,7 @@ export function mapSdkErrorToMcp(error: unknown, toolName?: string): McpToolResp
     const retryAfter = (error as { retryAfter?: number }).retryAfter;
     return buildErrorResponse(
       retryAfter
-        ? `Rate limit exceeded. Retry after ${retryAfter} seconds.`
+        ? `Rate limit exceeded. Retry after ${String(retryAfter)} seconds.`
         : 'Rate limit exceeded, please retry later.',
       { ...context, status: 429, ...(retryAfter ? { retry_after_seconds: retryAfter } : {}) },
     );
@@ -175,28 +175,45 @@ export function mapSdkErrorToMcp(error: unknown, toolName?: string): McpToolResp
 
   if (isNetworkError(error)) {
     return buildErrorResponse(
-      (error as Error).message || 'Network error: verify the API server is running',
+      sanitizeErrorMessage((error as Error).message || 'Network error: verify the API server is running'),
       context,
     );
   }
 
   if (isTimeoutError(error)) {
     return buildErrorResponse(
-      (error as Error).message || 'Request timed out. Consider increasing ULUOPS_TRACKER_TIMEOUT.',
+      sanitizeErrorMessage((error as Error).message || 'Request timed out. Consider increasing ULUOPS_TRACKER_TIMEOUT.'),
       context,
     );
   }
 
   // 402 Subscription Required — run submission tier gating (spec Section 9.2)
   if (statusCode === 402) {
-    const details = (error as { details?: Record<string, unknown> }).details ?? {};
-    const defs = details.definitions as Array<{ name?: string; requiredTier?: string }> | undefined;
-    const currentTier = details.currentTier as string | undefined;
-    const upgradeUrl = details.upgradeUrl as string | undefined;
+    const rawDetails = (error as { details?: unknown }).details;
+    const details: Record<string, unknown> =
+      typeof rawDetails === 'object' && rawDetails !== null
+        ? (rawDetails as Record<string, unknown>)
+        : {};
+
+    const defs = Array.isArray(details['definitions'])
+      ? (details['definitions'] as unknown[]).filter(
+          (d): d is Record<string, unknown> => typeof d === 'object' && d !== null,
+        )
+      : undefined;
+    const currentTier =
+      typeof details['currentTier'] === 'string' ? details['currentTier'] : undefined;
+    const upgradeUrl =
+      typeof details['upgradeUrl'] === 'string' ? details['upgradeUrl'] : undefined;
+
     const sep = upgradeUrl?.includes('?') ? '&' : '?';
     const trackedUrl = upgradeUrl ? `${upgradeUrl}${sep}source=mcp` : undefined;
 
-    const defList = defs?.map(d => `${d.name} (requires ${d.requiredTier})`).join(', ') ?? 'above-tier definitions';
+    const defList =
+      defs?.map(d => {
+        const name = typeof d['name'] === 'string' ? d['name'] : 'unknown';
+        const tier = typeof d['requiredTier'] === 'string' ? d['requiredTier'] : 'unknown';
+        return `${name} (requires ${tier})`;
+      }).join(', ') ?? 'above-tier definitions';
 
     return buildErrorResponse(
       `Subscription required. Run references: ${defList}.` +
@@ -258,7 +275,7 @@ export function mapZodErrorToMcp(error: unknown, toolName?: string): McpToolResp
         .map((e) => `${e.path.join('.')}: ${e.message}`)
         .join('; ');
       const count = zodError.errors.length;
-      message = `Validation failed (${count} error${count > 1 ? 's' : ''}): ${details}`;
+      message = `Validation failed (${String(count)} error${count > 1 ? 's' : ''}): ${details}`;
     }
   }
 

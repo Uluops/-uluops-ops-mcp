@@ -16,7 +16,7 @@ import {
 import { createToolHandler } from '../utils/tool-handler.js';
 
 export const SearchIssuesInputSchema = z.object({
-  query: z.string().min(1),
+  query: z.string().min(1).max(500),
   projects: z.array(z.string()).optional(),
   agents: z.array(z.string()).optional(),
   status: IssueStatusFilterSchema.default('all'),

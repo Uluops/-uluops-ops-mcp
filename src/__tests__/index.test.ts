@@ -71,6 +71,7 @@ describe('Main Entry Point', () => {
     vi.doMock('../config/index.js', () => ({
       loadConfig: vi.fn().mockReturnValue({ config: mockConfig, warnings: [] }),
       validateConfig: vi.fn(),
+      apiKeyFingerprint: vi.fn().mockReturnValue('ulr_…tsts'),
     }));
 
     vi.doMock('../utils/logger.js', () => ({
@@ -161,7 +162,7 @@ describe('Main Entry Point', () => {
       await main();
 
       expect(mockLoggerInstance.info).toHaveBeenCalledWith(
-        'Starting uluops-tracker MCP client',
+        'Starting @uluops/ops-mcp server',
         expect.objectContaining({
           apiUrl: 'http://localhost:3001/api',
         })
@@ -182,6 +183,7 @@ describe('Main Entry Point', () => {
         validateConfig: vi.fn().mockImplementation(() => {
           throw new Error('Invalid config');
         }),
+        apiKeyFingerprint: vi.fn().mockReturnValue('ulr_…tsts'),
       }));
 
       const { main } = await import('../index.js');
@@ -333,9 +335,10 @@ describe('Main Entry Point', () => {
       // eslint-disable-next-line @typescript-eslint/unbound-method
       expect(SecureMcpServer.create).toHaveBeenCalledWith(
         expect.objectContaining({
-          name: 'uluops-tracker-client',
+          name: '@uluops/ops-mcp',
         }),
         expect.objectContaining({
+          toolPoliciesPath: expect.stringMatching(/tool-policies\.json$/),
           securityLevel: 'basic',
           maxRequestsPerMinute: 120,
           maxParamCount: 3000,
