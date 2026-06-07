@@ -1,6 +1,6 @@
 {
   "name": "@uluops/ops-mcp",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "MCP server for the UluOps Platform API — validation tracking, analytics, and issue management",
   "type": "module",
   "main": "dist/index.js",
@@ -18,7 +18,8 @@
     "dist",
     "tool-policies.json",
     "README.md",
-    "CHANGELOG.md"
+    "CHANGELOG.md",
+    "LICENSE"
   ],
   "scripts": {
     "build": "tsc",

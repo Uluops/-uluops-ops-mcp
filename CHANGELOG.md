@@ -7,6 +7,164 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.1] - 2026-06-05
+
+First post-ship hardening pass. Driven by the run #1 ship pipeline (which
+failed Stage 3 public-interface at 56/100) and the run #2 anxiety reading
+(which surfaced two silent runtime failures the static gates missed:
+`tool-policies.json` never loaded by `npx` consumers, and `ULUOPS_API_KEY`
+format documented but unvalidated). All 7 ship gates now pass; 34 of the 39
+tracker findings closed (87%).
+
+### Security
+
+- **`tool-policies.json` now actually loaded.** The bundled policy file ships
+  in `files[]` but mcp-secure-server's resolution order (env var, then
+  `./tool-policies.json` in CWD, then `~/.config`) never found it for
+  `npx -y @uluops/ops-mcp` invocations — CWD is the MCP host's project
+  directory, not the package directory. Resolved via
+  `require.resolve('../tool-policies.json')` passed as `toolPoliciesPath`.
+  Without this fix every public consumer ran with default-level enforcement
+  and the `relaxedFields` that suppress UUID-as-credit-card false positives
+  were decorative.
+- **`ULUOPS_API_KEY` format validated at startup.** README documented the
+  `ulr_` prefix + 20-char minimum but `validateConfig` only checked for
+  non-empty. Mis-prefixed keys silently routed through `sessionToken` auth
+  and surfaced as opaque 401s. Now enforced via
+  `/^ulr_[A-Za-z0-9_-]{16,}$/` with an actionable error message.
+- **`NotFoundError` and `NetworkError` now pass through `sanitizeErrorMessage`.**
+  Closed a credential-redaction gap where 2 of 7 typed error branches
+  forwarded raw SDK error messages — low probability of leaking `ulr_*`
+  keys today, but the redaction layer is now consistent across all branches.
+- **402 tier-gating payload uses defensive type guards.** Previously cast
+  `details.definitions`, `details.currentTier`, `details.upgradeUrl` without
+  shape validation. Now `Array.isArray` + `typeof === 'string'` guards
+  with graceful fallback to `'above-tier definitions'` / `'unknown'` when
+  the API payload shape drifts.
+- **HTTPS-only base URL warning.** `loadConfig` now warns when
+  `ULUOPS_BASE_URL` uses a non-`https:` scheme outside `NODE_ENV=development`.
+  Closes CWE-319 cleartext-credential-transmission visibility gap.
+- **`ENABLE_DETAILED_ERRORS=false` env gate** for tightened production
+  deployments that want mcp-secure-server to suppress redacted error
+  reasons in `error.message`.
+- **`Number.isFinite` coercion guard.** `coerceNumericFields` now rejects
+  `Infinity` / `-Infinity` / `NaN` from string-typed numeric inputs.
+- **Input size bounds.** `delete_project.confirmation_phrase` and
+  `search_issues.query` now have `.max()` constraints (200 / 500 chars).
+
+### Changed
+
+- **Server protocol identity is now `@uluops/ops-mcp`.** Three call sites
+  still said `uluops-tracker-client` from before the package rename
+  (`SecureMcpServer.create` name, internal config default, startup log).
+  MCP host UIs now display the correct identity and bug reports can be
+  correlated to the npm package name.
+- **Verbose file logging defaults to `false`.** `ENABLE_FILE_LOGGING`,
+  `VERBOSE_LOGGING`, and `LOG_PERFORMANCE_METRICS` previously defaulted
+  to `true`, which created a `logs/` directory in every consumer's working
+  directory without opt-in. All three now default `false`; opt in
+  explicitly via env vars.
+- **README rewritten for npm/npx consumers.** Installation section was
+  the contributor `npm install` + `npm run build` workflow; now leads
+  with `npx -y @uluops/ops-mcp` and `npm install -g @uluops/ops-mcp`.
+  `.mcp.json` example uses the correct binary name (`uluops-ops-mcp`,
+  not the stale `uluops-tracker-client`). Quick Start field names
+  corrected (`agents`/`decision`/`agent`, not the pre-rename
+  `validators`/`status`/`validator`).
+- **Backend URL resolution deferred to the SDK.** Previously the MCP server
+  shadowed `@uluops/ops-sdk`'s `DEFAULT_BASE_URL` with its own copy and
+  enforced it as a required env var. The SDK already resolves the correct
+  production URL by default; the MCP now passes `baseUrl` through unchanged.
+  Public consumers no longer set anything but `ULUOPS_API_KEY`. README's
+  configuration table reduced to consumer-relevant variables and `.mcp.json`
+  examples slimmed to the single required key.
+- **Documentation parity with 48 registered tools.** README previously
+  documented 47 (off-by-one from `soft_delete_issue` addition) and
+  4 stale tool names from the validator→agent rename (`list_validators`,
+  `validate_features_list`, `get_validator_reliability`,
+  `get_validator_matrix`). All corrected; 10 previously-undocumented
+  tools added (the full Analysis Tools group plus `get_agent_lifecycle`,
+  `soft_delete_issue`, and renames).
+- **Six previously-undocumented environment variables documented**:
+  `ULUOPS_ORG_SLUG`, `ULUOPS_TRACKER_RETRIES`, `ENABLE_FILE_LOGGING`,
+  `LOG_DIR`, `VERBOSE_LOGGING`, `LOG_PERFORMANCE_METRICS`.
+- **Graceful shutdown awaits server close.** `SIGINT`/`SIGTERM` handlers
+  now `await Promise.race([server.close(), 2s timeout])` before
+  `process.exit(0)` so in-flight tool responses can flush back through
+  stdio.
+
+### Added
+
+- **API key fingerprint in startup log.** `apiKeyFingerprint(apiKey)`
+  emits `ulr_…XXXX` (last 4 chars) so operators can distinguish which
+  key the server loaded across multiple deployments without leaking
+  the secret.
+- **7 tests covering the 402 tier-gating error path** (`sdk-error-mapper.test.ts`)
+  including happy path, `?source=mcp` vs `&source=mcp` upgrade-URL tracking,
+  missing-details fallback, malformed-definitions tolerance,
+  non-array/non-string defensive handling, and credential-not-leaked check.
+- **`coerceNumericFields` boundary tests** verifying MCP JSON-RPC string-typed
+  numerics are coerced and `Infinity`/`NaN` rejected.
+- **`save_run` timestamp injection tests** verifying ISO-8601 timestamp is
+  injected when the caller omits one and caller-supplied timestamps are
+  preserved verbatim.
+
+### Removed
+
+- **Dead `config.server` stanza.** `ServerConfig` interface, the
+  `server: { name, version: '1.0.0' }` block in `loadConfig`, and the
+  matching test assertion. The static `'1.0.0'` was a pinned falsehood
+  (package was at 0.2.0); the dynamic version path at `src/index.ts:22`
+  reads from `package.json` and remains.
+- **`ValidatorResultSchema` / `ValidatorResult` deprecated aliases**
+  removed from `src/types/schemas.ts`. All consumers migrated to
+  `AgentResultSchema` / `AgentResult`. Deprecation introduced post-rename
+  in 0.2.0; alias dropped now to reduce surface.
+
+### Internal
+
+- 10 ESLint errors fixed (3× `restrict-template-expressions`,
+  3× `no-deprecated`, 3× `no-unnecessary-type-assertion`,
+  1× `no-unnecessary-type-assertion`). Lint now exits clean.
+- Shared run-related schemas extracted to `src/types/run-schemas.ts`
+  (`CategoryScoreSchema`, `ExplorationSectionSchema`,
+  `ExplorationMapSchema`, `AnalysisRecordBaseSchema`,
+  `AnalysisSummaryBaseSchema`). `save-run.ts` shrank 173 → 76 lines;
+  `update-run.ts` shrank 167 → 80 lines.
+- `main()` body extracted into `buildServerOptions()` plus
+  `STARTUP_TOOL_GROUPS` / `STARTUP_RESOURCES` constants. Function body
+  shrank 197 → 88 lines.
+- `EXPECTED_TOOLS` unified to a single fixture
+  (`src/__tests__/fixtures/expected-tools.ts`) consumed by both
+  `tools-integration.test.ts` and `tool-registry.test.ts`.
+- `createToolHandler` `preProcess` discriminates on a `Symbol`
+  marker (`shortCircuit()`) instead of `'content' in result`
+  duck-typing. Future tool schemas with top-level `content` fields
+  no longer trigger an accidental error-response interpretation.
+- `isNumericSchema` uses Zod's public `unwrap()` /
+  `removeDefault()` API instead of accessing `_def.innerType`
+  via `as any`. Stable across Zod minor versions.
+- `list_agents` handler now guards SDK return shape with
+  `Array.isArray` + a type predicate filter. Previously cast
+  `data as Array<{ name: string }>` blind.
+- `assertion` guarding `toolPoliciesPath` argument added to
+  `index.test.ts` — the fix above would otherwise have no test
+  coverage protecting it from refactor regression.
+- Stale `tool-policies.json` CWD-fallback comment in `src/index.ts`
+  replaced with an accurate description of the bundled-file lookup.
+- LICENSE file added (MIT, matching sibling `@uluops/*` packages)
+  and `LICENSE` added to `files[]`.
+- CHANGELOG `[Unreleased]` compare base corrected from `v1.21.0`
+  (pre-rename) to `v0.2.0` and `[0.2.0]` tag link added in 0.2.0
+  release; this release adds `[0.2.1]` link.
+
+### Test count
+
+655 passing (up from 645 in 0.2.0). Net +10: +7 tier-gating, +2
+`coerceNumericFields` boundary, +2 `save_run` timestamp, +2 ulr_
+format validation, −5 retired (one `loadConfig` server-defaults
+test deleted with the dead stanza, removed assertions migrated).
+
 ## [0.2.0] - 2026-06-05
 
 First release under the scoped name `@uluops/ops-mcp`. Forward-ports the
@@ -205,7 +363,9 @@ and aligns the package with the broader UluOps supply-chain policy.
 - Security limits increased for large validation payloads
 - `id` field handling standardized in status update tools
 
-[Unreleased]: https://github.com/Uluops/ops-uluops-mcp/compare/v1.21.0...HEAD
+[Unreleased]: https://github.com/Uluops/ops-uluops-mcp/compare/v0.2.1...HEAD
+[0.2.1]: https://github.com/Uluops/ops-uluops-mcp/compare/v0.2.0...v0.2.1
+[0.2.0]: https://github.com/Uluops/ops-uluops-mcp/compare/v1.21.0...v0.2.0
 [1.21.0]: https://github.com/Uluops/ops-uluops-mcp/compare/v1.20.0...v1.21.0
 [1.20.0]: https://github.com/Uluops/ops-uluops-mcp/compare/v1.19.0...v1.20.0
 [1.19.0]: https://github.com/Uluops/ops-uluops-mcp/compare/v1.18.0...v1.19.0
