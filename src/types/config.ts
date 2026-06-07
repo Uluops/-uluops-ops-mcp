@@ -5,8 +5,12 @@
 export type LogLevel = 'debug' | 'info' | 'warn' | 'error';
 
 export interface ApiClientConfig {
-  /** Base URL for the uluops-tracker API */
-  baseUrl: string;
+  /**
+   * Base URL for the UluOps Platform API. Optional — when undefined, the
+   * SDK's `DEFAULT_BASE_URL` is used (prod by default; localhost when
+   * `NODE_ENV=development`).
+   */
+  baseUrl?: string;
   /** API key for authentication */
   apiKey?: string;
   /** Org slug for multi-tenancy — sets X-Org-Slug header on all requests */
@@ -15,13 +19,6 @@ export interface ApiClientConfig {
   timeout: number;
   /** Number of retry attempts (default: 3) */
   retries: number;
-}
-
-export interface ServerConfig {
-  /** MCP server name */
-  name: string;
-  /** MCP server version */
-  version: string;
 }
 
 export interface SecurityConfig {
@@ -39,6 +36,5 @@ export interface SecurityConfig {
 
 export interface UluopsTrackerConfig {
   api: ApiClientConfig;
-  server: ServerConfig;
   security: SecurityConfig;
 }

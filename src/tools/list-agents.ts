@@ -29,12 +29,16 @@ export function registerListAgentsTool(
       // SDK returns AgentPerformance[] from analytics endpoint
       // Transform to match the expected list format
       const data = await opsClient.analytics.getAgentPerformance();
+      if (!Array.isArray(data)) {
+        return { success: true, agents: [] };
+      }
       return {
         success: true,
-        agents: (data as Array<{ name: string }>).map((v) => ({
-          name: v.name,
-          enabled: true,
-        })),
+        agents: data
+          .filter((v: unknown): v is { name: string } =>
+            typeof v === 'object' && v !== null && typeof (v as { name?: unknown }).name === 'string'
+          )
+          .map((v) => ({ name: v.name, enabled: true })),
       };
     }, { toolName: 'list_agents' })
   );

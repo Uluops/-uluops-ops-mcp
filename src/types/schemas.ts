@@ -69,13 +69,12 @@ export const ClassifierSchema = z.enum(['agent', 'classifier', 'human']);
 export type Classifier = z.infer<typeof ClassifierSchema>;
 
 /**
- * Analysis record type vocabulary.
- * Must stay in sync with ANALYSIS_RECORD_TYPES in
- * ops-uluops-api/src/business-objects/analysis-record.ts
+ * Known analysis record type vocabulary.
  *
- * TODO: Move this vocabulary to the database (e.g., a `record_types` lookup table)
- * so it can be shared across services without code duplication. This becomes
- * necessary when multiple services need to validate record types independently.
+ * This list is documentation/autocomplete material, not an exhaustive validator.
+ * Agent families can emit new structured analysis shapes; the tracker stores
+ * `record_type` as a bounded string so registry-defined agents do not need code
+ * releases before their analysis records can be persisted.
  */
 export const ANALYSIS_RECORD_TYPES = [
   // Validator
@@ -110,8 +109,8 @@ export const ANALYSIS_RECORD_TYPES = [
   'improvement', 'evidence_finding',
 ] as const;
 
-export const AnalysisRecordTypeSchema = z.enum(ANALYSIS_RECORD_TYPES);
-export type AnalysisRecordType = z.infer<typeof AnalysisRecordTypeSchema>;
+export const AnalysisRecordTypeSchema = z.string().min(1).max(50);
+export type AnalysisRecordType = string;
 
 /**
  * Note types for issue annotations
@@ -211,11 +210,6 @@ export const AgentResultSchema = z
   })
   .describe('Results from a single agent');
 export type AgentResult = z.infer<typeof AgentResultSchema>;
-
-/** @deprecated Use AgentResultSchema */
-export const ValidatorResultSchema = AgentResultSchema;
-/** @deprecated Use AgentResult */
-export type ValidatorResult = AgentResult;
 
 /**
  * Recommendation/issue schema for validation findings

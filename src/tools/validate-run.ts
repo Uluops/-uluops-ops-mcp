@@ -7,7 +7,7 @@
 import { z } from 'zod';
 import type { OpsClient } from '@uluops/ops-sdk';
 import {
-  ValidatorResultSchema,
+  AgentResultSchema,
   RecommendationSchema,
   type McpServerToolRegistration,
 } from '../types/index.js';
@@ -20,7 +20,7 @@ export const ValidateRunInputSchema = z.object({
     .min(1)
     .max(100)
     .describe('Workflow type (e.g., post-implementation, ship)'),
-  agents: z.array(ValidatorResultSchema).describe('Array of agent results'),
+  agents: z.array(AgentResultSchema).describe('Array of agent results'),
   recommendations: z.array(RecommendationSchema).describe('Array of issues/recommendations'),
 });
 

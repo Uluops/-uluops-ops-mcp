@@ -6,54 +6,7 @@
 
 import { describe, it, expect } from 'vitest';
 import { toolRegistry } from '../config/tool-registry.js';
-
-// Expected tool names (P0 + P1 + P2)
-const EXPECTED_TOOLS = [
-  // P0 Core Tools
-  'save_run',
-  'query_issues',
-  'update_status',
-  'get_project_summary',
-  'delete_project',
-  // P1 Extended Tools
-  'get_issue_details',
-  'get_run_details',
-  'diff_runs',
-  'archive_runs',
-  'get_analytics',
-  'search_issues',
-  'list_agents',
-  'validate_run',
-  'get_issue_history',
-  'add_issue_note',
-  'edit_issue',
-  'merge_issues',
-  'bulk_update_status',
-  'update_run',
-  'get_agent_reliability',
-  'create_issue',
-  // P2 Project Tools
-  'list_projects',
-  'get_project',
-  'get_project_trends',
-  'create_project',
-  'update_project',
-  'soft_delete_project',
-  'restore_project',
-  // P2 Run Tools
-  'get_run',
-  'list_runs',
-  'get_latest_run',
-  'delete_run',
-  // P2 Issue Tools
-  'get_issue_by_fingerprint',
-  'update_issue_by_fingerprint',
-  'restore_issue',
-  'undo_issue_status',
-  // P2 Taxonomy Tools
-  'get_taxonomy',
-  'get_full_taxonomy_analytics',
-];
+import { EXPECTED_TOOLS, EXPECTED_TOOL_COUNT } from './fixtures/expected-tools.js';
 
 describe('toolRegistry', () => {
   it('should export an array of tool specs', () => {
@@ -69,7 +22,7 @@ describe('toolRegistry', () => {
   });
 
   it('should have exactly 48 tools', () => {
-    expect(toolRegistry.length).toBe(48);
+    expect(toolRegistry.length).toBe(EXPECTED_TOOL_COUNT);
   });
 
   it('should have no duplicate tool names', () => {

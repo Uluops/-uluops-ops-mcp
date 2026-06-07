@@ -40,7 +40,7 @@ describe('registerProjectsResource', () => {
     };
 
     // Register resources and capture handlers
-    registerProjectsResource(mockServer as any, mockApiClient as any);
+    registerProjectsResource(mockServer, mockApiClient as any);
 
     // Extract registered handlers
     expect(mockServer.resource).toHaveBeenCalledTimes(2);
@@ -159,7 +159,7 @@ describe('registerTaxonomyResource', () => {
     };
 
     // Register resource and capture handler
-    registerTaxonomyResource(mockServer as any, mockOpsClient);
+    registerTaxonomyResource(mockServer, mockOpsClient);
 
     // Extract registered handler
     expect(mockServer.resource).toHaveBeenCalledTimes(1);

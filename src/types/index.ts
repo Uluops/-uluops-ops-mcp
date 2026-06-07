@@ -9,7 +9,6 @@
 export type {
   LogLevel,
   ApiClientConfig,
-  ServerConfig,
   SecurityConfig,
   UluopsTrackerConfig,
 } from './config.js';
@@ -48,7 +47,6 @@ export {
   // Shared validation schemas
   TokenUsageSchema,
   AgentResultSchema,
-  ValidatorResultSchema, // deprecated alias
   RecommendationSchema,
   ValidationSummarySchema,
 } from './schemas.js';
