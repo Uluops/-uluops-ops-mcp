@@ -1,4 +1,14 @@
+**[UluOps](https://uluops.ai)** · Operating Intelligence as Infrastructure
+
+---
+
 # @uluops/ops-mcp
+
+[![npm version](https://img.shields.io/npm/v/@uluops/ops-mcp.svg)](https://www.npmjs.com/package/@uluops/ops-mcp)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+[![Node.js Version](https://img.shields.io/node/v/@uluops/ops-mcp)](https://nodejs.org)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.7+-blue.svg)](https://www.typescriptlang.org/)
+[![Tests](https://img.shields.io/badge/tests-passing-brightgreen)](src/__tests__/)
 
 MCP (Model Context Protocol) server for the UluOps Platform API. Provides **48 tools** and **3 resources** (2 functional, 1 template placeholder) that enable Claude Code, Cursor, and other MCP hosts to interact with the UluOps Platform.
 

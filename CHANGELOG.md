@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.1] - 2026-06-07
+
+Docs-only patch. Adds the standard UluOps tagline and the 5-badge set (npm version, MIT license, node engine, TypeScript 5.7+, tests passing) to the README, matching the `@uluops/core` package presentation. No behavioural change.
+
+### Changed
+
+- README header now opens with the **[UluOps](https://uluops.ai) · Operating Intelligence as Infrastructure** tagline and the five shields.io badges (npm/license/node/typescript/tests), all linking to canonical sources. Tests badge points to `src/__tests__/` (the actual test home in this repo, not the conventional `test/` directory the core package uses). Brings the npm package page in line with the rest of the public UluOps surface.
+
 ## [0.3.0] - 2026-06-07
 
 Forward-ports the validation-drift fix from the internal `uluops-ops-mcp-client` v1.23.0 release. Pairs with ops-uluops-api v1.57.0 to resolve the opaque "Validation failed" experience that has been the dominant friction point on the MCP surface. Two coupled fixes share a single root cause across two layers — the error mapper was dropping per-field detail returned by the API, and the MCP-advertised schema was looser than the API-enforced schema for `failure_code` / `failure_mode` so bad codes round-tripped instead of failing at the boundary.
