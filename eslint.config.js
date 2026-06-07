@@ -8,7 +8,11 @@ export default tseslint.config(
     languageOptions: {
       parserOptions: {
         projectService: {
-          allowDefaultProject: ['*.config.js', 'src/__tests__/*.test.ts'],
+          allowDefaultProject: [
+            '*.config.js',
+            'src/__tests__/*.test.ts',
+            'src/__tests__/fixtures/*.ts',
+          ],
           defaultProject: 'tsconfig.test.json',
           maximumDefaultProjectFileMatchCount_THIS_WILL_SLOW_DOWN_LINTING: 20,
         },

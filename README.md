@@ -1,50 +1,74 @@
-# Uluops Tracker MCP Client
+# @uluops/ops-mcp
 
-MCP (Model Context Protocol) client for the uluops-tracker API. Provides **47 tools** and **3 resources** (2 functional, 1 template placeholder) that enable Claude Code to interact with the uluops-tracker backend API.
+MCP (Model Context Protocol) server for the UluOps Platform API. Provides **48 tools** and **3 resources** (2 functional, 1 template placeholder) that enable Claude Code, Cursor, and other MCP hosts to interact with the UluOps Platform.
 
 ## Design Philosophy
 
-**Thin Client Pattern**: This MCP client contains **zero business logic**. All data processing, validation, storage, and analytics are handled by the backend API. The client's sole responsibility is protocol translation between MCP's stdio-based JSON-RPC and the backend's REST API.
+**Thin Client Pattern**: This MCP server contains **zero business logic**. All data processing, validation, storage, and analytics are handled by the backend API. The server's sole responsibility is protocol translation between MCP's stdio-based JSON-RPC and the backend's REST API.
 
 ## Installation
 
 Requires **Node.js 18** or later.
 
+**Option A — npx (no install):**
+
 ```bash
-npm install
-npm run build
+npx -y @uluops/ops-mcp
 ```
+
+**Option B — global install:**
+
+```bash
+npm install -g @uluops/ops-mcp
+```
+
+This exposes the `uluops-ops-mcp` binary on your PATH.
 
 ## Configuration
 
-Create a `.env` file based on `.env.example`:
-
-```bash
-cp .env.example .env
-```
-
-Required environment variables:
+Set environment variables in your MCP host configuration (see "Usage with Claude Code" below) or in a `.env` file when developing locally.
 
 | Variable | Description | Required |
 |----------|-------------|----------|
-| `ULUOPS_BASE_URL` | Backend API URL (preferred) | Yes |
 | `ULUOPS_API_KEY` | API authentication key (must start with `ulr_`, min 20 chars) | Yes |
+| `ULUOPS_ORG_SLUG` | Organization slug for multi-org contexts | No |
 | `ULUOPS_TRACKER_TIMEOUT` | Request timeout (ms) | No (default: 30000) |
-| `LOG_LEVEL` | Logging level | No (default: info) |
+| `ULUOPS_TRACKER_RETRIES` | Number of retry attempts on failure | No (default: 3) |
+| `LOG_LEVEL` | Logging level (`debug`, `info`, `warn`, `error`) | No (default: info) |
+
+The backend URL is handled automatically by `@uluops/ops-sdk` — production by default, no configuration needed.
+
+### Advanced Logging
+
+By default this server logs only to stderr at `info` level. To enable structured file logging, set:
+
+| Variable | Description | Default |
+|----------|-------------|---------|
+| `ENABLE_FILE_LOGGING` | Write JSON logs to disk | `false` |
+| `LOG_DIR` | Directory for log files | `logs` |
+| `VERBOSE_LOGGING` | Include extra diagnostic detail | `false` |
+| `LOG_PERFORMANCE_METRICS` | Emit per-call timing metrics | `false` |
+
+When `ENABLE_FILE_LOGGING=true`, a `logs/` directory is created in the process's working directory.
+
+### Production Tightening
+
+| Variable | Description | Default |
+|----------|-------------|---------|
+| `ENABLE_DETAILED_ERRORS` | Propagate redacted error reasons in `error.message` so callers can diagnose failures without parsing the data envelope. Set to `false` to suppress in tightened production deployments. | `true` |
 
 ## Usage with Claude Code
 
 Add to your Claude Code MCP configuration (`.mcp.json`):
 
-**Option 1: Using installed binary** (recommended after `npm link` or global install)
+**Option 1: npx (lowest friction — no install)**
 ```json
 {
   "mcpServers": {
-    "uluops-tracker": {
-      "command": "uluops-tracker-client",
-      "args": [],
+    "uluops-ops": {
+      "command": "npx",
+      "args": ["-y", "@uluops/ops-mcp"],
       "env": {
-        "ULUOPS_BASE_URL": "http://localhost:3100/api/v1",
         "ULUOPS_API_KEY": "ulr_your-api-key-here"
       }
     }
@@ -52,21 +76,21 @@ Add to your Claude Code MCP configuration (`.mcp.json`):
 }
 ```
 
-**Option 2: Using node directly** (for development)
+**Option 2: Globally installed binary**
 ```json
 {
   "mcpServers": {
-    "uluops-tracker": {
-      "command": "node",
-      "args": ["/path/to/uluops-tracker-mcp-client/dist/index.js"],
+    "uluops-ops": {
+      "command": "uluops-ops-mcp",
+      "args": [],
       "env": {
-        "ULUOPS_BASE_URL": "http://localhost:3100/api/v1",
         "ULUOPS_API_KEY": "ulr_your-api-key-here"
       }
     }
   }
 }
 ```
+
 
 ## Quick Start Examples
 
@@ -77,8 +101,8 @@ Once configured, Claude Code can use the uluops tracker tools:
 save_run({
   project: "my-project",
   workflow_type: "ship",
-  validators: [{ name: "code-validator", score: 85, status: "PASS" }],
-  recommendations: [{ validator: "code-validator", title: "Fix lint error", priority: "suggested" }]
+  agents: [{ name: "code-validator", score: 85, decision: "PASS" }],
+  recommendations: [{ agent: "code-validator", title: "Fix lint error", priority: "suggested" }]
 })
 
 // Query open issues for a project
@@ -90,7 +114,7 @@ get_project_summary({ project: "my-project" })
 
 ## Rate Limiting Configuration
 
-This client uses [mcp-secure-server](https://github.com/anthropics/mcp-secure-server) with configuration optimized for Claude Code's usage patterns.
+This server uses `mcp-secure-server` with configuration optimized for Claude Code's usage patterns.
 
 ### Claude Code Usage Patterns
 
@@ -98,7 +122,7 @@ This client uses [mcp-secure-server](https://github.com/anthropics/mcp-secure-se
 |-----------|------------------------|-------|
 | Query context (summary, issues, runs) | 3-5 | Low burst |
 | Create issues from validation workflow | 10-30 | High burst |
-| Update validators with metrics | 6 | Medium burst |
+| Update agents with metrics | 6 | Medium burst |
 | Save recommendations | 1 (with array) | Single call |
 
 Claude Code issues tool calls in short, intense bursts (<2s) followed by "thinking" pauses. The default configuration accounts for this:
@@ -142,15 +166,16 @@ Claude Code issues tool calls in short, intense bursts (<2s) followed by "thinki
 | `archive_runs` | Archive old runs without deletion |
 | `get_analytics` | Cross-project analytics (8 metric types available) |
 | `search_issues` | Search issues across projects with relevance ranking |
-| `list_validators` | List canonical validators from manifest |
-| `validate_features_list` | Preview save operation without modifying database |
+| `list_agents` | List canonical agents from manifest |
+| `validate_run` | Preview save operation without modifying database |
 | `get_issue_history` | Full issue history with changes between runs |
 | `add_issue_note` | Add context, resolution, or blocker notes to issues |
 | `edit_issue` | Edit issue metadata (title, file_path, severity, etc.) |
 | `merge_issues` | Merge duplicate issues into a target issue |
 | `bulk_update_status` | Bulk update multiple issue statuses in one transaction |
 | `update_run` | Update run metadata post-hoc (tokens, scores, timestamps) |
-| `get_validator_reliability` | Analyze validator effectiveness and reliability scores |
+| `get_agent_reliability` | Analyze agent effectiveness and reliability scores |
+| `get_agent_lifecycle` | Lifecycle metrics for an agent across runs |
 
 ### Project Tools (P2)
 | Tool | Description |
@@ -177,6 +202,7 @@ Claude Code issues tool calls in short, intense bursts (<2s) followed by "thinki
 | `get_issue_by_fingerprint` | Get an issue by its SHA-256 fingerprint |
 | `update_issue_by_fingerprint` | Update an issue status by its fingerprint |
 | `restore_issue` | Restore a soft-deleted issue |
+| `soft_delete_issue` | Soft delete an issue (can be restored later) |
 | `undo_issue_status` | Undo the last status change on an issue |
 
 ### Taxonomy Tools (P2)
@@ -187,7 +213,15 @@ Claude Code issues tool calls in short, intense bursts (<2s) followed by "thinki
 | `get_burndown` | Get taxonomy burndown with time series and trend analysis per failure domain |
 | `get_velocity` | Get velocity metrics per failure mode with sparkline data and trend reliability |
 | `get_discovery` | Get discovery timeline showing new vs recurring issues over time |
-| `get_validator_matrix` | Get validator-taxonomy coverage matrix with blind spot detection |
+| `get_agent_matrix` | Get agent-taxonomy coverage matrix with blind spot detection |
+
+### Analysis Tools (P2)
+| Tool | Description |
+|------|-------------|
+| `get_run_analysis` | Structured analysis records for a single run (decision, scoring, findings) |
+| `get_project_analysis` | Aggregated analysis records across all runs in a project |
+| `query_analysis_records` | Query analysis records by type, classification, severity |
+| `get_agent_runs_analysis` | Per-run analysis records grouped by agent |
 
 ## Available Resources
 
@@ -212,8 +246,6 @@ read_resource("validation://taxonomy")
 **Note:** For project-specific data, use the `get_project_summary` tool instead of resources. MCP resource templates with parameters are not fully supported by the SDK.
 
 ## Development
-
-**Note:** This project uses a local file dependency for `mcp-secure-server` (see `package.json`). Ensure the sibling project exists at `../../ongoing-projects/mcp-secure-server` before running `npm install`.
 
 ```bash
 # Install dependencies
