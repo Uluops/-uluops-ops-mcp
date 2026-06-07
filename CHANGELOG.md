@@ -7,6 +7,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.0] - 2026-06-07
+
+Forward-ports the validation-drift fix from the internal `uluops-ops-mcp-client` v1.23.0 release. Pairs with ops-uluops-api v1.57.0 to resolve the opaque "Validation failed" experience that has been the dominant friction point on the MCP surface. Two coupled fixes share a single root cause across two layers — the error mapper was dropping per-field detail returned by the API, and the MCP-advertised schema was looser than the API-enforced schema for `failure_code` / `failure_mode` so bad codes round-tripped instead of failing at the boundary.
+
+### Fixed
+
+- `sdk-error-mapper.ts:155` `isValidationError` branch now extracts `details.errors` from the API ValidationError and surfaces per-field detail. Previously emitted only `error.message` ("Validation failed"), forcing clients into trial-and-error isolation to discover which field tripped which rule. The ops-uluops-api error handler (`src/middleware/error-handler.ts:258-279`) has always shipped a structured `errors: [{path, message}]` array; the SDK preserves it on `error.details.errors`; this branch was the only thing that wasn't forwarding it. Compare with `mapZodErrorToMcp` below — that branch always extracted per-field detail for Zod errors thrown in the MCP server itself, but the parallel branch for ValidationErrors returned from the API did not. Field errors now appear both inline in the message (`field.path: message; ...`) and as a structured `field_errors` array in the response envelope.
+- The original ops-uluops-api a08391f1 bug report concluded `file_path`, `category`, and `line_number` were rejected by save_run/update_run/create_issue. Live reproduction (probe `0ef736c1`) showed they were always accepted — the actual trigger was almost certainly a `lineNumber` sent as string-not-number or a `failureCode`/`failureMode` outside its regex, and the error mapper hid which. With per-field detail now surfacing, the actual cause is self-diagnosing the first time a client hits it.
+
+### Changed
+
+- **BREAKING (observable, not type-level):** `create-issue.ts:failure_code` is now `z.string().regex(/^(STR|SEM|PRA|EPI)-[A-Z]{3}\/[CHMLI]$/)` matching CreateUserIssueSchema's `FailureCode`. Was `z.string().optional()` — the MCP boundary silently accepted bad codes and round-tripped them to a 400. Error message spells out the DOMAIN-MODE/SEVERITY breakdown so the rejection is self-explaining. Clients submitting malformed `failure_code` values that previously round-tripped to an API 400 will now fail at the MCP boundary with the same effective rejection but a much clearer message.
+- **BREAKING (observable, not type-level):** `create-issue.ts:failure_mode` is now `z.string().regex(/^[A-Z]{3}$/)` matching `FailureModeCode`. Was `z.string().optional()`. Error message disambiguates from `failure_code`: "For the full code (e.g., SEM-VAL/H), use failure_code instead." — pointing at the exact mistake the original bug report stumbled into.
+- **BREAKING (observable, not type-level):** `schemas.ts:RecommendationSchema.failure_mode` (shared by `save_run` and `update_run` recommendation arrays) gets the same regex. `failure_code` already enforced the pattern in this package. Both surfaces now reject the same garbage at the same boundary.
+- Pair with ops-uluops-api v1.57.0's matching tightening of `RecommendationInputSchema` — both the MCP boundary AND the API boundary now enforce the same regexes. `POST /runs` recommendation payloads with malformed codes (which previously stored as-is) will now return a 400 with the specific failing field surfaced through the new error-mapper path.
+
 ## [0.2.1] - 2026-06-05
 
 First post-ship hardening pass. Driven by the run #1 ship pipeline (which

@@ -235,7 +235,13 @@ export const RecommendationSchema = z
       .optional()
       .describe('Failure taxonomy code (e.g., SEM-VAL/H)'),
     failure_domain: FailureDomainSchema.optional().describe('Failure domain'),
-    failure_mode: z.string().optional().describe('Failure mode identifier'),
+    failure_mode: z
+      .string()
+      .regex(/^[A-Z]{3}$/, {
+        message: 'Must be exactly 3 uppercase letters (e.g., VAL, OMI, FRA). For the full code (e.g., SEM-VAL/H), use failure_code instead.',
+      })
+      .optional()
+      .describe('Failure mode identifier — 3 uppercase letters (e.g., VAL, OMI)'),
     classification_confidence: ConfidenceSchema.optional().describe('Classification confidence'),
     classified_by: ClassifierSchema.optional().describe('Classification source'),
     secondary_failure_codes: z.array(z.string()).optional().describe('Secondary failure codes'),

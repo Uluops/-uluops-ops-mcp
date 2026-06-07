@@ -153,10 +153,30 @@ export function mapSdkErrorToMcp(error: unknown, toolName?: string): McpToolResp
   }
 
   if (isValidationError(error)) {
-    return buildErrorResponse(
-      sanitizeErrorMessage((error as Error).message || 'Invalid request parameters'),
-      context,
-    );
+    // Surface the API's per-field validation errors. The API error handler
+    // (ops-uluops-api/src/middleware/error-handler.ts) emits a structured
+    // `errors: [{path, message}]` array inside `details`; the SDK preserves
+    // it on `error.details.errors`. Forwarding only `error.message` ("Validation
+    // failed") forces clients into trial-and-error isolation to discover which
+    // field tripped which rule. Extracting the array makes drift between
+    // MCP-advertised schema and API-enforced schema immediately diagnosable.
+    const baseMessage = sanitizeErrorMessage((error as Error).message || 'Invalid request parameters');
+    const details = (error as { details?: Record<string, unknown> }).details;
+    const fieldErrors = details && Array.isArray((details as { errors?: unknown }).errors)
+      ? ((details as { errors: Array<{ path?: string; message?: string }> }).errors)
+      : undefined;
+
+    if (fieldErrors && fieldErrors.length > 0) {
+      const formatted = fieldErrors
+        .map((e) => `${e.path ?? '?'}: ${e.message ?? 'invalid'}`)
+        .join('; ');
+      return buildErrorResponse(
+        `${baseMessage}: ${formatted}`,
+        { ...context, field_errors: fieldErrors },
+      );
+    }
+
+    return buildErrorResponse(baseMessage, context);
   }
 
   if (error instanceof UnauthorizedError) {
