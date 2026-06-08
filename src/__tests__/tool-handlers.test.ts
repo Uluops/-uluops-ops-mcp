@@ -813,6 +813,19 @@ describe('Tool Handlers', () => {
       expect(name).toBe('get_analytics');
     });
 
+    it('description flags cross_project_patterns as empty-by-default placeholder (T2 §3.2 / F8)', () => {
+      // The F8 description note's whole point is to disambiguate `[]` =
+      // "metric placeholder" from `[]` = "no patterns in your data" for
+      // consumers.  A future rewrite that drops the note would let MCP
+      // clients silently treat the placeholder as data.
+      const [, description] = mockServer.tool.mock.calls[0];
+      const desc = String(description);
+      expect(desc).toContain('cross_project_patterns');
+      expect(desc).toContain('[]');
+      // The semantic disambiguation that's the entire point of the note.
+      expect(desc.toLowerCase()).toContain('placeholder');
+    });
+
     it('should get analytics with metric', async () => {
       mockOpsClient.analytics.getByMetric.mockResolvedValue({ data: [] });
 
@@ -982,13 +995,48 @@ describe('Tool Handlers', () => {
       expect(name).toBe('get_issue_history');
     });
 
-    it('should get history by issue ID', async () => {
-      mockOpsClient.issues.getHistory.mockResolvedValue({ history: [], notes: [] });
+    it('description documents the F10 IssueHistoryEnvelope contract (T2 §3.1)', () => {
+      // The wave's core deliverable is description accuracy.  Without this
+      // assertion, a future rewrite that drops the envelope shape claim or
+      // the tombstone semantics from the description would land silently —
+      // exactly the failure mode this wave fixed.
+      const [, description] = mockServer.tool.mock.calls[0];
+      const desc = String(description);
+      // Envelope fields consumers must know to call this.
+      expect(desc).toContain('issueId');
+      expect(desc).toContain('events');
+      expect(desc).toContain('totalEvents');
+      expect(desc).toContain('truncated');
+      // The three event-type discriminator values.
+      expect(desc).toContain("'occurrence'");
+      expect(desc).toContain("'status'");
+      expect(desc).toContain("'note'");
+      // F10 Bug B tombstone semantics — consumers branch on these.
+      expect(desc).toContain('transitionType');
+      expect(desc).toContain('revertedChangeId');
+      expect(desc).toContain("'undo'");
+    });
 
-      await handler({ issue_id: TEST_UUID_1 });
+    it('should get history by issue ID', async () => {
+      // Post-impl r1: mock uses the IssueHistoryEnvelope shape (post-F10),
+      // not the pre-F10 `{ history, notes }` placeholder. The shape needs
+      // to match the live SDK contract so a future regression back to the
+      // old shape is caught here.
+      mockOpsClient.issues.getHistory.mockResolvedValue({
+        issueId: TEST_UUID_1,
+        events: [],
+        totalEvents: 0,
+        truncated: false,
+      });
+
+      const result = await handler({ issue_id: TEST_UUID_1 });
 
       // Only issueId is passed to SDK (normalizeKeys converts issue_id → issueId)
       expect(mockOpsClient.issues.getHistory).toHaveBeenCalledWith(TEST_UUID_1);
+      // Response shape anchor — if the SDK regresses back to a flat
+      // `{ history, notes }` shape the createSuccessResponse wrapper would
+      // surface that as data without issueId/events/totalEvents.
+      expect(result).not.toHaveProperty('isError');
     });
 
     it('should ignore the dropped include_diffs param (T2 §3.1)', async () => {
