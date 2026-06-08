@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.4.1] - 2026-06-08
+
+### Changed
+
+- **`get_analytics` tool description now flags `cross_project_patterns` as the empty-by-default placeholder** (live-tests T2 §3.2, F8). The tracker API used to throw 501 NOT_IMPLEMENTED on this metric; it now returns `[]` so the metric behaves like every other one in the family (return data or empty array, never crash on the category itself). Without this description note the empty response is indistinguishable from "no patterns in your data" — a silent semantic gap that defeats the whole point of returning `[]` instead of 501.
+
+  Per response-type-trust + thin-client architecture the handler itself is unchanged. No companion `@uluops/ops-sdk` bump is needed (this is a server-side behavior change, not a contract change).
+
 ## [0.4.0] - 2026-06-08
 
 ### Changed

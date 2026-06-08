@@ -36,7 +36,16 @@ export function registerGetAnalyticsTool(
 ): void {
   server.tool(
     'get_analytics',
-    'Get cross-project analytics. Metrics: agent_performance, resolution_rates, cross_project_patterns, file_hotspots, regression_analysis, trend_summary, cost_analysis, taxonomy_distribution.',
+    [
+      'Get cross-project analytics. Metrics: agent_performance,',
+      'resolution_rates, cross_project_patterns, file_hotspots,',
+      'regression_analysis, trend_summary, cost_analysis,',
+      'taxonomy_distribution.',
+      "Note: cross_project_patterns currently returns [] — pattern",
+      'aggregation across projects is on the roadmap but not yet',
+      'implemented. The empty response is not "no patterns in your data";',
+      'it is the metric placeholder.',
+    ].join(' '),
     GetAnalyticsInputSchema.shape,
     createToolHandler(GetAnalyticsInputSchema, (n) =>
       opsClient.analytics.getByMetric(n['metric'], n),
