@@ -7,6 +7,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.4.0] - 2026-06-08
+
+### Changed
+
+- **`get_issue_history` tool description rewritten + dead `include_diffs` param dropped** (live-tests T2 §3.1, F10). Ports the description rewrite already live in the local `ops-uluops-mcp` source tree (commit 76550ed on its `live-tests/phase-1` branch) into the public package. The tracker API endpoint changed in Phase 2 from returning a bare `StatusHistory[]` (status transitions only, with destroyed rows on undo) to a merged envelope:
+  ```
+  { issueId, events: HistoryEvent[], totalEvents, truncated }
+  ```
+  where `events` is a timestamp-sorted stream covering occurrences | status | notes (discriminated by `type`). Status events carry `transitionType` (`'change' | 'undo' | null`) and `revertedChangeId` for tombstone-aware audit reconstruction.
+
+  The tool description now accurately documents the envelope shape, the `type` discriminator, the undo-tombstone semantics, and the 1000-event ceiling. The prior copy ("Get the full history... including all occurrences, changes between runs, and any notes") was aspirational — it described what the tool *should* return, not what it did. Per the response-type-trust + thin-client architecture the handler itself is unchanged; the full shape contract lives in `@uluops/ops-sdk` 3.2.0.
+
+  The `include_diffs` parameter was removed. It was declared in the input schema, defaulted to true, and never wired through to the SDK. With the new envelope it has no meaning. Schema is now just `{ issue_id: uuid }`.
+
+### Dependencies
+
+- `@uluops/ops-sdk` 3.1.0 → 3.2.0 (envelope types: `IssueHistoryEnvelope`, `HistoryEvent`, `TransitionType`).
+
+### Internal
+
+- Updated 1 schema test + 1 tool-handler test to use the new envelope shape and assert the dropped param is silently stripped. Suite 655 → 655 (test count unchanged; same coverage, post-F10 semantics).
+
 ## [0.3.1] - 2026-06-07
 
 Docs-only patch. Adds the standard UluOps tagline and the 5-badge set (npm version, MIT license, node engine, TypeScript 5.7+, tests passing) to the README, matching the `@uluops/core` package presentation. No behavioural change.

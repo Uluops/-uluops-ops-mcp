@@ -5,3 +5,7 @@ logs/
 *.tsbuildinfo
 .env
 .env.local
+
+# Local Verdaccio scope override (per CLAUDE.md): drop in to validate a
+# @uluops/* publish; remove when done.
+.npmrc

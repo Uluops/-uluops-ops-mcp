@@ -221,20 +221,27 @@ describe('P1 tool schemas', () => {
   });
 
   describe('GetIssueHistoryInputSchema', () => {
+    // Live-tests T2 §3.1 (F10): the schema was trimmed to a single field after
+    // the Strategy B rewrite. The old `include_diffs` parameter was declared
+    // but never wired through to the API — dropping it removes the lie.
     it('should accept issue_id', () => {
       const result = GetIssueHistoryInputSchema.safeParse({ issue_id: TEST_UUID_1 });
       expect(result.success).toBe(true);
-      if (result.success) {
-        expect(result.data.include_diffs).toBe(true); // default
-      }
     });
 
-    it('should accept include_diffs option', () => {
+    it('should reject unknown parameters (e.g., the dropped include_diffs)', () => {
+      // Sanity check that schema is strict enough: extra keys are allowed by
+      // default in z.object (strip), but they must not appear on the parsed
+      // output. This guards against the schema silently accepting params that
+      // never reach the SDK.
       const result = GetIssueHistoryInputSchema.safeParse({
         issue_id: TEST_UUID_2,
         include_diffs: false,
       });
       expect(result.success).toBe(true);
+      if (result.success) {
+        expect('include_diffs' in result.data).toBe(false);
+      }
     });
   });
 

@@ -991,8 +991,16 @@ describe('Tool Handlers', () => {
       expect(mockOpsClient.issues.getHistory).toHaveBeenCalledWith(TEST_UUID_1);
     });
 
-    it('should accept include_diffs option', async () => {
-      mockOpsClient.issues.getHistory.mockResolvedValue({ history: [] });
+    it('should ignore the dropped include_diffs param (T2 §3.1)', async () => {
+      // include_diffs was removed in F10 — it was never wired through to the
+      // SDK. Confirm the schema strips it silently and the SDK is still called
+      // with only the issueId.
+      mockOpsClient.issues.getHistory.mockResolvedValue({
+        issueId: TEST_UUID_1,
+        events: [],
+        totalEvents: 0,
+        truncated: false,
+      });
 
       const result = await handler({ issue_id: TEST_UUID_1, include_diffs: false });
 
