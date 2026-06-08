@@ -174,11 +174,11 @@ Claude Code issues tool calls in short, intense bursts (<2s) followed by "thinki
 | `get_run_details` | Run information with all recommendations and stats |
 | `diff_runs` | Compare two validation runs (fixed, new, unchanged issues) |
 | `archive_runs` | Archive old runs without deletion |
-| `get_analytics` | Cross-project analytics (8 metric types available) |
+| `get_analytics` | Cross-project analytics (8 metric types; `cross_project_patterns` returns `[]` — placeholder until pattern aggregation ships) |
 | `search_issues` | Search issues across projects with relevance ranking |
 | `list_agents` | List canonical agents from manifest |
 | `validate_run` | Preview save operation without modifying database |
-| `get_issue_history` | Full issue history with changes between runs |
+| `get_issue_history` | Merged audit-event stream (occurrences, status, notes) as an envelope `{issueId, events[], totalEvents, truncated}` — includes undo tombstones (v0.4.0+) |
 | `add_issue_note` | Add context, resolution, or blocker notes to issues |
 | `edit_issue` | Edit issue metadata (title, file_path, severity, etc.) |
 | `merge_issues` | Merge duplicate issues into a target issue |

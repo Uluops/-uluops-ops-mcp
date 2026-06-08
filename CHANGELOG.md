@@ -7,6 +7,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.4.2] - 2026-06-08
+
+Post-implementation hardening on the 0.4.0/0.4.1 wave. No behavior change;
+all improvements are defensive, security-dep, or doc-fix.
+
+### Security
+
+- **Bump `@uluops/ops-sdk` 3.2.0 → 3.2.1.** Picks up CWE-20 `.max()` bounds on `HistoryEvent` string fields in the history-envelope types (`agentName`/255, `description`/10k, `reason`/2k, `content`/10k, `createdBy`/200), plus `Extract<>` → `z.infer<>` for the constituent event type exports. No source changes in this package — the MCP layer passes SDK return types through opaquely; this carries the bound downstream to consumers receiving the JSON-serialized envelope.
+- **Bump `vitest` 2.1.9 → 3.2.6 and `@vitest/coverage-v8` 2.1.9 → 3.2.6.** Closes a CVSS 9.8 CRITICAL CVE (arbitrary file read/exec when Vitest UI server is listening). Dev-only — not in the published package — but CI runs would expose it if `--ui` mode is ever enabled.
+
+### Tests
+
+- **Envelope-shape regression assertion fixed.** The r1 commit (`9232246`) added `expect(result).not.toHaveProperty('isError')` claiming to anchor the envelope-shape regression, but the assertion is a non-check — it passes for any object without an `isError` key, including the pre-F10 `{ history: [], notes: [] }` shape. Test-architect (82/100) caught this; r2 replaces the assertion with `JSON.parse(content[0].text)` and explicit field anchors (`issueId`, `events`, `totalEvents`, `truncated`).
+- **`truncated: true` test added.** A sibling test with `totalEvents: 1001, truncated: true, events: [<status event>]` proves the envelope passes through without filtering — without it, a mutation that dropped the `truncated` field in `createSuccessResponse` would not be caught.
+
+### Docs
+
+- **README `get_issue_history` row updated** from "Full issue history with changes between runs" (the pre-F10 framing the CHANGELOG explicitly calls "aspirational — described what the tool should return, not what it did") to the post-F10 envelope shape with undo-tombstone note.
+- **README `get_analytics` row** now flags `cross_project_patterns` as the placeholder metric.
+- **CHANGELOG `[Unreleased]` compare base** corrected from `v0.2.1` (stale, spans the entire T2 wave) to `v0.4.2`. Added link definitions for `[0.4.2]`, `[0.4.1]`, `[0.4.0]`, `[0.3.1]`, `[0.3.0]` so the version headers are clickable on GitHub/npm.
+
 ## [0.4.1] - 2026-06-08
 
 ### Changed
@@ -417,7 +438,12 @@ and aligns the package with the broader UluOps supply-chain policy.
 - Security limits increased for large validation payloads
 - `id` field handling standardized in status update tools
 
-[Unreleased]: https://github.com/Uluops/ops-uluops-mcp/compare/v0.2.1...HEAD
+[Unreleased]: https://github.com/Uluops/ops-uluops-mcp/compare/v0.4.2...HEAD
+[0.4.2]: https://github.com/Uluops/ops-uluops-mcp/compare/v0.4.1...v0.4.2
+[0.4.1]: https://github.com/Uluops/ops-uluops-mcp/compare/v0.4.0...v0.4.1
+[0.4.0]: https://github.com/Uluops/ops-uluops-mcp/compare/v0.3.1...v0.4.0
+[0.3.1]: https://github.com/Uluops/ops-uluops-mcp/compare/v0.3.0...v0.3.1
+[0.3.0]: https://github.com/Uluops/ops-uluops-mcp/compare/v0.2.1...v0.3.0
 [0.2.1]: https://github.com/Uluops/ops-uluops-mcp/compare/v0.2.0...v0.2.1
 [0.2.0]: https://github.com/Uluops/ops-uluops-mcp/compare/v1.21.0...v0.2.0
 [1.21.0]: https://github.com/Uluops/ops-uluops-mcp/compare/v1.20.0...v1.21.0

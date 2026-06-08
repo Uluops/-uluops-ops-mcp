@@ -1017,11 +1017,12 @@ describe('Tool Handlers', () => {
       expect(desc).toContain("'undo'");
     });
 
-    it('should get history by issue ID', async () => {
-      // Post-impl r1: mock uses the IssueHistoryEnvelope shape (post-F10),
-      // not the pre-F10 `{ history, notes }` placeholder. The shape needs
-      // to match the live SDK contract so a future regression back to the
-      // old shape is caught here.
+    it('should get history by issue ID and surface envelope shape in response (T2 §3.1)', async () => {
+      // Post-impl r2: the r1 commit claimed to anchor the envelope-shape
+      // regression but used `not.toHaveProperty('isError')` — a non-check
+      // (passes for any object without isError, including the pre-F10 flat
+      // shape).  This version parses the serialized response body and
+      // asserts the envelope fields are actually present.
       mockOpsClient.issues.getHistory.mockResolvedValue({
         issueId: TEST_UUID_1,
         events: [],
@@ -1033,10 +1034,65 @@ describe('Tool Handlers', () => {
 
       // Only issueId is passed to SDK (normalizeKeys converts issue_id → issueId)
       expect(mockOpsClient.issues.getHistory).toHaveBeenCalledWith(TEST_UUID_1);
-      // Response shape anchor — if the SDK regresses back to a flat
-      // `{ history, notes }` shape the createSuccessResponse wrapper would
-      // surface that as data without issueId/events/totalEvents.
-      expect(result).not.toHaveProperty('isError');
+
+      // Parse the serialized envelope and assert all four fields are present.
+      // If the SDK regresses to the pre-F10 `{ history, notes }` shape, the
+      // body would be `{ history: [], notes: [] }` and these assertions fail.
+      const r = result as {
+        isError?: boolean;
+        content: Array<{ type: string; text: string }>;
+      };
+      expect(r.isError).toBeUndefined();
+      const body = JSON.parse(r.content[0].text) as {
+        issueId: string;
+        events: unknown[];
+        totalEvents: number;
+        truncated: boolean;
+      };
+      expect(body.issueId).toBe(TEST_UUID_1);
+      expect(Array.isArray(body.events)).toBe(true);
+      expect(body.totalEvents).toBe(0);
+      expect(body.truncated).toBe(false);
+    });
+
+    it('surfaces truncated:true and populated events through the envelope (T2 §3.1)', async () => {
+      // Sibling to the above: exercises a non-trivial envelope (truncated
+      // flag + a populated event) to prove the envelope passes through
+      // without filtering or rewriting.  Without this, a mutation that
+      // dropped the `truncated` field in createSuccessResponse would not
+      // be caught.
+      mockOpsClient.issues.getHistory.mockResolvedValue({
+        issueId: TEST_UUID_1,
+        events: [
+          {
+            type: 'status',
+            timestamp: '2026-06-08T10:00:00Z',
+            oldStatus: 'open',
+            newStatus: 'completed',
+            reason: 'Fixed',
+            transitionType: 'change',
+            revertedChangeId: null,
+          },
+        ],
+        totalEvents: 1001,
+        truncated: true,
+      });
+
+      const result = await handler({ issue_id: TEST_UUID_1 });
+
+      const r = result as {
+        isError?: boolean;
+        content: Array<{ type: string; text: string }>;
+      };
+      const body = JSON.parse(r.content[0].text) as {
+        events: Array<{ type: string }>;
+        totalEvents: number;
+        truncated: boolean;
+      };
+      expect(body.truncated).toBe(true);
+      expect(body.totalEvents).toBe(1001);
+      expect(body.events).toHaveLength(1);
+      expect(body.events[0].type).toBe('status');
     });
 
     it('should ignore the dropped include_diffs param (T2 §3.1)', async () => {
