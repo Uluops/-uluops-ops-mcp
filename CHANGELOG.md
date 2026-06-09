@@ -7,6 +7,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.4.4] - 2026-06-08
+
+Carries API v1.58.1 + SDK 3.2.2's dry-run completeness all the way to the MCP surface so consumers (Codex, Claude Code, custom agents) can pass `analysis_records` and `analysis_summary` to `validate_run` and get back faithful preview counts. No breaking changes; all additions optional.
+
+### Added
+
+- **`validate_run` tool accepts `analysis_records` and `analysis_summary`** with the same strict shape as `save_run`. Prior versions silently stripped these fields from the dry-run request because the MCP-layer Zod schema didn't declare them, so consumers couldn't predict whether analysis payloads would persist correctly — the symptom Codex hit on the 2026-06-08 foundations skill run. The new schema mirrors `save_run`'s shape: `record_id` (max 20), `record_type`, `title`, `data` required per record; single-object or per-agent-array `analysis_summary` accepted.
+- **Tool description advertises the new return fields** (`would_create_analysis_records`, `would_create_analysis_summaries`) and the wider request shape, so MCP clients discover the capability from the schema rather than from failed real saves.
+
+### Security
+
+- **Bump `@uluops/ops-sdk` 3.2.1 → 3.2.2** for the matching wire-side change: the SDK's `validate()` now forwards `analysisRecords` and `analysisSummary` to the API, and `ValidateRunResponseSchema` accepts the new optional preview fields. Without this bump, the MCP layer would accept analysis fields from the client but the SDK would strip them on the way to the API — the exact failure mode Codex documented.
+
+### Why
+
+API v1.58.1 made the dry-run faithful at the source; SDK 3.2.2 carries it through the wire layer; this MCP release exposes it at the protocol surface. Tracker: `ops-uluops-api` `c29dd21e` (PRA-DRI/H — dry-run incomplete). Verified live end-to-end against API v1.58.1 + SDK 3.2.2 on 2026-06-08.
+
 ## [0.4.3] - 2026-06-08
 
 ### Internal
