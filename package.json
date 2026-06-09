@@ -1,6 +1,6 @@
 {
   "name": "@uluops/ops-mcp",
-  "version": "0.4.2",
+  "version": "0.4.3",
   "description": "MCP server for the UluOps Platform API — validation tracking, analytics, and issue management",
   "type": "module",
   "main": "dist/index.js",
@@ -36,7 +36,8 @@
     "test:unit": "vitest run test/unit",
     "test:integration": "vitest run test/integration",
     "test:watch": "vitest",
-    "test:coverage": "vitest run --coverage"
+    "test:coverage": "vitest run --coverage",
+    "prepublishOnly": "npm run lint && npm test && npm audit --audit-level=high --omit=dev && npm run build"
   },
   "keywords": [
     "mcp",

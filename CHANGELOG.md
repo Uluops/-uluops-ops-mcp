@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.4.3] - 2026-06-08
+
+### Internal
+
+- **Add `prepublishOnly` script** matching the other public `@uluops/*` packages (ops-sdk, registry-sdk, cli): `npm run lint && npm test && npm audit --audit-level=high --omit=dev && npm run build`. Caught by wave-merge pre-publish verification — the prior `prepublishOnly` was absent, so `npm publish` would have skipped lint+test+audit entirely and relied on the developer to remember to run them manually. Aligning the safety net with the rest of the public surface. No behavior change in the runtime package.
+
 ## [0.4.2] - 2026-06-08
 
 Post-implementation hardening on the 0.4.0/0.4.1 wave. No behavior change;
@@ -438,7 +444,8 @@ and aligns the package with the broader UluOps supply-chain policy.
 - Security limits increased for large validation payloads
 - `id` field handling standardized in status update tools
 
-[Unreleased]: https://github.com/Uluops/ops-uluops-mcp/compare/v0.4.2...HEAD
+[Unreleased]: https://github.com/Uluops/ops-uluops-mcp/compare/v0.4.3...HEAD
+[0.4.3]: https://github.com/Uluops/ops-uluops-mcp/compare/v0.4.2...v0.4.3
 [0.4.2]: https://github.com/Uluops/ops-uluops-mcp/compare/v0.4.1...v0.4.2
 [0.4.1]: https://github.com/Uluops/ops-uluops-mcp/compare/v0.4.0...v0.4.1
 [0.4.0]: https://github.com/Uluops/ops-uluops-mcp/compare/v0.3.1...v0.4.0
