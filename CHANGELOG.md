@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.4.5] - 2026-06-11
+
+### Security
+
+- **Bump `mcp-secure-server` 0.0.14-security → 0.0.16-security.** Picks up the `executionWrappers` word-boundary fix: the `System Call` (`/system\s*\(/`) and `Exec Call` (`/exec\s*\(/`) content-layer patterns were unanchored, so benign prose like `filesystem (` matched the `system (` substring and was rejected as a CRITICAL command-injection attempt. The new `\b`-anchored patterns still catch real `system(`/`exec(` calls. Drop-in patch, no API change; build + dist unchanged.
+
 ## [0.4.4] - 2026-06-08
 
 Carries API v1.58.1 + SDK 3.2.2's dry-run completeness all the way to the MCP surface so consumers (Codex, Claude Code, custom agents) can pass `analysis_records` and `analysis_summary` to `validate_run` and get back faithful preview counts. No breaking changes; all additions optional.
