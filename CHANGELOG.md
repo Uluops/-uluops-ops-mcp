@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.4.6] - 2026-06-16
+
+### Changed
+
+- **Bump `@uluops/ops-sdk` 3.2.2 → 3.3.0** (exact), which re-pins `@uluops/sdk-core` to 0.13.0. Runtime fixes pulled in: `retries: 0` now makes one attempt and surfaces the real typed error (e.g. `NetworkError`) instead of a contextless `Error('Request failed')`; a 401 with credentials present yields an actionable `UnauthorizedError` (server reason preserved + guidance), distinct from the no-credentials case; `isApiKey()` enforces the minimum key length. No API/tool-schema change. 658 tests green.
+
 ## [0.4.5] - 2026-06-11
 
 ### Security
