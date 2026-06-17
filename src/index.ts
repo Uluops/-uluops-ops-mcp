@@ -188,11 +188,10 @@ async function main(): Promise<void> {
     apiKeyFingerprint: apiKeyFingerprint(config.api.apiKey),
   });
 
-  // Detect auth type: ulr_ prefix = API key, otherwise = session token
-  const isApiKey = config.api.apiKey?.startsWith('ulr_');
+  // validateConfig guarantees apiKey matches /^ulr_.../, so it is always an API key.
   const opsClient = new OpsClient({
     baseUrl: config.api.baseUrl,
-    ...(isApiKey ? { apiKey: config.api.apiKey } : { sessionToken: config.api.apiKey }),
+    apiKey: config.api.apiKey,
     orgSlug: config.api.orgSlug,
     timeout: config.api.timeout,
     retries: config.api.retries,
@@ -273,7 +272,7 @@ export { main };
 if (process.env.NODE_ENV !== 'test') {
   main().catch((error: unknown) => {
     const message = error instanceof Error ? error.message : String(error);
-    console.error('Failed to start MCP client:', message);
+    console.error('Failed to start MCP server:', message);
     process.exit(1);
   });
 }

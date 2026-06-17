@@ -146,7 +146,7 @@ describe('SDK Error Mapper', () => {
     it('should map UnauthorizedError to actionable auth message', () => {
       const error = new UnauthorizedError('Bad credentials');
       const result = mapSdkErrorToMcp(error);
-      expect(getErrorText(result)).toBe('Authentication required. Verify ULUOPS_API_KEY is set to a valid ulr_* key.');
+      expect(getErrorText(result)).toBe('Authentication required. Verify ULUOPS_API_KEY is set to a valid ulr_* key. Manage keys at https://app.uluops.ai/settings/api-keys.');
       expect(getErrorPayload(result).status).toBe(401);
     });
 

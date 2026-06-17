@@ -12,6 +12,19 @@
 
 MCP (Model Context Protocol) server for the UluOps Platform API. Provides **48 tools** and **3 resources** (2 functional, 1 template placeholder) that enable Claude Code, Cursor, and other MCP hosts to interact with the UluOps Platform.
 
+## Table of Contents
+
+- [Design Philosophy](#design-philosophy)
+- [Installation](#installation)
+- [Configuration](#configuration)
+- [Usage with Claude Code](#usage-with-claude-code)
+- [Quick Start Examples](#quick-start-examples)
+- [Rate Limiting Configuration](#rate-limiting-configuration)
+- [Available Tools](#available-tools)
+- [Available Resources](#available-resources)
+- [Development](#development)
+- [License](#license)
+
 ## Design Philosophy
 
 **Thin Client Pattern**: This MCP server contains **zero business logic**. All data processing, validation, storage, and analytics are handled by the backend API. The server's sole responsibility is protocol translation between MCP's stdio-based JSON-RPC and the backend's REST API.
@@ -40,7 +53,7 @@ Set environment variables in your MCP host configuration (see "Usage with Claude
 
 | Variable | Description | Required |
 |----------|-------------|----------|
-| `ULUOPS_API_KEY` | API authentication key (must start with `ulr_`, min 20 chars) | Yes |
+| `ULUOPS_API_KEY` | API authentication key (must start with `ulr_`, min 20 chars). Create and manage keys at [app.uluops.ai/settings/api-keys](https://app.uluops.ai/settings/api-keys) | Yes |
 | `ULUOPS_ORG_SLUG` | Organization slug for multi-org contexts | No |
 | `ULUOPS_TRACKER_TIMEOUT` | Request timeout (ms) | No (default: 30000) |
 | `ULUOPS_TRACKER_RETRIES` | Number of retry attempts on failure | No (default: 3) |
@@ -104,9 +117,9 @@ Add to your Claude Code MCP configuration (`.mcp.json`):
 
 ## Quick Start Examples
 
-Once configured, Claude Code can use the uluops tracker tools:
+Once configured, Claude Code can use the uluops tracker tools. These are MCP tool invocations (issued by the MCP host), not runnable TypeScript:
 
-```typescript
+```text
 // Save validation results from a workflow run
 save_run({
   project: "my-project",
@@ -245,7 +258,7 @@ MCP resources provide read-only access to validation data via the `validation://
 
 ### Resource Usage
 
-```typescript
+```text
 // List all projects (returns JSON array of project names)
 read_resource("validation://projects")
 

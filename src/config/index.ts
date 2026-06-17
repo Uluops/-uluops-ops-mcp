@@ -10,6 +10,9 @@ const DEFAULT_TIMEOUT = 30000;
 const DEFAULT_RETRIES = 3;
 const DEFAULT_LOG_LEVEL: LogLevel = 'info';
 
+/** Where consumers obtain and manage API keys. Surfaced in auth error messages. */
+const API_KEYS_URL = 'https://app.uluops.ai/settings/api-keys';
+
 /**
  * Parse a log level string, returning a valid LogLevel.
  * @param value - Raw string from environment variable
@@ -126,21 +129,21 @@ export function validateConfig(config: UluopsTrackerConfig): void {
 
   if (config.api.apiKey === undefined || config.api.apiKey === '') {
     throw new Error(
-      'API key is required. Set ULUOPS_API_KEY to a value starting with "ulr_" (min 20 chars).'
+      `API key is required. Set ULUOPS_API_KEY to a value starting with "ulr_" (min 20 chars). Get one at ${API_KEYS_URL}.`
     );
   }
 
   if (!/^ulr_[A-Za-z0-9_-]{16,}$/.test(config.api.apiKey)) {
     throw new Error(
-      'ULUOPS_API_KEY must start with "ulr_" and be at least 20 characters. Check for typos or leading whitespace.'
+      `ULUOPS_API_KEY must start with "ulr_" and be at least 20 characters. Check for typos or leading whitespace. Manage your keys at ${API_KEYS_URL}.`
     );
   }
 
   if (config.api.timeout <= 0) {
-    throw new Error('Timeout must be a positive number');
+    throw new Error(`ULUOPS_TRACKER_TIMEOUT must be a positive number (got ${String(config.api.timeout)}).`);
   }
 
   if (config.api.retries < 0) {
-    throw new Error('Retries must be a non-negative number');
+    throw new Error(`ULUOPS_TRACKER_RETRIES must be a non-negative number (got ${String(config.api.retries)}).`);
   }
 }

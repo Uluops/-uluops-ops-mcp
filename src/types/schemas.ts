@@ -109,7 +109,11 @@ export const ANALYSIS_RECORD_TYPES = [
   'improvement', 'evidence_finding',
 ] as const;
 
-export const AnalysisRecordTypeSchema = z.string().min(1).max(50);
+export const AnalysisRecordTypeSchema = z
+  .string()
+  .min(1)
+  .max(50)
+  .describe(`Bounded free-form string. Known record types: ${ANALYSIS_RECORD_TYPES.join(', ')}`);
 export type AnalysisRecordType = string;
 
 /**
