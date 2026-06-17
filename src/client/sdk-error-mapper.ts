@@ -84,7 +84,7 @@ const ERROR_SUGGESTIONS: Record<string, string> = {
   NotFoundError: 'Verify the resource ID/name exists. Use a query or list tool to find valid identifiers.',
   RateLimitError: 'Wait for the retry_after_seconds period, then retry.',
   ValidationError: 'Check parameter types and required fields against the tool schema.',
-  UnauthorizedError: 'Verify ULUOPS_API_KEY is set to a valid ulr_* key.',
+  UnauthorizedError: 'Verify ULUOPS_API_KEY is set to a valid ulr_* key. Manage keys at https://app.uluops.ai/settings/api-keys.',
   ForbiddenError: 'This operation requires elevated permissions or a different subscription tier.',
   NetworkError: 'The API server may be down. Check that the service is running.',
   TimeoutError: 'The request took too long. Try reducing payload size or increasing timeout.',
@@ -181,7 +181,7 @@ export function mapSdkErrorToMcp(error: unknown, toolName?: string): McpToolResp
 
   if (error instanceof UnauthorizedError) {
     return buildErrorResponse(
-      'Authentication required. Verify ULUOPS_API_KEY is set to a valid ulr_* key.',
+      'Authentication required. Verify ULUOPS_API_KEY is set to a valid ulr_* key. Manage keys at https://app.uluops.ai/settings/api-keys.',
       { ...context, status: 401 },
     );
   }

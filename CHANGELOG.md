@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.4.7] - 2026-06-16
+
+### Security
+
+- **Bump `@uluops/ops-sdk` 3.3.0 → 3.4.0 (exact)**, which carries the CWE-20 `.max()` bounds on response-schema string fields shipped in ops-sdk 3.4.0. The MCP layer passes SDK return types through opaquely, so this propagates the bound to consumers receiving the JSON-serialized payloads. No API/tool-schema change.
+- **Override transitive `hono` to 4.12.25** (GHSA-88fw-hqm2-52qc). `@modelcontextprotocol/sdk@1.29.0` pulls `hono <=4.12.24`, which carries a HIGH advisory the `prepublishOnly` audit gate blocks on. Pin an exact override to 4.12.25 (patched, within the MCP SDK's `^4.11.4` range). Removable once the MCP SDK ships a non-vulnerable `hono`.
+
 ## [0.4.6] - 2026-06-16
 
 ### Changed
@@ -76,7 +83,7 @@ all improvements are defensive, security-dep, or doc-fix.
 ### Changed
 
 - **`get_issue_history` tool description rewritten + dead `include_diffs` param dropped** (live-tests T2 §3.1, F10). Ports the description rewrite already live in the local `ops-uluops-mcp` source tree (commit 76550ed on its `live-tests/phase-1` branch) into the public package. The tracker API endpoint changed in Phase 2 from returning a bare `StatusHistory[]` (status transitions only, with destroyed rows on undo) to a merged envelope:
-  ```
+  ```typescript
   { issueId, events: HistoryEvent[], totalEvents, truncated }
   ```
   where `events` is a timestamp-sorted stream covering occurrences | status | notes (discriminated by `type`). Status events carry `transitionType` (`'change' | 'undo' | null`) and `revertedChangeId` for tombstone-aware audit reconstruction.
@@ -473,7 +480,11 @@ and aligns the package with the broader UluOps supply-chain policy.
 - Security limits increased for large validation payloads
 - `id` field handling standardized in status update tools
 
-[Unreleased]: https://github.com/Uluops/ops-uluops-mcp/compare/v0.4.3...HEAD
+[Unreleased]: https://github.com/Uluops/ops-uluops-mcp/compare/v0.4.7...HEAD
+[0.4.7]: https://github.com/Uluops/ops-uluops-mcp/compare/v0.4.6...v0.4.7
+[0.4.6]: https://github.com/Uluops/ops-uluops-mcp/compare/v0.4.5...v0.4.6
+[0.4.5]: https://github.com/Uluops/ops-uluops-mcp/compare/v0.4.4...v0.4.5
+[0.4.4]: https://github.com/Uluops/ops-uluops-mcp/compare/v0.4.3...v0.4.4
 [0.4.3]: https://github.com/Uluops/ops-uluops-mcp/compare/v0.4.2...v0.4.3
 [0.4.2]: https://github.com/Uluops/ops-uluops-mcp/compare/v0.4.1...v0.4.2
 [0.4.1]: https://github.com/Uluops/ops-uluops-mcp/compare/v0.4.0...v0.4.1

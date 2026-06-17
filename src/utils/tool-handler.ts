@@ -115,8 +115,8 @@ export function createToolHandler<TInput>(
   // statically. Zod validation immediately upstream enforces the shape; the
   // SDK call signatures further constrain field types. createToolHandler is
   // an internal utility (not re-exported from src/index.ts), so this `any`
-  // does not leak to the public npm surface.
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  // does not leak to the public npm surface. (no-explicit-any is disabled for
+  // this file via the eslint.config.js file-pattern override.)
   sdkCall: (normalized: any) => Promise<unknown>,
   options?: {
     /** Tool name for error context. Included in error responses to help MCP clients diagnose failures. */

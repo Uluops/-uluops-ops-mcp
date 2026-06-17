@@ -217,7 +217,7 @@ describe('config', () => {
         },
       };
 
-      expect(() => validateConfig(config)).toThrow('Timeout must be a positive number');
+      expect(() => validateConfig(config)).toThrow('ULUOPS_TRACKER_TIMEOUT must be a positive number');
     });
 
     it('should throw for negative timeout', () => {
@@ -236,7 +236,7 @@ describe('config', () => {
         },
       };
 
-      expect(() => validateConfig(config)).toThrow('Timeout must be a positive number');
+      expect(() => validateConfig(config)).toThrow('ULUOPS_TRACKER_TIMEOUT must be a positive number');
     });
 
     it('should throw for negative retries', () => {
@@ -255,7 +255,7 @@ describe('config', () => {
         },
       };
 
-      expect(() => validateConfig(config)).toThrow('Retries must be a non-negative number');
+      expect(() => validateConfig(config)).toThrow('ULUOPS_TRACKER_RETRIES must be a non-negative number');
     });
 
     it('should throw for missing API key', () => {
