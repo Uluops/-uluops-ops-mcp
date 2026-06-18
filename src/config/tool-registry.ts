@@ -252,6 +252,14 @@ export const toolRegistry: ToolSpec[] = [
     quotaPerHour: 1000,
   },
   {
+    name: 'update_profile',
+    sideEffects: 'write',
+    maxArgsSize: 10 * KB,
+    maxEgressBytes: 10 * KB,
+    quotaPerMinute: 30,
+    quotaPerHour: 200,
+  },
+  {
     name: 'update_project',
     sideEffects: 'write',
     maxArgsSize: 10 * KB,

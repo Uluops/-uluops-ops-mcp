@@ -36,6 +36,7 @@ import { registerListProjectsTool } from './list-projects.js';
 import { registerGetProjectTool } from './get-project.js';
 import { registerGetProjectTrendsTool } from './get-project-trends.js';
 import { registerCreateProjectTool } from './create-project.js';
+import { registerUpdateProfileTool } from './update-profile.js';
 import { registerUpdateProjectTool } from './update-project.js';
 import { registerSoftDeleteProjectTool } from './soft-delete-project.js';
 import { registerRestoreProjectTool } from './restore-project.js';
@@ -105,6 +106,7 @@ export function registerAllTools(
   registerGetProjectTool(server, opsClient);
   registerGetProjectTrendsTool(server, opsClient);
   registerCreateProjectTool(server, opsClient);
+  registerUpdateProfileTool(server, opsClient);
   registerUpdateProjectTool(server, opsClient);
   registerSoftDeleteProjectTool(server, opsClient);
   registerRestoreProjectTool(server, opsClient);
