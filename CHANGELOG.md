@@ -7,6 +7,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.5.0] - 2026-06-17
+
+### Added
+
+- **`update_profile` tool.** Lets an MCP client (human or LLM) set the
+  authenticated user's profile fields — most importantly the **username**, which
+  the ops-api fold-in treats as one-time confirmation. This is the prerequisite
+  the registry enforces before creating or publishing definitions, previously
+  only reachable via the web account page. Wraps `ops-sdk` `auth.updateProfile`;
+  includes the required `ToolSpec` entry. Tool inventory 48 → 49.
+
+### Changed
+
+- Bumped `@uluops/ops-sdk` 4.0.0 → 4.0.1 (username slug validator accepts
+  hyphenated slugs like `ulu-labs`).
+
 ## [0.4.7] - 2026-06-16
 
 ### Security
