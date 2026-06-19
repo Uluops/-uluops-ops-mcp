@@ -152,7 +152,11 @@ export const toolRegistry: ToolSpec[] = [
     name: 'get_issue_history',
     sideEffects: 'read',
     maxArgsSize: 10 * KB,
-    maxEgressBytes: 200 * KB,
+    // Merges up to 1000 events spanning occurrences, status changes, and notes.
+    // Note bodies are MySQL TEXT (up to 64KB each), so a busy issue's history can
+    // exceed a 200KB envelope and trip silent truncation. 500KB matches the other
+    // bulk read tools (get_analytics, get_agent_lifecycle).
+    maxEgressBytes: 500 * KB,
     quotaPerMinute: 240,
     quotaPerHour: 5000,
   },

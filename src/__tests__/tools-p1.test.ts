@@ -32,19 +32,22 @@ describe('P1 tool schemas', () => {
     it('should accept valid input with id', () => {
       const result = GetIssueDetailsInputSchema.safeParse({ id: TEST_UUID_1 });
       expect(result.success).toBe(true);
-      if (result.success) {
-        expect(result.data.include_occurrences).toBe(true); // default
-        expect(result.data.include_related).toBe(false); // default
-      }
     });
 
-    it('should accept all options', () => {
+    it('should strip unknown include_* options without error', () => {
+      // The backend /details endpoint returns a fixed envelope; the tool no
+      // longer exposes include_occurrences/include_related. Extra keys are
+      // stripped by the non-strict Zod object rather than rejected.
       const result = GetIssueDetailsInputSchema.safeParse({
         id: TEST_UUID_2,
         include_occurrences: false,
         include_related: true,
       });
       expect(result.success).toBe(true);
+      if (result.success) {
+        expect(result.data).not.toHaveProperty('include_occurrences');
+        expect(result.data).not.toHaveProperty('include_related');
+      }
     });
 
     it('should reject invalid uuid', () => {

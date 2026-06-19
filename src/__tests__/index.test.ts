@@ -39,6 +39,13 @@ describe('Main Entry Point', () => {
     tool: ReturnType<typeof vi.fn>;
     resource: ReturnType<typeof vi.fn>;
   };
+  // Shared mocks for failure-mode injection. Per-test failure cases override
+  // these (mockRejectedValueOnce / mockImplementationOnce) rather than
+  // re-doMock'ing the same module, which races the beforeEach doMock
+  // (last-write-wins is nondeterministic → the no-op mock sometimes won and
+  // main() resolved instead of rejecting). See PRA-FRA flaky-test fix.
+  let mockServerCreate: ReturnType<typeof vi.fn>;
+  let mockValidateConfig: ReturnType<typeof vi.fn>;
 
   beforeEach(() => {
     vi.resetModules();
@@ -67,10 +74,13 @@ describe('Main Entry Point', () => {
       resource: vi.fn(),
     };
 
+    mockServerCreate = vi.fn().mockResolvedValue(mockServerInstance);
+    mockValidateConfig = vi.fn();
+
     // Setup mocks before importing index.js
     vi.doMock('../config/index.js', () => ({
       loadConfig: vi.fn().mockReturnValue({ config: mockConfig, warnings: [] }),
-      validateConfig: vi.fn(),
+      validateConfig: mockValidateConfig,
       apiKeyFingerprint: vi.fn().mockReturnValue('ulr_…tsts'),
     }));
 
@@ -90,7 +100,7 @@ describe('Main Entry Point', () => {
 
     vi.doMock('mcp-secure-server', () => ({
       SecureMcpServer: {
-        create: vi.fn().mockResolvedValue(mockServerInstance),
+        create: mockServerCreate,
       },
     }));
 
@@ -178,41 +188,25 @@ describe('Main Entry Point', () => {
     });
 
     it('should throw when config validation fails', async () => {
-      vi.doMock('../config/index.js', () => ({
-        loadConfig: vi.fn().mockReturnValue({ config: mockConfig, warnings: [] }),
-        validateConfig: vi.fn().mockImplementation(() => {
-          throw new Error('Invalid config');
-        }),
-        apiKeyFingerprint: vi.fn().mockReturnValue('ulr_…tsts'),
-      }));
+      mockValidateConfig.mockImplementationOnce(() => {
+        throw new Error('Invalid config');
+      });
 
       const { main } = await import('../index.js');
       await expect(main()).rejects.toThrow('Invalid config');
     });
 
     it('should throw when server creation fails', async () => {
-      vi.doMock('mcp-secure-server', () => ({
-        SecureMcpServer: {
-          create: vi.fn().mockRejectedValue(new Error('Server creation failed')),
-        },
-      }));
+      mockServerCreate.mockRejectedValueOnce(new Error('Server creation failed'));
 
       const { main } = await import('../index.js');
       await expect(main()).rejects.toThrow('Server creation failed');
     });
 
     it('should throw when server connection fails', async () => {
-      const failingServer = {
-        connect: vi.fn().mockRejectedValue(new Error('Connection failed')),
-        tool: vi.fn(),
-        resource: vi.fn(),
-      };
-
-      vi.doMock('mcp-secure-server', () => ({
-        SecureMcpServer: {
-          create: vi.fn().mockResolvedValue(failingServer),
-        },
-      }));
+      mockServerInstance.connect.mockRejectedValueOnce(
+        new Error('Connection failed')
+      );
 
       const { main } = await import('../index.js');
       await expect(main()).rejects.toThrow('Connection failed');
