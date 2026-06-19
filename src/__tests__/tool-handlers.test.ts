@@ -67,9 +67,17 @@ describe('Tool Handlers', () => {
     });
 
     it('should register with correct name and description', () => {
-      const [name, description] = mockServer.tool.mock.calls[0];
+      const [name, description] = mockServer.tool.mock.calls[0] as [
+        string,
+        string,
+      ];
       expect(name).toBe('query_issues');
+      // Anchor on the substantive filter vocabulary, not just the opening
+      // words — a description that lost its filter documentation should fail.
       expect(description).toContain('Query issues');
+      expect(description.length).toBeGreaterThan(40);
+      expect(description).toMatch(/status/i);
+      expect(description).toMatch(/priority/i);
     });
 
     it('should call SDK with valid input', async () => {
@@ -350,7 +358,7 @@ describe('Tool Handlers', () => {
       expect(mockOpsClient.issues.getDetails).toHaveBeenCalledWith(TEST_UUID_1);
     });
 
-    it('should accept include options without error', async () => {
+    it('should tolerate stray include_* keys without error', async () => {
       mockOpsClient.issues.getDetails.mockResolvedValue({ data: { issue: {} } });
 
       const result = await handler({
@@ -359,8 +367,9 @@ describe('Tool Handlers', () => {
         include_related: true,
       });
 
-      // SDK is called with just the ID; include options are validated by Zod but
-      // the current implementation only passes the ID to the SDK
+      // These options were removed from the schema (the /details endpoint has no
+      // toggles); the non-strict Zod object strips them and the SDK is still
+      // called with just the ID.
       expect(mockOpsClient.issues.getDetails).toHaveBeenCalledWith(TEST_UUID_1);
       expect(result).not.toHaveProperty('isError');
     });
@@ -996,10 +1005,13 @@ describe('Tool Handlers', () => {
     });
 
     it('description documents the F10 IssueHistoryEnvelope contract (T2 §3.1)', () => {
-      // The wave's core deliverable is description accuracy.  Without this
-      // assertion, a future rewrite that drops the envelope shape claim or
-      // the tombstone semantics from the description would land silently —
-      // exactly the failure mode this wave fixed.
+      // Description accuracy guard. Issue #2 shortened this so it survives MCP
+      // host description truncation, so the contract is now stated in prose
+      // (envelope shape + the three event types + undo/tombstone semantics)
+      // rather than spelling out every discriminator field. A rewrite that
+      // drops the envelope shape or the undo semantics should still fail here;
+      // the per-field detail (transitionType/revertedChangeId) now lives on the
+      // SDK's IssueHistoryEnvelope type, not in the wire description.
       const [, description] = mockServer.tool.mock.calls[0];
       const desc = String(description);
       // Envelope fields consumers must know to call this.
@@ -1007,14 +1019,14 @@ describe('Tool Handlers', () => {
       expect(desc).toContain('events');
       expect(desc).toContain('totalEvents');
       expect(desc).toContain('truncated');
-      // The three event-type discriminator values.
-      expect(desc).toContain("'occurrence'");
-      expect(desc).toContain("'status'");
-      expect(desc).toContain("'note'");
-      // F10 Bug B tombstone semantics — consumers branch on these.
-      expect(desc).toContain('transitionType');
-      expect(desc).toContain('revertedChangeId');
-      expect(desc).toContain("'undo'");
+      // The three event types.
+      expect(desc).toContain('occurrence');
+      expect(desc).toContain('status');
+      expect(desc).toContain('note');
+      // F10 Bug B tombstone semantics.
+      expect(desc).toContain('undo');
+      // Issue #2: stay within the MCP-host-safe description length budget.
+      expect(desc.length).toBeLessThanOrEqual(430);
     });
 
     it('should get history by issue ID and surface envelope shape in response (T2 §3.1)', async () => {

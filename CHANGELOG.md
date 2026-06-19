@@ -7,6 +7,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.5.1] - 2026-06-18
+
+Maintenance release: ports the ops-mcp triage batch and lint cleanup, and closes a pre-existing function-coverage gap. No runtime behavior changes for callers — the one tool-surface change (`get_issue_details`) removes two parameters that never did anything.
+
+### Fixed
+
+- `get_issue_details` no longer advertises `include_occurrences` / `include_related` parameters. The backend `/issues/:id/details` endpoint returns a fixed `{ issue, occurrences, notes, history }` envelope with no toggles and no "related issues" field, so both params were silently ignored. The schema now takes only `id`; the description matches the real envelope. Unknown keys are still stripped by the non-strict Zod object, so existing callers passing the old params are unaffected.
+- `get_issue_history` `maxEgressBytes` raised 200KB → 500KB. A merged history of up to 1000 events spanning occurrences, status changes, and notes (note bodies are MySQL TEXT, up to 64KB each) could exceed a 200KB envelope and trip silent truncation. Now matches the other bulk read tools (`get_analytics`, `get_agent_lifecycle`).
+- Eliminated a class of flaky tests in `index.test.ts`. The failure-mode tests re-`vi.doMock`'d a module already mocked in `beforeEach`; last-write-wins between the two registrations is nondeterministic, so `main()` intermittently ran with the success mock and resolved instead of rejecting. Lifted the relevant mocks (`SecureMcpServer.create`, `validateConfig`) to shared `vi.fn()`s overridden per-test, removing all in-test re-mocking. 0 failures over 15 file-level runs.
+
+### Changed
+
+- `get_issue_history` description shortened (~480 → ~270 chars) so it survives MCP-host description truncation, with the tombstone/undo semantics moved to the front rather than the truncation-prone tail. The full merged-event-stream contract remains documented on the SDK's `IssueHistoryEnvelope` type, and the description-accuracy guard test now asserts the reduced content plus a ≤430-char length budget.
+- `get_analytics` and `get_issue_history` descriptions converted from the `[...].join(' ')` array style to single-string literals, matching the rest of the tool surface.
+
+### Internal
+
+- Resolved all 13 `strict-boolean-expressions` lint warnings in `sdk-error-mapper.ts` via explicit comparisons. No config changes; lint is clean.
+- Added `tool-handlers-coverage.test.ts`, a table-driven behavioral suite covering the 28 P2 tool handlers that previously had only registration assertions, leaving their SDK-call callback uncovered. Function coverage 79.43% → 99.29%, restoring a green `test:coverage` gate (all four thresholds now pass).
+
 ## [0.5.0] - 2026-06-17
 
 ### Added

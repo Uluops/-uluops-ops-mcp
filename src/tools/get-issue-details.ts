@@ -1,7 +1,10 @@
 /**
  * get_issue_details tool
  *
- * Get complete issue details including all occurrences, lifecycle events, and related issues.
+ * Get complete issue details. The backend `/issues/:id/details` endpoint
+ * returns a fixed envelope { issue, occurrences, notes, history } — there are
+ * no server-side toggles to suppress sections and no "related issues" field.
+ * The tool therefore takes only the issue id.
  */
 
 import { z } from 'zod';
@@ -11,8 +14,6 @@ import { createToolHandler } from '../utils/tool-handler.js';
 
 export const GetIssueDetailsInputSchema = z.object({
   id: z.string().uuid(),
-  include_occurrences: z.boolean().default(true),
-  include_related: z.boolean().default(false),
 });
 
 export type GetIssueDetailsInput = z.infer<typeof GetIssueDetailsInputSchema>;
@@ -26,7 +27,7 @@ export function registerGetIssueDetailsTool(
 ): void {
   server.tool(
     'get_issue_details',
-    'Get complete issue details including all occurrences, lifecycle events, regression history, and optionally related issues.',
+    'Get complete issue details: the issue plus all of its occurrences, notes, and status/regression history.',
     GetIssueDetailsInputSchema.shape,
     createToolHandler(GetIssueDetailsInputSchema, (n) =>
       opsClient.issues.getDetails(n['id'] as string),

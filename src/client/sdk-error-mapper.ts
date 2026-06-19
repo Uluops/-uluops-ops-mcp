@@ -73,7 +73,7 @@ function sanitizeErrorMessage(message: string): string {
  * Extract HTTP status code from SDK errors when available
  */
 function getStatusCode(error: unknown): number | undefined {
-  if (error && typeof error === 'object' && 'statusCode' in error) {
+  if (typeof error === 'object' && error !== null && 'statusCode' in error) {
     return (error as { statusCode: number }).statusCode;
   }
   return undefined;
@@ -129,10 +129,10 @@ export function mapSdkErrorToMcp(error: unknown, toolName?: string): McpToolResp
   const errorType = getErrorTypeName(error);
   const suggestion = ERROR_SUGGESTIONS[errorType];
   const context: Record<string, unknown> = {
-    ...(statusCode ? { status: statusCode } : {}),
+    ...(statusCode !== undefined ? { status: statusCode } : {}),
     error_type: errorType,
-    ...(toolName ? { tool: toolName } : {}),
-    ...(suggestion ? { suggestion } : {}),
+    ...(toolName != null ? { tool: toolName } : {}),
+    ...(suggestion != null ? { suggestion } : {}),
   };
 
   if (isNotFoundError(error)) {
@@ -145,10 +145,10 @@ export function mapSdkErrorToMcp(error: unknown, toolName?: string): McpToolResp
   if (isRateLimitError(error)) {
     const retryAfter = (error as { retryAfter?: number }).retryAfter;
     return buildErrorResponse(
-      retryAfter
+      retryAfter != null
         ? `Rate limit exceeded. Retry after ${String(retryAfter)} seconds.`
         : 'Rate limit exceeded, please retry later.',
-      { ...context, status: 429, ...(retryAfter ? { retry_after_seconds: retryAfter } : {}) },
+      { ...context, status: 429, ...(retryAfter != null ? { retry_after_seconds: retryAfter } : {}) },
     );
   }
 
@@ -225,8 +225,8 @@ export function mapSdkErrorToMcp(error: unknown, toolName?: string): McpToolResp
     const upgradeUrl =
       typeof details['upgradeUrl'] === 'string' ? details['upgradeUrl'] : undefined;
 
-    const sep = upgradeUrl?.includes('?') ? '&' : '?';
-    const trackedUrl = upgradeUrl ? `${upgradeUrl}${sep}source=mcp` : undefined;
+    const sep = upgradeUrl?.includes('?') === true ? '&' : '?';
+    const trackedUrl = upgradeUrl != null ? `${upgradeUrl}${sep}source=mcp` : undefined;
 
     const defList =
       defs?.map(d => {
@@ -237,14 +237,14 @@ export function mapSdkErrorToMcp(error: unknown, toolName?: string): McpToolResp
 
     return buildErrorResponse(
       `Subscription required. Run references: ${defList}.` +
-      (currentTier ? ` Your current tier: ${currentTier}.` : '') +
-      (trackedUrl ? ` Upgrade: ${trackedUrl}` : ''),
+      (currentTier != null ? ` Your current tier: ${currentTier}.` : '') +
+      (trackedUrl != null ? ` Upgrade: ${trackedUrl}` : ''),
       {
         ...context,
         status: 402,
-        ...(currentTier ? { current_tier: currentTier } : {}),
-        ...(defs ? { rejected_definitions: defs } : {}),
-        ...(trackedUrl ? { upgrade_url: trackedUrl } : {}),
+        ...(currentTier != null ? { current_tier: currentTier } : {}),
+        ...(defs != null ? { rejected_definitions: defs } : {}),
+        ...(trackedUrl != null ? { upgrade_url: trackedUrl } : {}),
       },
     );
   }
@@ -302,7 +302,7 @@ export function mapZodErrorToMcp(error: unknown, toolName?: string): McpToolResp
   return buildErrorResponse(message, {
     status: 400,
     error_type: 'ZodValidationError',
-    ...(toolName ? { tool: toolName } : {}),
+    ...(toolName != null ? { tool: toolName } : {}),
     suggestion: 'Check parameter types and required fields against the tool schema.',
   });
 }
