@@ -124,7 +124,12 @@ Once configured, Claude Code can use the uluops tracker tools. These are MCP too
 save_run({
   project: "my-project",
   workflow_type: "ship",
-  agents: [{ name: "code-validator", score: 85, decision: "PASS" }],
+  agents: [
+    { name: "code-validator", score: 85, decision: "PASS" },
+    // Scoreless agents (generators, executors) omit score and max_score —
+    // do not fabricate a score. They are stored as null, not 0/100.
+    { name: "aristotle-generator", decision: "ACTUALIZED" }
+  ],
   recommendations: [{ agent: "code-validator", title: "Fix lint error", priority: "suggested" }]
 })
 
