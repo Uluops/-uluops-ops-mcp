@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.6.0] - 2026-06-23
+
+Completes the score-nullability transition at the public MCP boundary (ports the change from the internal `ops-uluops-mcp` server).
+
+### Changed
+
+- `save_run`/`update_run` agent input (`AgentResultSchema`): `max_score` is now `.optional().nullable()` (mirroring `score`). A scoreless agent (generator, executor) omits or nulls `max_score`, holding the invariant `score === null ⟺ max_score === null`. Existing callers that always provide a numeric `max_score` are unaffected.
+- Bumped `@uluops/ops-sdk` 4.0.1 → 5.0.0 (makes response `maxScore` nullable end-to-end).
+
 ## [0.5.1] - 2026-06-18
 
 Maintenance release: ports the ops-mcp triage batch and lint cleanup, and closes a pre-existing function-coverage gap. No runtime behavior changes for callers — the one tool-surface change (`get_issue_details`) removes two parameters that never did anything.

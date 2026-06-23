@@ -199,7 +199,7 @@ export const AgentResultSchema = z
   .object({
     name: z.string().min(1).describe('Agent name (e.g., code-validator, test-architect)'),
     score: z.number().optional().nullable().describe('Agent score (0-100). Omit for generator/executor agents that do not produce scores.'),
-    max_score: z.number().optional().describe('Maximum possible score'),
+    max_score: z.number().optional().nullable().describe('Maximum possible score. Omit or null for generator/executor agents that do not produce scores (paired with score).'),
     decision: z.string().describe('Agent decision (e.g., PASS, FAIL, CLEAR, BEWITCHED)'),
     definition_version: z.string().max(50).optional().describe('Definition version for version-aware analytics'),
     summary: z.string().optional().describe('Brief human-readable summary of agent result'),
