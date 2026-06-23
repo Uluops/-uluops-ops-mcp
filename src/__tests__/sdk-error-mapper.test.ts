@@ -327,6 +327,43 @@ describe('SDK Error Mapper', () => {
     });
   });
 
+  describe('402 project-limit (org cap)', () => {
+    it('renders a distinct project-cap message with counts and a source-tagged upgrade url', () => {
+      const error = new OpsApiError(
+        402,
+        'Organization has reached its project limit (3). Upgrade your plan to create more projects.',
+        'PROJECT_LIMIT',
+        {
+          currentCount: 3,
+          limit: 3,
+          limitType: 'project',
+          upgradeUrl: 'https://registry.uluops.ai/orgs/acme/settings/billing?source=api',
+        },
+      );
+      const result = mapSdkErrorToMcp(error);
+      const payload = getErrorPayload(result);
+      const text = getErrorText(result);
+      expect(text).toContain('Project limit reached');
+      expect(text).toContain('3 of 3 projects');
+      expect(text).toContain('source=mcp');
+      expect(text).not.toContain('Subscription required');
+      expect(payload.status).toBe(402);
+      expect(payload.limit_type).toBe('project');
+      expect(payload.current_count).toBe(3);
+      expect(payload.project_limit).toBe(3);
+      expect(payload.upgrade_url).toContain('source=mcp');
+    });
+
+    it('degrades gracefully when a PROJECT_LIMIT 402 carries no details', () => {
+      const error = new OpsApiError(402, 'Project limit reached', 'PROJECT_LIMIT');
+      const result = mapSdkErrorToMcp(error);
+      const text = getErrorText(result);
+      expect(text).toContain('Project limit reached');
+      expect(text).not.toContain('Upgrade:');
+      expect(text).not.toContain('Subscription required');
+    });
+  });
+
   describe('Zod error mapping', () => {
     it('should map ZodError with field details', () => {
       const error = Object.assign(new Error('Validation'), {

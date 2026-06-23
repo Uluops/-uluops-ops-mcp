@@ -207,6 +207,44 @@ export function mapSdkErrorToMcp(error: unknown, toolName?: string): McpToolResp
     );
   }
 
+  // 402 PROJECT_LIMIT — org project-cap reached (distinct from tier gating). The ops-api
+  // nests {currentCount, limit, limitType, upgradeUrl} under error.details and sets
+  // code=PROJECT_LIMIT (enforceProjectCap + error-handler enrichment), so these surface
+  // cleanly on the SDK error. Must precede the generic 402 branch.
+  if (statusCode === 402 && (error as { code?: string }).code === 'PROJECT_LIMIT') {
+    const rawDetails = (error as { details?: unknown }).details;
+    const details: Record<string, unknown> =
+      typeof rawDetails === 'object' && rawDetails !== null
+        ? (rawDetails as Record<string, unknown>)
+        : {};
+
+    const currentCount =
+      typeof details['currentCount'] === 'number' ? details['currentCount'] : undefined;
+    const limit = typeof details['limit'] === 'number' ? details['limit'] : undefined;
+    const upgradeUrl =
+      typeof details['upgradeUrl'] === 'string' ? details['upgradeUrl'] : undefined;
+
+    const sep = upgradeUrl?.includes('?') === true ? '&' : '?';
+    const trackedUrl = upgradeUrl != null ? `${upgradeUrl}${sep}source=mcp` : undefined;
+    const countPhrase =
+      currentCount != null && limit != null
+        ? ` Your org has ${String(currentCount)} of ${String(limit)} projects.`
+        : '';
+
+    return buildErrorResponse(
+      `Project limit reached.${countPhrase} Reuse an existing project name, or upgrade your plan to add more projects.` +
+        (trackedUrl != null ? ` Upgrade: ${trackedUrl}` : ''),
+      {
+        ...context,
+        status: 402,
+        limit_type: 'project',
+        ...(currentCount != null ? { current_count: currentCount } : {}),
+        ...(limit != null ? { project_limit: limit } : {}),
+        ...(trackedUrl != null ? { upgrade_url: trackedUrl } : {}),
+      },
+    );
+  }
+
   // 402 Subscription Required — run submission tier gating (spec Section 9.2)
   if (statusCode === 402) {
     const rawDetails = (error as { details?: unknown }).details;
