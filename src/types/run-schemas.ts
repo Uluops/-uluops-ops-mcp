@@ -7,6 +7,7 @@
  */
 
 import { z } from 'zod';
+import { ANALYSIS_RECORD_ID_MAX_LENGTH } from '@uluops/ops-sdk';
 import { AnalysisRecordTypeSchema, SeveritySchema } from './schemas.js';
 
 /** Per-category score breakdown for an agent. */
@@ -89,7 +90,7 @@ export const AnalysisSummaryBaseSchema = z.object({
 /** Structured analysis record base — extend with agent_name for per-agent updates. */
 export const AnalysisRecordBaseSchema = z.object({
   record_type: AnalysisRecordTypeSchema.describe('Record type (convention, tension, decay_vector, etc.)'),
-  record_id: z.string().max(20).describe('Agent-local ID (C-1, T-3, D-2)'),
+  record_id: z.string().max(ANALYSIS_RECORD_ID_MAX_LENGTH).describe('Agent-local ID (semantic IDs allowed, e.g. foundations-api-aristotle-20260626, max 100 chars)'),
   title: z.string().max(500).describe('Human-readable title'),
   classification: z.string().max(50).optional().nullable().describe('Type-specific classification (LIVING, CALCIFIED, IMMINENT, etc.)'),
   severity: SeveritySchema.optional().nullable().describe('Severity when applicable'),

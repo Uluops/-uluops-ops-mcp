@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.7.0] - 2026-06-26
+
+### Changed
+
+- **Analysis `record_id` max length widened from 20 to 100** in `AnalysisRecordBaseSchema`
+  (shared by `save_run`, `validate_run`, `update_run`). The cap is imported from
+  `@uluops/ops-sdk` (`ANALYSIS_RECORD_ID_MAX_LENGTH`) rather than hardcoded. Agent-local
+  id — non-breaking. Requires `@uluops/ops-sdk@5.1.0` and ops-api ≥ 1.61.0 deployed.
+
 ## [0.6.0] - 2026-06-23
 
 Completes the score-nullability transition at the public MCP boundary (ports the change from the internal `ops-uluops-mcp` server).
