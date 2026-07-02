@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.8.0] - 2026-07-02
+
+### Changed
+
+- **Status-change `reason` max length widened from 500 to 1000** in the
+  `update_status`, `bulk_update_status`, and `update_issue_by_fingerprint` tool
+  input schemas (ports the change from the internal `ops-uluops-mcp` server).
+  The cap is imported from `@uluops/ops-sdk` (`STATUS_REASON_MAX_LENGTH`) rather
+  than hardcoded. Requires `@uluops/ops-sdk@5.3.0` and ops-api ≥ 1.63.0 deployed;
+  against an older server a 501–1000 char reason is rejected with a 400 (fails
+  safe, nothing written).
+
 ## [0.7.0] - 2026-06-26
 
 ### Changed

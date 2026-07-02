@@ -3,7 +3,7 @@
  */
 
 import { z } from 'zod';
-import type { OpsClient } from '@uluops/ops-sdk';
+import { STATUS_REASON_MAX_LENGTH, type OpsClient } from '@uluops/ops-sdk';
 import { IssueStatusSchema, type McpServerToolRegistration } from '../types/index.js';
 import { createToolHandler } from '../utils/tool-handler.js';
 
@@ -12,7 +12,7 @@ const BulkStatusUpdateSchema = z
     issue_id: z.string().uuid().optional().describe('Issue UUID (preferred)'),
     id: z.string().uuid().optional().describe('Issue UUID (alias for issue_id)'),
     status: IssueStatusSchema,
-    reason: z.string().max(500).optional(),
+    reason: z.string().max(STATUS_REASON_MAX_LENGTH).optional(),
   })
   .refine(
     (data) => (data.issue_id ?? data.id) !== undefined,

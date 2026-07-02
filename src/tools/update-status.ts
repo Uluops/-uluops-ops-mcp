@@ -5,7 +5,7 @@
  */
 
 import { z } from 'zod';
-import type { OpsClient } from '@uluops/ops-sdk';
+import { STATUS_REASON_MAX_LENGTH, type OpsClient } from '@uluops/ops-sdk';
 import { IssueStatusSchema, type McpServerToolRegistration } from '../types/index.js';
 import { createToolHandler } from '../utils/tool-handler.js';
 
@@ -16,7 +16,7 @@ const StatusUpdateSchema = z.object({
   file_path: z.string().optional().describe('File path (use with title)'),
   title: z.string().optional().describe('Issue title (use with file_path)'),
   status: IssueStatusSchema.describe('New status'),
-  reason: z.string().max(500).optional().describe('Reason for status change (max 500 chars)'),
+  reason: z.string().max(STATUS_REASON_MAX_LENGTH).optional().describe('Reason for status change (max 1000 chars)'),
 });
 
 export const UpdateStatusInputSchema = z.object({
