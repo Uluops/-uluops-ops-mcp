@@ -5,7 +5,7 @@
  */
 
 import { z } from 'zod';
-import type { OpsClient } from '@uluops/ops-sdk';
+import { STATUS_REASON_MAX_LENGTH, type OpsClient } from '@uluops/ops-sdk';
 import type { McpServerToolRegistration } from '../types/index.js';
 import { IssueStatusSchema } from '../types/schemas.js';
 import { createToolHandler } from '../utils/tool-handler.js';
@@ -14,7 +14,7 @@ export const UpdateIssueByFingerprintInputSchema = z.object({
   fingerprint: z.string().min(1).describe('Issue SHA-256 fingerprint'),
   project: z.string().min(1).describe('Project name or UUID'),
   status: IssueStatusSchema.describe('New status'),
-  reason: z.string().max(500).optional().describe('Reason for status change'),
+  reason: z.string().max(STATUS_REASON_MAX_LENGTH).optional().describe('Reason for status change'),
 });
 
 export type UpdateIssueByFingerprintInput = z.infer<typeof UpdateIssueByFingerprintInputSchema>;
