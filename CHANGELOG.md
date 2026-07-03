@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.8.1] - 2026-07-02
+
+### Dependencies
+
+- **Bump `@uluops/ops-sdk` `^5.3.0` → `^5.4.0`** (brings `@uluops/sdk-core@0.14.0`
+  transitively). Adopts the sdk-core security-observability release — redirect
+  hardening, `baseUrl` embedded-credential rejection, sanitized `requestId`. The
+  explicit floor bump (over relying on the caret to float) keeps the update
+  reviewable and refreshes the committed lockfile. No MCP behavior change; 697
+  tests pass.
+
 ## [0.8.0] - 2026-07-02
 
 ### Changed
