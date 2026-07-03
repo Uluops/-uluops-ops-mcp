@@ -80,7 +80,7 @@ export const AnalysisSummaryBaseSchema = z.object({
   decision: z.string().max(50).describe('Decision (VITAL, FLOWING, PASS, etc.)'),
   score: z.number().min(0).max(100).optional().nullable().describe('Score. Omit for scoreless agents.'),
   decision_vocabulary: z.string().max(100).optional().nullable().describe('e.g., VITAL/DECADENT'),
-  system_metrics: z.record(z.unknown()).optional().nullable().describe('Agent-type-specific metrics'),
+  system_metrics: z.record(z.unknown()).optional().nullable().describe("Agent's cognitive measurements — counts, levels, categorical indicators (values: number | boolean | string ≤100 chars). Execution telemetry (tokens/model/duration) belongs in agents[], not here. Objects/arrays are stripped at ingest; keys starting with _ are reserved."),
   category_scores: z.array(CategoryScoreSchema).optional().nullable().describe('Category score breakdown'),
   epistemic_assessment: z.record(z.unknown()).optional().nullable().describe('Failure signature risk ratings'),
   audit_implications: z.array(z.string()).optional().nullable().describe('Trajectory projections'),

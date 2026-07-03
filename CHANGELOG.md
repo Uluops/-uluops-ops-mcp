@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.8.3] - 2026-07-02
+
+### Changed
+
+- **`system_metrics` guidance rewritten** in the shared run schemas: "Agent's
+  cognitive measurements — counts, levels, categorical indicators (number |
+  boolean | string ≤100). Execution telemetry (tokens/model/duration) belongs
+  in agents[]. Objects/arrays are stripped at ingest; `_`-prefixed keys are
+  reserved." (Ports the internal `ops-uluops-mcp` change.) Guidance only —
+  validation is server-side (ops-api ≥ 1.65.0 normalizes at ingest).
+
 ## [0.8.2] - 2026-07-02
 
 ### Changed
