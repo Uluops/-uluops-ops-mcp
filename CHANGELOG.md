@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.8.2] - 2026-07-02
+
+### Changed
+
+- **`record_id` guidance sharpened** in the shared run schemas: "short
+  semantic slug… Do NOT embed session/agent UUIDs; use the finding name, not
+  identifiers." (Ports the change from the internal `ops-uluops-mcp` server.)
+  Guidance only — the cap and validation are unchanged.
+
 ## [0.8.1] - 2026-07-02
 
 ### Dependencies

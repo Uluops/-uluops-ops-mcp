@@ -90,7 +90,7 @@ export const AnalysisSummaryBaseSchema = z.object({
 /** Structured analysis record base — extend with agent_name for per-agent updates. */
 export const AnalysisRecordBaseSchema = z.object({
   record_type: AnalysisRecordTypeSchema.describe('Record type (convention, tension, decay_vector, etc.)'),
-  record_id: z.string().max(ANALYSIS_RECORD_ID_MAX_LENGTH).describe('Agent-local ID (semantic IDs allowed, e.g. foundations-api-aristotle-20260626, max 100 chars)'),
+  record_id: z.string().max(ANALYSIS_RECORD_ID_MAX_LENGTH).describe('Agent-local ID — short semantic slug (e.g. foundations-api-aristotle-20260626, max 100 chars). Do NOT embed session/agent UUIDs; use the finding name, not identifiers.'),
   title: z.string().max(500).describe('Human-readable title'),
   classification: z.string().max(50).optional().nullable().describe('Type-specific classification (LIVING, CALCIFIED, IMMINENT, etc.)'),
   severity: SeveritySchema.optional().nullable().describe('Severity when applicable'),
