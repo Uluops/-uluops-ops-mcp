@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.8.4] - 2026-07-05
+
+### Fixed
+
+- **`ForbiddenError` suggestion no longer implies a subscription tier.** (Ports
+  the internal `ops-uluops-mcp` fix.) The 403 error mapper suggested "requires
+  elevated permissions or a different subscription tier" for every
+  `ForbiddenError` — but genuine tier limits surface as **402** (the
+  `PROJECT_LIMIT` and Subscription-Required branches). 403 is access/scope: an
+  unresolvable or foreign id, wrong org context, or an under-scoped key. The
+  tier-flavored message misdirected debugging toward a paywall that is not the
+  cause. Replaced with the actual likely causes; adds a regression test.
+
 ## [0.8.3] - 2026-07-02
 
 ### Changed
