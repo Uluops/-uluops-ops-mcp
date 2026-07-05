@@ -85,7 +85,10 @@ const ERROR_SUGGESTIONS: Record<string, string> = {
   RateLimitError: 'Wait for the retry_after_seconds period, then retry.',
   ValidationError: 'Check parameter types and required fields against the tool schema.',
   UnauthorizedError: 'Verify ULUOPS_API_KEY is set to a valid ulr_* key. Manage keys at https://app.uluops.ai/settings/api-keys.',
-  ForbiddenError: 'This operation requires elevated permissions or a different subscription tier.',
+  // 403 is access/scope, NOT tier — genuine tier limits surface as 402 (see the
+  // PROJECT_LIMIT / Subscription-Required branches below). A tier-flavored 403
+  // message misdirects callers toward a paywall that isn't the cause.
+  ForbiddenError: 'Access denied. The target may not exist, may belong to another org, or your key may lack the required scope/role — verify the id(s), the org context, and your key permissions before assuming a tier limit.',
   NetworkError: 'The API server may be down. Check that the service is running.',
   TimeoutError: 'The request took too long. Try reducing payload size or increasing timeout.',
   ConflictError: 'The resource was modified concurrently. Refresh and retry.',

@@ -157,6 +157,16 @@ describe('SDK Error Mapper', () => {
       expect(getErrorPayload(result).status).toBe(403);
     });
 
+    it('ForbiddenError suggestion points at id/org/scope, not a subscription tier', () => {
+      // Regression: 403 is access/scope; genuine tier limits are 402. A 403 whose
+      // suggestion blames a subscription tier misdirects debugging toward a paywall
+      // that is not the cause (e.g. an unresolvable/foreign id from the tracker).
+      const error = new ForbiddenError('Access denied');
+      const suggestion = getErrorPayload(mapSdkErrorToMcp(error)).suggestion as string;
+      expect(suggestion.toLowerCase()).not.toContain('subscription tier');
+      expect(suggestion.toLowerCase()).toMatch(/id|org|scope|permission/);
+    });
+
     it('should map ConflictError preserving message', () => {
       const error = new ConflictError('Resource already exists');
       const result = mapSdkErrorToMcp(error);
