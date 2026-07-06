@@ -29,6 +29,11 @@ const AgentUpdateSchema = z.object({
   total_effective_tokens: z.number().int().nonnegative().optional(),
   duration_ms: z.number().int().nonnegative().optional(),
   model: z.string().optional(),
+  agent_id: z
+    .string()
+    .max(50)
+    .optional()
+    .describe('Harness transcript/agent provenance id (e.g., from agent-metrics extract)'),
 });
 
 const AnalysisRecordSchema = AnalysisRecordBaseSchema.extend({

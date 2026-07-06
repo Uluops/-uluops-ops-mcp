@@ -211,6 +211,11 @@ export const AgentResultSchema = z
       .nonnegative()
       .optional()
       .describe('Execution duration in milliseconds'),
+    agent_id: z
+      .string()
+      .max(50)
+      .optional()
+      .describe('Harness transcript/agent provenance id (e.g., a4f35bf2cacc5f3ac from agent-metrics) — joins this row to its buffer entry and transcript'),
   })
   .describe('Results from a single agent');
 export type AgentResult = z.infer<typeof AgentResultSchema>;

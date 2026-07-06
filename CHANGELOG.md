@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.9.0] - 2026-07-06
+
+### Added
+
+- **`agent_id` accepted on `save_run` / `update_run` agent entries.** Harness
+  transcript/agent provenance id (from `agent-metrics extract -f tracker`);
+  persisted to `agent_snapshots.agent_id` by the API (migration 064), making
+  tracker agent rows joinable back to their agent-metrics buffer entries and
+  session transcripts.
+
 ## [0.8.4] - 2026-07-05
 
 ### Fixed
