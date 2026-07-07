@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.9.1] - 2026-07-06
+
+### Dependencies
+
+- **`@uluops/ops-sdk` `^5.5.1` → `^5.6.0`** (sdk-core 0.15.0 coherent set). ops-sdk
+  5.6.0 inherits the sdk-core streaming transport on `OpsHttpClient`; this MCP does
+  not consume it — pin-alignment refreshing the lockfile to a single
+  `sdk-core@0.15.0`. No behavior change.
+
 ## [0.9.0] - 2026-07-06
 
 ### Added
