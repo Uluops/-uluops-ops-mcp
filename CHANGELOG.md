@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.9.2] - 2026-07-08
+
+### Dependencies
+
+- **`@uluops/ops-sdk` `^5.6.0` → `^5.7.0`.** ops-sdk 5.7.0 makes the `saveRun`
+  response `correlation` nullable, so a legacy idempotent replay (`correlation:
+  null` from the API) no longer throws a `ZodError` on parse. Required before
+  the paired ops-uluops-api change (migration 065) deploys. (F5 consumer)
+
 ## [0.9.1] - 2026-07-06
 
 ### Dependencies
