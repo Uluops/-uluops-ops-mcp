@@ -7,6 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.10.0] - 2026-07-10
+
+### Added
+- **`merge_projects` tool** — merge one tracker project into another (spec
+  merge-projects v0.3.4). Thin wrapper over `client.projects.mergeProjects()`:
+  snake_case input (`source`, `target`, `dry_run`, `delete_source`,
+  `confirm_cross_org`) normalized to the SDK, typed-error → MCP-error mapping.
+  Runs and issues are re-keyed into the target and colliding issues dedup'd by
+  fingerprint server-side; the source is soft-deleted by default. **Always
+  `dry_run` first** — the merge is durable (no undo). ToolSpec: write, 2KB args
+  / 16KB egress, 5/min + 10/hr. Tool count 49 → 50.
+
+### Changed
+- Bumped `@uluops/ops-sdk` to `^5.9.0` (ships `client.projects.mergeProjects`).
+
 ## [0.9.2] - 2026-07-08
 
 ### Dependencies

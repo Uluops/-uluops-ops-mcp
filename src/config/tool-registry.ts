@@ -188,6 +188,18 @@ export const toolRegistry: ToolSpec[] = [
     quotaPerHour: 1000,
   },
   {
+    // Project-level merge (merge-projects spec v0.3.4) — infrequent,
+    // expensive, durable. The hourly cap is the real throttle: LLM-driven
+    // callers should never legitimately fan out merges, and unmodeled retry
+    // loops are a known failure mode (spec §7 Phase 3 rationale).
+    name: 'merge_projects',
+    sideEffects: 'write',
+    maxArgsSize: 2 * KB,
+    maxEgressBytes: 16 * KB,
+    quotaPerMinute: 5,
+    quotaPerHour: 10,
+  },
+  {
     name: 'bulk_update_status',
     sideEffects: 'write',
     maxArgsSize: 500 * KB,

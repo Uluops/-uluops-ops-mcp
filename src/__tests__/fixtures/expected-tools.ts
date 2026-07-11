@@ -26,6 +26,7 @@ export const EXPECTED_TOOLS = [
   'add_issue_note',
   'edit_issue',
   'merge_issues',
+  'merge_projects',
   'bulk_update_status',
   'update_run',
   'get_agent_reliability',

@@ -24,6 +24,7 @@ import { registerGetIssueHistoryTool } from '../tools/get-issue-history.js';
 import { registerAddIssueNoteTool } from '../tools/add-issue-note.js';
 import { registerEditIssueTool } from '../tools/edit-issue.js';
 import { registerMergeIssuesTool } from '../tools/merge-issues.js';
+import { registerMergeProjectsTool } from '../tools/merge-projects.js';
 import { registerBulkUpdateStatusTool } from '../tools/bulk-update-status.js';
 import { registerUpdateRunTool } from '../tools/update-run.js';
 import { registerGetAgentReliabilityTool } from '../tools/get-agent-reliability.js';
@@ -1244,6 +1245,62 @@ describe('Tool Handlers', () => {
 
       expect(result.isError).toBe(true);
       expect(mockOpsClient.issues.update).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('merge_projects', () => {
+    let mockOpsClient: { projects: { mergeProjects: ReturnType<typeof vi.fn> } };
+    let handler: (args: unknown) => Promise<unknown>;
+
+    beforeEach(() => {
+      mockOpsClient = { projects: { mergeProjects: vi.fn() } };
+      registerMergeProjectsTool(mockServer, mockOpsClient as unknown as OpsClient);
+      handler = getHandler(mockServer.tool);
+    });
+
+    it('should register with correct name', () => {
+      const [name] = mockServer.tool.mock.calls[0];
+      expect(name).toBe('merge_projects');
+    });
+
+    it('should merge projects via normalized input with defaults applied', async () => {
+      mockOpsClient.projects.mergeProjects.mockResolvedValue({ moved: { runs: 2, issues: 1 } });
+      await handler({ source: 'old-name', target: 'canonical-name' });
+      expect(mockOpsClient.projects.mergeProjects).toHaveBeenCalledWith({
+        source: 'old-name',
+        target: 'canonical-name',
+        dryRun: false,
+        deleteSource: true,
+        confirmCrossOrg: false,
+      });
+    });
+
+    it('should pass dry_run and delete_source through', async () => {
+      mockOpsClient.projects.mergeProjects.mockResolvedValue({ audit: { dry_run: true } });
+      await handler({ source: 'old-name', target: 'canonical-name', dry_run: true, delete_source: false });
+      expect(mockOpsClient.projects.mergeProjects).toHaveBeenCalledWith({
+        source: 'old-name',
+        target: 'canonical-name',
+        dryRun: true,
+        deleteSource: false,
+        confirmCrossOrg: false,
+      });
+    });
+
+    it('should reject missing target without calling the SDK', async () => {
+      const result = (await handler({ source: 'only-source' })) as any;
+      expect(result.isError).toBe(true);
+      expect(mockOpsClient.projects.mergeProjects).not.toHaveBeenCalled();
+    });
+
+    it('should map SDK errors to MCP error responses', async () => {
+      const err = new Error('Merge lock unavailable');
+      (err as any).statusCode = 409;
+      (err as any).code = 'MERGE_LOCK_UNAVAILABLE';
+      mockOpsClient.projects.mergeProjects.mockRejectedValue(err);
+      const result = (await handler({ source: 'a', target: 'b' })) as any;
+      expect(result.isError).toBe(true);
+      expect(result.content[0].text).toContain('Merge lock unavailable');
     });
   });
 

@@ -26,6 +26,7 @@ import { registerGetIssueHistoryTool } from './get-issue-history.js';
 import { registerAddIssueNoteTool } from './add-issue-note.js';
 import { registerEditIssueTool } from './edit-issue.js';
 import { registerMergeIssuesTool } from './merge-issues.js';
+import { registerMergeProjectsTool } from './merge-projects.js';
 import { registerBulkUpdateStatusTool } from './bulk-update-status.js';
 import { registerUpdateRunTool } from './update-run.js';
 import { registerGetAgentReliabilityTool } from './get-agent-reliability.js';
@@ -96,6 +97,7 @@ export function registerAllTools(
   registerAddIssueNoteTool(server, opsClient);
   registerEditIssueTool(server, opsClient);
   registerMergeIssuesTool(server, opsClient);
+  registerMergeProjectsTool(server, opsClient);
   registerBulkUpdateStatusTool(server, opsClient);
   registerUpdateRunTool(server, opsClient);
   registerGetAgentReliabilityTool(server, opsClient);
