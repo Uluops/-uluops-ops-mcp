@@ -10,7 +10,7 @@
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.7+-blue.svg)](https://www.typescriptlang.org/)
 [![Tests](https://img.shields.io/badge/tests-passing-brightgreen)](src/__tests__/)
 
-MCP (Model Context Protocol) server for the UluOps Platform API. Provides **48 tools** and **3 resources** (2 functional, 1 template placeholder) that enable Claude Code, Cursor, and other MCP hosts to interact with the UluOps Platform.
+MCP (Model Context Protocol) server for the UluOps Platform API. Provides **50 tools** and **3 resources** (2 functional, 1 template placeholder) that enable Claude Code, Cursor, and other MCP hosts to interact with the UluOps Platform.
 
 ## Table of Contents
 
@@ -138,6 +138,12 @@ query_issues({ project: "my-project", status: "open", priority: "critical" })
 
 // Get project summary with issue counts and trends
 get_project_summary({ project: "my-project" })
+
+// Consolidate a duplicate project into the canonical one.
+// ALWAYS dry_run first — the merge is durable (no undo). The preview reports
+// exactly what would move (runs, issues, dedupes) without changing anything.
+merge_projects({ source: "-my-project", target: "@org/my-project", dry_run: true })
+merge_projects({ source: "-my-project", target: "@org/my-project" }) // execute
 ```
 
 ## Rate Limiting Configuration
@@ -215,6 +221,7 @@ Claude Code issues tool calls in short, intense bursts (<2s) followed by "thinki
 | `update_project` | Update a project name |
 | `soft_delete_project` | Soft delete a project (can be restored later) |
 | `restore_project` | Restore a soft-deleted project |
+| `merge_projects` | Merge one project into another — runs and issues re-keyed into the target, colliding issues deduplicated by fingerprint, source soft-deleted. Durable (no undo) — always `dry_run` first |
 
 ### Run Tools (P2)
 | Tool | Description |
