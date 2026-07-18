@@ -179,6 +179,22 @@ Claude Code issues tool calls in short, intense bursts (<2s) followed by "thinki
 - **`burstWindowMs: 5000`** - Short window resets between Claude's "thinking" periods, preventing false positives
 - **`automationDetection: disabled`** - Claude Code IS automation with consistent timing patterns; detecting it as a "bot" would block legitimate use
 
+### Payload Size Limits
+
+`save_run` and `update_run` carry the largest payloads on the surface — long `raw_markdown` reports, plus 40+ recommendations with per-agent analysis summaries. `mcp-secure-server` enforces payload size at several independent layers, and the defaults (tuned for small tool calls) sit far below the per-tool `maxArgsSize`. This server raises each to a common ceiling so the per-tool limit is the one that actually governs:
+
+```typescript
+{
+  maxMessageSize: 500 * 1024,        // Layer 1 whole-message envelope
+  maxStringLength: 128 * 1024,       // Layer 1 per-string cap (raw_markdown)
+  maxParamBytes: 500 * 1024,         // Layer 2 serialized-params cap
+  suspiciousMessageSize: 500 * 1024, // Layer 3 large-message block
+  maxParamCount: 3000,               // supports ~150 issues per run
+}
+```
+
+The per-tool `maxArgsSize` (2 MB for `save_run`) and the 500 KB message envelope remain the effective gates. When a payload is rejected, the error names which cap fired — for a per-string rejection, it names the offending field path (e.g. `raw_markdown`) and notes that `maxStringLength` is a separate, lower cap than the tool's `maxArgsSize` — so the fix (shorten a field vs. split the call) is unambiguous.
+
 ## Available Tools
 
 ### Core Tools (P0)
