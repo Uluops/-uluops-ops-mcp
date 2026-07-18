@@ -7,6 +7,52 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.11.0] - 2026-07-17
+
+Port of the internal tracker MCP's 1.30.0 remediation (heidegger-analyst
+equipment analysis run #9): the tool surface's breakdown moments now teach
+instead of strand.
+
+### Added
+- **Handler ↔ ToolSpec parity check** — the tool surface is registered twice
+  (handlers in `src/tools/index.ts`, security ToolSpecs in
+  `src/config/tool-registry.ts`) joined only by string name; a handler with no
+  ToolSpec was accepted at registration and rejected at first invocation with a
+  bare protocol-layer `-32602` naming neither the tool nor the file needing the
+  edit. Now welded at both moments: `checkToolSpecParity()` warns at boot, by
+  name and in the registry's own vocabulary, for any handler lacking a ToolSpec
+  (and any orphan ToolSpec); `src/__tests__/tool-spec-parity.test.ts` asserts
+  bidirectional set equality in CI.
+- **Cause-keyed ConflictError suggestions (F4 backport)** — conflict responses
+  now refine their suggestion from the API-supplied `details.reason`
+  (`name_collision`/`name_taken`, `soft_deleted_conflict`,
+  `idempotency_reuse`), matching the internal client. Previously every 409
+  carried the same "modified concurrently" advice.
+
+### Changed
+- **ConflictError fallback suggestion** — when the API supplies no
+  `details.reason`, the suggestion no longer asserts the single cause
+  "modified concurrently. Refresh and retry." (which misdirects for
+  idempotency-reuse and soft-delete-tombstone conflicts). It now states the
+  cause is unspecified and enumerates the cause families with their distinct
+  remedies.
+- Bumped `mcp-secure-server` `0.0.16-security` → `0.0.19-security`. Layer 1
+  limit rejections now carry cap provenance (`STRING_LIMIT_EXCEEDED` names the
+  offending field path and its relationship to the tool's `maxArgsSize`;
+  `SIZE_LIMIT_EXCEEDED`/`PARAM_LIMIT_EXCEEDED` name their caps), and
+  `command.shellAccess` content patterns require invocation context instead of
+  matching bare shell mentions in stored prose.
+- **Raised the stacked payload caps** to match the internal client:
+  `maxStringLength: 128KB` (was pinned to the 5000-char default — the knob
+  only became threadable in `mcp-secure-server` 0.0.17), `maxParamBytes:
+  500KB` (Layer 2 serialized-params cap, configurable as of 0.0.19), and
+  `suspiciousMessageSize: 500KB` (Layer 3's 'basic'-preset 50000 default is a
+  hard block stacked at the same 50KB as the Layer 2 cap). Without these,
+  large `save_run` payloads (long `raw_markdown`, 40+ recommendations with
+  per-agent analysis summaries) were rejected far below the advertised 2MB
+  per-tool `maxArgsSize`. Per-tool `maxArgsSize` and the 500KB message
+  envelope remain the effective gates.
+
 ## [0.10.0] - 2026-07-10
 
 ### Added

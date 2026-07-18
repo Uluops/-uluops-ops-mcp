@@ -16,6 +16,9 @@ import { toolRegistry } from './config/tool-registry.js';
 import { registerAllTools } from './tools/index.js';
 import { registerAllResources } from './resources/index.js';
 import { createLogger } from './utils/logger.js';
+import type { Logger } from './utils/logger.js';
+import type { McpServerToolRegistration, ToolHandler } from './types/index.js';
+import type { ZodRawShape } from 'zod';
 
 // Read version from package.json dynamically
 const require = createRequire(import.meta.url);
@@ -25,6 +28,43 @@ const { version } = require('../package.json') as { version: string };
 // Without this, mcp-secure-server falls back to CWD / ~/.config — which
 // does NOT contain the bundled policies for npx / global-install consumers.
 const TOOL_POLICIES_PATH = require.resolve('../tool-policies.json');
+
+/**
+ * Wrap a tool-registration surface so every registered handler name is
+ * recorded, then cross-check the recorded set against the ToolSpec registry.
+ *
+ * A handler with no matching ToolSpec is accepted here but rejected by
+ * mcp-secure-server's semantic layer at first invocation with a bare
+ * JSON-RPC -32602 (Invalid params) — a protocol-layer vocabulary that gives
+ * the developer no route back to the file they forgot to edit. This check
+ * surfaces the omission at boot, by name, in the registry's own terms.
+ */
+export function checkToolSpecParity(
+  registeredNames: readonly string[],
+  specNames: readonly string[],
+  logger: Pick<Logger, 'warn'>
+): { missingSpecs: string[]; orphanSpecs: string[] } {
+  const specSet = new Set(specNames);
+  const registeredSet = new Set(registeredNames);
+  const missingSpecs = registeredNames.filter((n) => !specSet.has(n));
+  const orphanSpecs = specNames.filter((n) => !registeredSet.has(n));
+
+  for (const name of missingSpecs) {
+    logger.warn(
+      `Tool handler '${name}' is registered but has no ToolSpec in src/config/tool-registry.ts — ` +
+        `calls will be rejected at the protocol layer with -32602 (Invalid params). ` +
+        `Add a ToolSpec entry (sideEffects, maxArgsSize, maxEgressBytes, quotas).`
+    );
+  }
+  for (const name of orphanSpecs) {
+    logger.warn(
+      `ToolSpec '${name}' in src/config/tool-registry.ts has no registered handler — ` +
+        `stale entry, or the handler registration in src/tools/index.ts was missed.`
+    );
+  }
+
+  return { missingSpecs, orphanSpecs };
+}
 
 /**
  * Tool groups surfaced in the startup log. Kept in sync with src/tools/index.ts;
@@ -119,6 +159,24 @@ function buildServerOptions(
     // Large workflows with many recommendations + raw_markdown can exceed 100KB.
     maxMessageSize: 500 * 1024, // 500KB
 
+    // Override per-string cap for raw_markdown on save_run/update_run — the
+    // declared schema allows 100K chars but Layer 1 defaults to 5000
+    // (requires mcp-secure-server >= 0.0.17-security; maxMessageSize above
+    // provides the required envelope headroom)
+    maxStringLength: 128 * 1024,
+
+    // Override Layer 2 serialized-params cap (default 50000 bytes) — save_run
+    // with 40+ recommendations + per-agent analysis summaries legitimately
+    // exceeds 50KB; per-tool maxArgsSize (2MB) and the 500KB envelope above
+    // remain the effective gates (requires mcp-secure-server >= 0.0.19-security)
+    maxParamBytes: 500 * 1024,
+
+    // Layer 3 treats messages over this size as suspicious and BLOCKS them —
+    // the 'basic' preset default (50000) is a third ceiling stacked at the
+    // same 50KB as the Layer 2 param cap; raise it to the envelope so the
+    // caps above are the ones that actually govern
+    suspiciousMessageSize: 500 * 1024,
+
     // Override maxParamCount for save_run which can have many nested parameters:
     // agents × fields + recommendations × fields. With 70 issues × 15 fields +
     // 8 agents × 10 fields = 1150+ params. Set to 3000 to support up to ~150
@@ -208,9 +266,26 @@ async function main(): Promise<void> {
     buildServerOptions(config.security),
   );
 
-  // Register all tools and resources
-  registerAllTools(server, opsClient);
+  // Register all tools and resources.
+  // The recording wrapper captures every handler name so the handler set can
+  // be cross-checked against toolRegistry below — the two registrations live
+  // in separate files joined only by string name, and a missing ToolSpec
+  // otherwise surfaces only as -32602 at first invocation.
+  const registeredToolNames: string[] = [];
+  const recordingServer: McpServerToolRegistration = {
+    tool: (name: string, description: string, schema: ZodRawShape, handler: ToolHandler): void => {
+      registeredToolNames.push(name);
+      server.tool(name, description, schema, handler);
+    },
+  };
+  registerAllTools(recordingServer, opsClient);
   registerAllResources(server, opsClient);
+
+  checkToolSpecParity(
+    registeredToolNames,
+    toolRegistry.map((spec) => spec.name),
+    logger
+  );
 
   // Setup graceful shutdown. Awaits server.close() so any in-flight tool call
   // response can flush back through the stdio transport before exit. Capped

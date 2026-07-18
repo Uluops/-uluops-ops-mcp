@@ -181,6 +181,34 @@ describe('SDK Error Mapper', () => {
       expect(payload.status).toBe(409);
     });
 
+    it('should attach a name-collision suggestion when details.reason=name_collision (F4)', () => {
+      const error = new ConflictError('A project with this name already exists', { reason: 'name_collision', name: 'dup' });
+      const suggestion = getErrorPayload(mapSdkErrorToMcp(error)).suggestion as string;
+      expect(suggestion.toLowerCase()).toContain('name');
+      expect(suggestion.toLowerCase()).not.toContain('modified concurrently');
+    });
+
+    it('should attach an idempotency suggestion when details.reason=idempotency_reuse (F4)', () => {
+      const error = new ConflictError('idempotency_key reused with a different payload', { reason: 'idempotency_reuse' });
+      const suggestion = getErrorPayload(mapSdkErrorToMcp(error)).suggestion as string;
+      expect(suggestion.toLowerCase()).toContain('idempotency_key');
+    });
+
+    it('should fall back to a multi-cause conflict suggestion when no reason is present (F4)', () => {
+      // Regression (heidegger run #9, OBTRUSIVE-2): a single-cause fallback
+      // ("modified concurrently. Refresh and retry.") misdirects at untagged
+      // conflict sites — idempotency reuse and tombstone conflicts are not
+      // resolved by refreshing. The fallback must say the cause is unspecified
+      // and enumerate the cause families instead of asserting one.
+      const error = new ConflictError('Resource conflict');
+      const suggestion = getErrorPayload(mapSdkErrorToMcp(error)).suggestion as string;
+      expect(suggestion.toLowerCase()).toContain('did not specify a cause');
+      expect(suggestion.toLowerCase()).toContain('concurrent modification');
+      expect(suggestion.toLowerCase()).toContain('idempotency_key');
+      expect(suggestion.toLowerCase()).toContain('soft-deleted');
+      expect(suggestion.toLowerCase()).not.toContain('modified concurrently. refresh and retry');
+    });
+
     it('should map UnprocessableError preserving message', () => {
       const error = new UnprocessableError('Cannot process entity');
       const result = mapSdkErrorToMcp(error);

@@ -91,9 +91,29 @@ const ERROR_SUGGESTIONS: Record<string, string> = {
   ForbiddenError: 'Access denied. The target may not exist, may belong to another org, or your key may lack the required scope/role — verify the id(s), the org context, and your key permissions before assuming a tier limit.',
   NetworkError: 'The API server may be down. Check that the service is running.',
   TimeoutError: 'The request took too long. Try reducing payload size or increasing timeout.',
-  ConflictError: 'The resource was modified concurrently. Refresh and retry.',
+  ConflictError:
+    'Conflict — the API did not specify a cause. Possible causes: concurrent modification (refresh and retry), ' +
+    'a name already in use (choose another, or target the existing resource), a soft-deleted resource holding ' +
+    'the name (restore it instead of recreating), or an idempotency_key reused with a different payload (use a new key).',
   UnprocessableError: 'The request is well-formed but cannot be processed. Check business logic constraints.',
   InputValidationError: 'SDK-level validation failed before reaching the API. Check input shapes.',
+};
+
+/**
+ * Cause-specific conflict guidance, keyed on the API-supplied ConflictError
+ * `details.reason`. A ConflictError is one class serving many causes (name
+ * collision, idempotency reuse, …). An absent or unknown reason falls back to
+ * the generic ERROR_SUGGESTIONS.ConflictError string, which therefore
+ * enumerates the cause families rather than asserting one — a single-cause
+ * fallback ("modified concurrently") misdirects at exactly the conflict sites
+ * the API does not tag (idempotency reuse and tombstone conflicts are not
+ * resolved by refreshing).
+ */
+const CONFLICT_REASON_SUGGESTIONS: Record<string, string> = {
+  name_collision: 'A project with this name already exists in this scope. Choose a different name, or target the existing project.',
+  name_taken: 'A project with this name already exists in this scope. Choose a different name, or target the existing project.',
+  soft_deleted_conflict: 'A soft-deleted project of this name exists. Restore it (restore_project) instead of recreating, or choose a different name.',
+  idempotency_reuse: 'This idempotency_key was already used with a different payload. Use a new idempotency_key, or update the existing run via update_run.',
 };
 
 /**
@@ -291,12 +311,18 @@ export function mapSdkErrorToMcp(error: unknown, toolName?: string): McpToolResp
   }
 
   if (isConflictError(error)) {
+    // Refine the generic conflict suggestion by cause (details.reason), and
+    // place it LAST so it overrides the type-level suggestion already in context.
+    const reason = typeof error.details?.['reason'] === 'string' ? error.details['reason'] : undefined;
+    const refinedSuggestion =
+      (reason != null ? CONFLICT_REASON_SUGGESTIONS[reason] : undefined) ?? ERROR_SUGGESTIONS['ConflictError'];
     return buildErrorResponse(
       sanitizeErrorMessage((error as Error).message || 'Resource conflict'),
       {
         ...context,
         status: error.statusCode,
         ...error.details,
+        ...(refinedSuggestion != null ? { suggestion: refinedSuggestion } : {}),
       },
     );
   }
