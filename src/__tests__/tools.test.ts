@@ -61,7 +61,7 @@ describe('tool schemas', () => {
             line_number: 42,
             category: 'error-handling',
             severity: 'high',
-            failure_code: 'SEM-ERR/H',
+            failure_code: 'SEM-INC/H',
             failure_domain: 'SEM',
           },
         ],

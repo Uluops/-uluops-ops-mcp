@@ -62,7 +62,7 @@ describe('RecommendationSchema', () => {
 
   describe('failure_code validation', () => {
     it('accepts valid failure codes', () => {
-      const validCodes = ['STR-INC/C', 'SEM-VAL/H', 'PRA-FRA/M', 'EPI-DOC/L', 'STR-OMI/I'];
+      const validCodes = ['STR-INC/C', 'EPI-VAL/H', 'PRA-FRA/M', 'PRA-DOC/L', 'STR-OMI/I'];
       for (const failure_code of validCodes) {
         const result = RecommendationSchema.safeParse({ ...validRecommendation, failure_code });
         expect(result.success).toBe(true);

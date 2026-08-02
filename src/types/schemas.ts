@@ -239,15 +239,15 @@ export const RecommendationSchema = z
     failure_code: z
       .string()
       .regex(/^(STR|SEM|PRA|EPI)-[A-Z]{3}\/[CHMLI]$/, {
-        message: 'Must match pattern DOMAIN-MODE/SEVERITY (e.g., SEM-VAL/H, STR-OMI/M)',
+        message: 'Must match pattern DOMAIN-MODE/SEVERITY (e.g., STR-OMI/H, PRA-FRA/M)',
       })
       .optional()
-      .describe('Failure taxonomy code (e.g., SEM-VAL/H)'),
+      .describe('Failure taxonomy code (e.g., STR-OMI/H)'),
     failure_domain: FailureDomainSchema.optional().describe('Failure domain'),
     failure_mode: z
       .string()
       .regex(/^[A-Z]{3}$/, {
-        message: 'Must be exactly 3 uppercase letters (e.g., VAL, OMI, FRA). For the full code (e.g., SEM-VAL/H), use failure_code instead.',
+        message: 'Must be exactly 3 uppercase letters (e.g., VAL, OMI, FRA). For the full code (e.g., STR-OMI/H), use failure_code instead.',
       })
       .optional()
       .describe('Failure mode identifier — 3 uppercase letters (e.g., VAL, OMI)'),

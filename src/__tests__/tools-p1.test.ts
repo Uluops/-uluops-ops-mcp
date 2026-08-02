@@ -308,7 +308,7 @@ describe('P1 tool schemas', () => {
     });
 
     it('should accept valid failure_code formats', () => {
-      const validCodes = ['STR-INC/C', 'SEM-TYP/H', 'PRA-MAT/M', 'EPI-DOC/L', 'STR-FMT/I'];
+      const validCodes = ['STR-INC/C', 'SEM-TYP/H', 'PRA-MAT/M', 'PRA-DOC/L', 'STR-FMT/I'];
       for (const failure_code of validCodes) {
         const result = EditIssueInputSchema.safeParse({ issue_id: TEST_UUID_1, failure_code });
         expect(result.success).toBe(true);

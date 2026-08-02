@@ -29,15 +29,15 @@ export const CreateIssueInputSchema = z.object({
   failure_code: z
     .string()
     .regex(/^(STR|SEM|PRA|EPI)-[A-Z]{3}\/[CHMLI]$/, {
-      message: 'Must match DOMAIN-MODE/SEVERITY (e.g., SEM-VAL/H, STR-OMI/M). DOMAIN ∈ {STR,SEM,PRA,EPI}; MODE = 3 uppercase letters; SEVERITY ∈ {C,H,M,L,I}.',
+      message: 'Must match DOMAIN-MODE/SEVERITY (e.g., STR-OMI/H, PRA-FRA/M). DOMAIN ∈ {STR,SEM,PRA,EPI}; MODE = 3 uppercase letters; SEVERITY ∈ {C,H,M,L,I}.',
     })
     .optional()
-    .describe('Failure code (e.g., SEM-VAL/H)'),
+    .describe('Failure code (e.g., STR-OMI/H)'),
   failure_domain: FailureDomainSchema.optional().describe('Failure domain'),
   failure_mode: z
     .string()
     .regex(/^[A-Z]{3}$/, {
-      message: 'Must be exactly 3 uppercase letters (e.g., VAL, OMI, FRA). For the full code (e.g., SEM-VAL/H), use failure_code instead.',
+      message: 'Must be exactly 3 uppercase letters (e.g., VAL, OMI, FRA). For the full code (e.g., STR-OMI/H), use failure_code instead.',
     })
     .optional()
     .describe('Failure mode — 3 uppercase letters (e.g., VAL, OMI)'),
