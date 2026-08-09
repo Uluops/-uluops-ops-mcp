@@ -7,6 +7,29 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- **`@uluops/ops-sdk` 5.10.0 → 5.13.0, pinned exact.** Surfaces `mergedIntoIssueId`
+  on issue responses — the issue a merge source was absorbed into (`ops-uluops-api`
+  migration 078, tracker `a5639db7`); `null` = never merged.
+
+  **No code change was needed here, and that is the finding, not an omission.** Every
+  issue-returning tool passes the SDK result straight through — `get_issue_details`,
+  `query_issues`, `search_issues`, `get_issue_by_fingerprint` and `merge_issues` were
+  all checked for projection or reshaping and none does any. The SDK was the sole
+  place the key was being dropped, because `z.object()` strips unknown keys rather
+  than erroring.
+
+  So this bump is the entire fix from this repo's side: before it,
+  `get_issue_details` on a merged issue returned no such key at all, and the only
+  ways to answer *"where did this issue go"* were parsing `status_history` prose or
+  querying the database — which in production is reachable only from EC2.
+
+  Pinned exact rather than left on the caret. This repo was resolving 5.10.0 under
+  `^5.9.0`, so it also picks up 5.11.0's optional `resolutionRunId` and 5.12.0's
+  `clusterKey` on `RecommendationInput`; both are additive. Build and 718 tests pass
+  across the three-minor jump.
+
 ## [0.11.0] - 2026-07-17
 
 Port of the internal tracker MCP's 1.30.0 remediation (heidegger-analyst
