@@ -87,8 +87,38 @@ export const AnalysisSummaryBaseSchema = z.object({
   exploration_maps: z.array(ExplorationMapSchema).optional().nullable().describe('Structural maps from explorer agents — inventories, topologies, claim extractions, etc.'),
 });
 
-/** Structured analysis record base — extend with agent_name for per-agent updates. */
+/**
+ * Structured analysis record — the shared shape for save_run, update_run and validate_run.
+ *
+ * `agent_name` belongs HERE, not in a per-tool `.extend()`. The previous docstring read
+ * "extend with agent_name for per-agent updates", and only update_run did — which encoded
+ * the assumption that attribution matters when revising a run but not when creating one.
+ * It matters more at creation: that is when a multi-agent run's records are first written.
+ *
+ * A tool schema is the wire contract. `createToolHandler` forwards `schema.parse(args)` and
+ * `z.object()` strips undeclared keys, so a field the schema omits is one an orchestrator
+ * cannot send — silently, with no error at any layer. Without it the tracker falls back to
+ * `definitionName ?? agents[0].name ?? 'unknown'` and then infers `agent_type` from that
+ * string, so the row reads as confidently attributed to an agent that never produced it.
+ *
+ * Observed on tracker run #4 (2026-08-09): 18 records from anxiety-reader and 14 from
+ * operators-eye all stored under the definition name "AnalysisSummaryExtractor record-type
+ * sanitization", every one typed `validator`. The per-agent summaries in the same call
+ * attributed correctly — AnalysisSummaryBaseSchema had the field all along.
+ *
+ * trim().min(1) rather than a bare max(100), and the order matters. The tracker resolves
+ * attribution with `r.agentName ?? defaultAgentName`, and neither '' nor '   ' is nullish,
+ * so a blank name defeats the fallback and reaches an agent_name column the tracker's own
+ * read schema requires to be non-empty. min(1) alone would admit whitespace.
+ */
 export const AnalysisRecordBaseSchema = z.object({
+  agent_name: z
+    .string()
+    .trim()
+    .min(1)
+    .max(100)
+    .optional()
+    .describe('Agent name — overrides the run-level default. Set it per record when a run carries records from more than one agent, or every record is attributed to the run definition instead.'),
   record_type: AnalysisRecordTypeSchema.describe('Record type (convention, tension, decay_vector, etc.)'),
   record_id: z.string().max(ANALYSIS_RECORD_ID_MAX_LENGTH).describe('Agent-local ID — short semantic slug (e.g. foundations-api-aristotle-20260626, max 100 chars). Do NOT embed session/agent UUIDs; use the finding name, not identifiers.'),
   title: z.string().max(500).describe('Human-readable title'),
