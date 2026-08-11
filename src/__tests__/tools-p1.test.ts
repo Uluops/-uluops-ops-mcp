@@ -299,6 +299,44 @@ describe('P1 tool schemas', () => {
       expect(result.success).toBe(true);
     });
 
+    // Tracker 89ae6355. `priority` was absent from this schema while the API accepted
+    // it and the SDK forwarded it, so a caller got 200 + a bumped updated_at + every
+    // OTHER field written, and the priority change simply evaporated. Asserting
+    // success alone would not have caught that — the parse succeeded before the fix
+    // too, it just dropped the key. The surviving VALUE is the assertion.
+    it('preserves priority rather than stripping it (tracker 89ae6355)', () => {
+      const result = EditIssueInputSchema.safeParse({
+        issue_id: TEST_UUID_1,
+        priority: 'backlog',
+      });
+      expect(result.success).toBe(true);
+      if (result.success) expect(result.data.priority).toBe('backlog');
+    });
+
+    it('rejects every priority outside the enum', () => {
+      for (const priority of ['urgent', 'p0', 'BACKLOG', '']) {
+        const result = EditIssueInputSchema.safeParse({ issue_id: TEST_UUID_1, priority });
+        expect(result.success).toBe(false);
+      }
+    });
+
+    // The general fix, not the specific one. A bare z.object() strips unknown keys, so
+    // the NEXT field someone forgets to declare here will vanish exactly as priority
+    // did. `.strict()` turns that into an error at the boundary.
+    it('rejects an undeclared field instead of silently discarding it', () => {
+      const result = EditIssueInputSchema.safeParse({
+        issue_id: TEST_UUID_1,
+        not_a_real_field: 'should not be swallowed',
+      });
+      expect(result.success).toBe(false);
+    });
+
+    it('accepts type, so a misclassified issue can be reclassified', () => {
+      const result = EditIssueInputSchema.safeParse({ issue_id: TEST_UUID_1, type: 'bug' });
+      expect(result.success).toBe(true);
+      if (result.success) expect(result.data.type).toBe('bug');
+    });
+
     it('should reject invalid failure_code format', () => {
       const result = EditIssueInputSchema.safeParse({
         issue_id: TEST_UUID_1,
