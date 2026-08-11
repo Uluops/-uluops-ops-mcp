@@ -36,9 +36,9 @@ const AgentUpdateSchema = z.object({
     .describe('Harness transcript/agent provenance id (e.g., from agent-metrics extract)'),
 });
 
-const AnalysisRecordSchema = AnalysisRecordBaseSchema.extend({
-  agent_name: z.string().max(100).optional().describe('Agent name — overrides run-level default'),
-});
+// agent_name moved into AnalysisRecordBaseSchema, so save_run and validate_run inherit it
+// instead of update_run being the only tool that could attribute a record to its agent.
+const AnalysisRecordSchema = AnalysisRecordBaseSchema;
 
 const AnalysisSummarySchema = AnalysisSummaryBaseSchema.extend({
   agent_name: z.string().max(100).optional().describe('Agent name — overrides run-level default'),
