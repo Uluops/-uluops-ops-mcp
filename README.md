@@ -264,7 +264,7 @@ The per-tool `maxArgsSize` (2 MB for `save_run`) and the 500 KB message envelope
 | `get_burndown` | Get taxonomy burndown with time series and trend analysis per failure domain |
 | `get_velocity` | Get velocity metrics per failure mode with sparkline data and trend reliability |
 | `get_discovery` | Get discovery timeline showing new vs recurring issues over time |
-| `get_agent_matrix` | Get agent-taxonomy coverage matrix with blind spot detection |
+| `get_agent_matrix` | Get agent-taxonomy coverage matrix with blind spot detection. Coverage analysis is scoped to the canonical taxonomy; non-canonical codes are returned separately as `shadowModes` |
 
 ### Analysis Tools (P2)
 | Tool | Description |

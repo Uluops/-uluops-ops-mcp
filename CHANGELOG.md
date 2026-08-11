@@ -9,6 +9,32 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- **`@uluops/ops-sdk` 5.14.0 → 5.15.0, pinned exact.** Adds `shadowModes` to the
+  agent-matrix response schema, which `get_agent_matrix` returns.
+
+  `ops-uluops-api` `7ada3b0` scoped `analysis.singlePoints` / `analysis.highOverlap` to
+  the canonical failure taxonomy and began reporting the excluded non-canonical codes
+  under a new `shadowModes` key. The SDK did not declare it, and `getAgentMatrix` returns
+  `Schema.parse(...)` — so a plain `z.object()` stripped the field silently, and this
+  server could not surface it however correct the API was.
+
+  Unlike the 5.14.0 bump below, this one **does** change what a tool returns, so it is not
+  invisible at this layer. Same mechanism as the SDK's own `clusterKey` and `agentName`
+  cases — an undeclared key is dropped, not rejected — and the first instance on a *read*
+  path rather than a write one.
+
+  `shadowModes` is `ShadowMode[] | undefined`, deliberately not defaulted: `undefined`
+  means the API does not report shadow modes at all, `[]` means it does and found none.
+  Consumers of this tool's output should not treat the two as equivalent.
+
+  Verified live through the sibling `ops-uluops-mcp` server after the bump:
+  `get_agent_matrix` (90d, minIssues 5) returned 66 distinct shadow codes across 287
+  issues, while `singlePoints` came back empty and `highOverlap` returned 10 canonical
+  modes — so the emptiness is a real result, not a filter excluding everything.
+
+  Re-resolved against npmjs with an explicit `--registry`; lockfile scanned clean of
+  `localhost:4873` URLs.
+
 - **`@uluops/ops-sdk` 5.13.0 → 5.14.0, pinned exact.** Deprecates `status` on
   `UpdateIssueInput` (`client.issues.update`), which the tracker now refuses with a
   `400`: that endpoint records no `status_history` row and derives no `resolved_at`
