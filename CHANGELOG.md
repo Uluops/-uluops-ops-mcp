@@ -7,6 +7,40 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed — `edit_issue` silently dropped `priority`; added `type`; schema is now `.strict()`
+
+Ported verbatim from `ops-uluops-mcp`, where this was found and fixed first. **This
+repo carried the identical defect** — the two `edit-issue.ts` files were byte-for-byte
+the same — so fixing only the other one would have left a known bug in a sibling.
+
+`EditIssueInputSchema` never declared `priority`, and `z.object()` strips unknown keys
+rather than rejecting them. A caller setting priority got a **200, a bumped
+`updated_at`, and every other field in the same call written** while the priority
+change evaporated before it reached the wire. The API accepts `priority` on
+`PATCH /issues/:id` and `@uluops/ops-sdk` forwards it; this schema was the only place
+it was lost, which is why nothing errored. Tracker `89ae6355`.
+
+It matters because priority is the tracker's sort key: a re-scope that silently did
+not apply leaves the issue arriving at its old rank indefinitely.
+
+`type` was likewise settable on `create_issue` but not on edit, so a misclassified
+issue could never be reclassified.
+
+`.strict()` is the general fix — without it the next undeclared field vanishes the
+same way, with a 200 on the way out. **Behaviour change for malformed calls:** a key
+this tool does not define now errors instead of being partially applied.
+
+Three fields the SDK accepts remain deliberately unexposed and are documented at the
+schema so a future sweep does not re-raise them: `status` (the API's `editIssue`
+writes no `status_history` row and does no `resolved_at` derivation — exposing it
+would bypass the audit trail; that the API accepts it at all is ops-uluops-api
+tracker `ff0f3d8a`), and `failure_domain`/`failure_mode` (derived from
+`failure_code`).
+
+All four ported tests were run against this repo's original schema first and all four
+fail there.
+
+
 ### Changed
 
 - **`@uluops/ops-sdk` 5.10.0 → 5.13.0, pinned exact.** Surfaces `mergedIntoIssueId`
