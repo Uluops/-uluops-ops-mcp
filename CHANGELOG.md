@@ -7,6 +7,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- **`@uluops/ops-sdk` 5.13.0 → 5.14.0, pinned exact.** Deprecates `status` on
+  `UpdateIssueInput` (`client.issues.update`), which the tracker now refuses with a
+  `400`: that endpoint records no `status_history` row and derives no `resolved_at`
+  (ops-uluops-api tracker `ff0f3d8a`). The SDK still declares and forwards the field
+  deliberately, so an older tracker keeps working and a current one answers with an
+  actionable error instead of a silent no-op.
+
+  **No code change needed, and it is by construction rather than luck.** This
+  server's `EditIssueInputSchema` declares nine fields, `status` is not among them,
+  and the schema is `.strict()` — so an undeclared key is rejected rather than
+  quietly dropped. Its docblock already routes lifecycle changes to `update_status`.
+  Verified by reading the schema's field list, not by assuming the port matched.
+
+  Installed straight from npmjs with an explicit `--registry`; this repo had no
+  Verdaccio `.npmrc` and no `localhost:4873` entries in its lockfile before or after,
+  both checked.
+
 ### Fixed — `edit_issue` silently dropped `priority`; added `type`; schema is now `.strict()`
 
 Ported verbatim from `ops-uluops-mcp`, where this was found and fixed first. **This
