@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- **`query_issues` accepted `failure_mode` and silently dropped it.** The tool's input
+  schema declared the parameter, and the handler's explicit forward-list omitted
+  `failureMode` while including `failureDomain`, so a mode-filtered query returned the
+  unfiltered result set. Control: `failure_mode: 'ZZZ'`, a mode that does not exist,
+  returned rows whose modes were `INC`, `INC`, `VAL`.
+
+  The matching API-side fix (validation schema, repository predicate, controller) ships in
+  `ops-uluops-api`; either half alone is inert. Applied identically in `ops-uluops-mcp` —
+  the two files are byte-identical. Tracker `1658dafd`.
+
 ### Changed
 
 - **`@uluops/ops-sdk` 5.14.0 → 5.15.0, pinned exact.** Adds `shadowModes` to the
