@@ -6,6 +6,7 @@ import { z } from 'zod';
 import type { OpsClient } from '@uluops/ops-sdk';
 import { SeveritySchema, PrioritySchema, IssueTypeSchema, FilePathSchema, type McpServerToolRegistration } from '../types/index.js';
 import { createToolHandler } from '../utils/tool-handler.js';
+import { FAILURE_CODE_PATTERN } from '@uluops/taxonomy';
 
 /**
  * `.strict()`, not a bare `z.object()` — and that is the actual fix here.
@@ -56,7 +57,7 @@ export const EditIssueInputSchema = z.object({
   severity: SeveritySchema.optional(),
   failure_code: z
     .string()
-    .regex(/^(STR|SEM|PRA|EPI)-[A-Z]{3}\/[CHMLI]$/)
+    .regex(FAILURE_CODE_PATTERN)
     .optional(),
   line_number: z.number().int().nonnegative().optional().nullable(),
 }).strict();

@@ -6,6 +6,7 @@
  */
 
 import { z } from 'zod';
+import { FAILURE_CODE_PATTERN } from '@uluops/taxonomy';
 
 /**
  * Issue priority levels
@@ -238,7 +239,7 @@ export const RecommendationSchema = z
     severity: SeveritySchema.optional().describe('Issue severity'),
     failure_code: z
       .string()
-      .regex(/^(STR|SEM|PRA|EPI)-[A-Z]{3}\/[CHMLI]$/, {
+      .regex(FAILURE_CODE_PATTERN, {
         message: 'Must match pattern DOMAIN-MODE/SEVERITY (e.g., SEM-VAL/H, STR-OMI/M)',
       })
       .optional()

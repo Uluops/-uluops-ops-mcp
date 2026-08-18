@@ -13,6 +13,7 @@ import {
   type McpServerToolRegistration,
 } from '../types/index.js';
 import { createToolHandler } from '../utils/tool-handler.js';
+import { FAILURE_CODE_PATTERN } from '@uluops/taxonomy';
 
 export const CreateIssueInputSchema = z.object({
   project: z.string().min(1).describe('Project name'),
@@ -28,7 +29,7 @@ export const CreateIssueInputSchema = z.object({
   line_number: z.number().int().nonnegative().optional().nullable().describe('Line number in file'),
   failure_code: z
     .string()
-    .regex(/^(STR|SEM|PRA|EPI)-[A-Z]{3}\/[CHMLI]$/, {
+    .regex(FAILURE_CODE_PATTERN, {
       message: 'Must match DOMAIN-MODE/SEVERITY (e.g., SEM-VAL/H, STR-OMI/M). DOMAIN ∈ {STR,SEM,PRA,EPI}; MODE = 3 uppercase letters; SEVERITY ∈ {C,H,M,L,I}.',
     })
     .optional()

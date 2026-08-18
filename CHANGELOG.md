@@ -7,6 +7,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed — the failure-code pattern comes from `@uluops/taxonomy`
+
+Three hard-coded copies of `/^(STR|SEM|PRA|EPI)-[A-Z]{3}\/[CHMLI]$/` — in `create-issue`,
+`edit-issue` and `types/schemas` — now import `FAILURE_CODE_PATTERN`. Behaviour is unchanged;
+the pattern is the same matcher, sourced instead of retyped.
+
+**The bare-mode validators are deliberately untouched.** `/^[A-Z]{3}$/` on `failure_mode`
+accepts `ZZZ`, and it is the shape that let 242 invented codes into the datastore — but the
+package exports no format-only mode pattern, on purpose: nothing means "any three letters".
+Replacing them requires membership checking, which systems spec §7.3 sequences last and which
+`ops-uluops-api` §P5.2 already enforces at the service layer. A cosmetic swap here would be
+the appearance of progress on the exact shape that matters.
+
+**Both MCP packages received this change in the same pass** — `ops-uluops-mcp` and
+`packages/-uluops-ops-mcp`. Fixing one and leaving the other is a documented recurring failure
+here, and while making this change the two were found to have already diverged elsewhere: see
+below.
+
 ### Changed
 
 - **`update_run` payload caps raised to match `save_run`: `maxArgsSize` 500 KB → 2 MB,
