@@ -210,8 +210,13 @@ export const toolRegistry: ToolSpec[] = [
   {
     name: 'update_run',
     sideEffects: 'write',
-    maxArgsSize: 500 * KB,
-    maxEgressBytes: 500 * KB,
+    // Must match save_run: update_run accepts the same analysis_records
+    // (maxItems 100) and recommendations arrays, and analysis_records REPLACES
+    // rather than appends — so a run saved under save_run's budget could not
+    // otherwise be updated at all, and batching would silently drop earlier
+    // records. Raised from 500 * KB on 2026-08-18 after a 65-record write failed.
+    maxArgsSize: 2 * MB,
+    maxEgressBytes: 1 * MB,
     quotaPerMinute: 120,
     quotaPerHour: 2000,
   },

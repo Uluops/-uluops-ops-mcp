@@ -7,6 +7,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- **`update_run` payload caps raised to match `save_run`: `maxArgsSize` 500 KB → 2 MB,
+  `maxEgressBytes` 500 KB → 1 MB** (`src/config/tool-registry.ts`).
+
+  The two tools accept the same `analysis_records` array (`maxItems: 100`) and the same
+  `recommendations` array, but `update_run` was capped 4× lower on args and 2× lower on
+  egress. Because **`analysis_records` replaces rather than appends**, that asymmetry made a
+  whole class of write impossible rather than merely awkward: any run whose records were
+  saved within `save_run`'s budget could never be updated, and splitting the write into
+  batches would silently discard every earlier batch.
+
+  Found 2026-08-18 persisting a 4-agent spec review with 65 analysis records; three
+  successive `update_run` attempts were rejected at 628 KB, 557 KB and 520 KB against the
+  512 KB ceiling, and the records only landed after trimming record prose.
+
+  Mirrors the same change in `ops-uluops-mcp` — the two packages carry byte-identical
+  `update_run` policy blocks and must be changed together.
+
 ### Fixed
 
 - **`query_issues` accepted `failure_mode` and silently dropped it.** The tool's input
