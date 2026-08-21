@@ -37,7 +37,13 @@ async function getTaxonomyData(opsClient: OpsClient): Promise<unknown> {
   } catch {
     // Serve stale cache on error
     if (cache) return cache.data;
-    throw new Error('Taxonomy unavailable: tracker API unreachable and no cached data');
+    // Name the config knob, matching the tool-layer NetworkError guidance —
+    // the resource path previously gave no pointer at what to check.
+    throw new Error(
+      'Taxonomy unavailable: tracker API unreachable and no cached data. ' +
+      'Verify the API is running and reachable at the configured base URL ' +
+      '(ULUOPS_BASE_URL if overridden, otherwise the ops-sdk production default).'
+    );
   }
 }
 

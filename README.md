@@ -57,9 +57,10 @@ Set environment variables in your MCP host configuration (see "Usage with Claude
 | `ULUOPS_ORG_SLUG` | Organization slug for multi-org contexts | No |
 | `ULUOPS_TRACKER_TIMEOUT` | Request timeout (ms) | No (default: 30000) |
 | `ULUOPS_TRACKER_RETRIES` | Number of retry attempts on failure | No (default: 3) |
+| `ULUOPS_BASE_URL` | Override the backend API base URL (e.g. a local or staging deployment). Non-HTTPS values log a cleartext-credentials warning | No (default: `@uluops/ops-sdk`'s production URL) |
 | `LOG_LEVEL` | Logging level (`debug`, `info`, `warn`, `error`) | No (default: info) |
 
-The backend URL is handled automatically by `@uluops/ops-sdk` — production by default, no configuration needed.
+The backend URL is handled automatically by `@uluops/ops-sdk` — production by default; set `ULUOPS_BASE_URL` only when targeting a non-production deployment.
 
 ### Advanced Logging
 
@@ -144,7 +145,29 @@ get_project_summary({ project: "my-project" })
 // exactly what would move (runs, issues, dedupes) without changing anything.
 merge_projects({ source: "-my-project", target: "@org/my-project", dry_run: true })
 merge_projects({ source: "-my-project", target: "@org/my-project" }) // execute
+
+// Enrich a saved run with analysis data. Analysis writes are PER-AGENT
+// REPLACE: each agent named in the payload has its entire live set superseded
+// by these rows; agents not named are untouched, and omitting a record an
+// agent previously had RETIRES it. Preview first when updating an agent that
+// already has records — would_retire_record_ids shows what an omission would
+// destroy, without writing anything.
+preview_update_run({
+  project: "my-project", run_number: 5,
+  analysis_records: [{ agent_name: "nietzsche-analyst", record_type: "convention",
+                       record_id: "C-1", title: "Inherited convention", data: {} }]
+})
+update_run({
+  project: "my-project", run_number: 5,
+  analysis_records: [{ agent_name: "nietzsche-analyst", record_type: "convention",
+                       record_id: "C-1", title: "Inherited convention", data: {} }]
+})
 ```
+
+If an analysis-bearing `update_run` fails with `AnalysisEchoMismatchError`, the
+update **was already applied** — the error means server and SDK disagree about
+analysis-write semantics, not that the write failed. Do **not** retry (a retry
+re-applies the write); re-read the run (`get_run_analysis`) instead.
 
 ## Rate Limiting Configuration
 
@@ -238,6 +261,7 @@ The per-tool `maxArgsSize` (2 MB for `save_run`) and the 500 KB message envelope
 | `update_project` | Update a project name |
 | `soft_delete_project` | Soft delete a project (can be restored later) |
 | `restore_project` | Restore a soft-deleted project |
+| `update_profile` | Update the authenticated user's profile (username, name, bio, timezone, websiteUrl). Setting `username` confirms it **one-time** — required before creating or publishing registry definitions |
 | `merge_projects` | Merge one project into another — runs and issues re-keyed into the target, colliding issues deduplicated by fingerprint, source soft-deleted. Durable (no undo) — always `dry_run` first |
 
 ### Run Tools (P2)

@@ -11,7 +11,7 @@ import type { McpServerToolRegistration } from '../types/index.js';
 import { EXPECTED_TOOLS, EXPECTED_TOOL_COUNT } from './fixtures/expected-tools.js';
 
 describe('registerAllTools', () => {
-  it('should register all 50 tools', () => {
+  it('should register the expected number of tools', () => {
     const registeredTools: string[] = [];
 
     // Mock server that captures tool registrations

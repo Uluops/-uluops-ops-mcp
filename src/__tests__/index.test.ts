@@ -178,10 +178,16 @@ describe('Main Entry Point', () => {
         })
       );
 
+      // The tool inventory is DERIVED from recorded registrations (the
+      // hand-maintained grouping drifted to 48/51 before being removed).
+      // registerAllTools is MOCKED here, so the recorded list is legitimately
+      // empty — assert the derived shape only; the real-name coverage lives in
+      // the registration/integration tests, where registration actually runs.
       expect(mockLoggerInstance.info).toHaveBeenCalledWith(
         'MCP server connected and ready',
         expect.objectContaining({
-          tools: expect.any(Object),
+          toolCount: expect.any(Number),
+          tools: expect.any(Array),
           resources: expect.any(Array),
         })
       );

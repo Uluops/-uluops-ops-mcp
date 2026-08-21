@@ -67,70 +67,14 @@ export function checkToolSpecParity(
 }
 
 /**
- * Tool groups surfaced in the startup log. Kept in sync with src/tools/index.ts;
- * a drift between this listing and the actual registration is caught by
- * src/__tests__/tools-integration.test.ts (count assertion: 48).
+ * Resources surfaced in the startup log. Short and stable; parity is covered
+ * by resources tests. (The tool listing that used to sit beside this was
+ * hand-maintained and had silently drifted to 48 of the 51 registered tools —
+ * its own docblock still claimed "count assertion: 48" — omitting, among
+ * others, this release's new preview_update_run. It is now DERIVED from the
+ * recorded registrations at the log site; a list that does not exist cannot
+ * drift.)
  */
-const STARTUP_TOOL_GROUPS = {
-  p0_core: [
-    'save_run',
-    'query_issues',
-    'update_status',
-    'get_project_summary',
-    'delete_project',
-  ],
-  p1_extended: [
-    'get_issue_details',
-    'get_run_details',
-    'diff_runs',
-    'archive_runs',
-    'get_analytics',
-    'search_issues',
-    'list_agents',
-    'get_agent_lifecycle',
-    'validate_run',
-    'get_issue_history',
-    'add_issue_note',
-    'edit_issue',
-    'merge_issues',
-    'bulk_update_status',
-    'update_run',
-    'get_agent_reliability',
-    'create_issue',
-  ],
-  p2_projects: [
-    'list_projects',
-    'get_project',
-    'get_project_trends',
-    'create_project',
-    'update_project',
-    'soft_delete_project',
-    'restore_project',
-  ],
-  p2_runs: ['get_run', 'list_runs', 'get_latest_run', 'delete_run'],
-  p2_issues: [
-    'get_issue_by_fingerprint',
-    'update_issue_by_fingerprint',
-    'restore_issue',
-    'soft_delete_issue',
-    'undo_issue_status',
-  ],
-  p2_analysis: [
-    'get_run_analysis',
-    'get_project_analysis',
-    'query_analysis_records',
-    'get_agent_runs_analysis',
-  ],
-  p2_taxonomy: [
-    'get_taxonomy',
-    'get_full_taxonomy_analytics',
-    'get_burndown',
-    'get_velocity',
-    'get_discovery',
-    'get_agent_matrix',
-  ],
-} as const;
-
 const STARTUP_RESOURCES = [
   'validation://projects',
   'validation://projects/{project}',
@@ -334,8 +278,11 @@ async function main(): Promise<void> {
   const transport = new StdioServerTransport();
   await server.connect(transport);
 
+  // Tool inventory DERIVED from the recorded registrations — see the
+  // STARTUP_RESOURCES docblock for why the hand-maintained grouping is gone.
   logger.info('MCP server connected and ready', {
-    tools: STARTUP_TOOL_GROUPS,
+    toolCount: registeredToolNames.length,
+    tools: [...registeredToolNames].sort(),
     resources: STARTUP_RESOURCES,
   });
 }

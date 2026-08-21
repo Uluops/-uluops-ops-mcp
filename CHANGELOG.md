@@ -9,6 +9,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [0.12.0] - 2026-08-20
 
+### Fixed — post-review set (public-interface 87 POLISHED / dx 92 SHIP_IT, pre-publish)
+
+- **The startup tool inventory is now DERIVED from recorded registrations.**
+  The hand-maintained `STARTUP_TOOL_GROUPS` had silently drifted to 48 of the
+  51 registered tools — its own docblock claimed "count assertion: 48" — and
+  omitted `merge_projects`, `update_profile`, and this release's own
+  `preview_update_run`, so the operator-visible boot log denied the new tool
+  existed. The constant is deleted; the log emits `toolCount` + the sorted
+  recorded list (a list that does not exist cannot drift).
+- README: `update_profile` documented (it was the only registered tool absent
+  from the tool tables); `ULUOPS_BASE_URL` added to the Configuration table;
+  Quick Start gains the `preview_update_run` → `update_run` pair with the
+  per-agent-replace retire warning, plus the `AnalysisEchoMismatchError`
+  do-not-retry note — previously CHANGELOG-only, invisible to README readers.
+- `validation://taxonomy` unavailable-error now names the base-URL config knob,
+  matching the tool-layer NetworkError guidance.
+
 Adopts the update-run replacement semantics (ops-uluops-api 1a, in prod since
 2026-08-20; spec v0.5.0 phase 3) on `@uluops/ops-sdk` 5.18.0. The headline is a
 **semantics change with no schema change** on `update_run`'s analysis fields:
