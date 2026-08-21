@@ -7,6 +7,33 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.13.0] - 2026-08-21
+
+Adopts update-run 1b (API live 2026-08-21) on `@uluops/ops-sdk` 5.19.0.
+
+### Added
+
+- **`record_write_mode: replace | merge`** on `update_run` and
+  `preview_update_run` (records only; summaries stay per-agent replace).
+  merge = upsert on `(agent_name, record_id)`: matched records superseded,
+  unmatched keys appended, nothing retired — and there is still no delete
+  endpoint, so past the 100-per-call cap a merged agent's set cannot be
+  restated by replace (stated in the tool description per the R2 record).
+- **`analysis_write` echo in `update_run` responses** (F17): analysis-bearing
+  updates now return the superseded/created counts beside the run fields
+  (additive — absent on non-analysis updates). `supersededRecords: 0` on an
+  enrichment that expected to replace means the named agents had no live
+  rows — previously visible only in a server-side warn log.
+
+### Changed
+
+- `@uluops/ops-sdk` `5.18.0` → `5.19.0` (exact): with-echo methods, mode on
+  the wire, echo assertion against the SENT mode (a pre-1b server stripping
+  the mode now surfaces as `AnalysisEchoMismatchError` instead of silently
+  executing replace on a merge send).
+- `update_run` ToolSpec 2 MB rationale re-checked for merge: deltas are
+  smaller, but replace's full-set resend still bounds the worst case.
+
 ## [0.12.0] - 2026-08-20
 
 ### Fixed — post-review set (public-interface 87 POLISHED / dx 92 SHIP_IT, pre-publish)

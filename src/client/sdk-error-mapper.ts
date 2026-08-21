@@ -100,9 +100,11 @@ const ERROR_SUGGESTIONS: Record<string, string> = {
   // must-not-retry line is load-bearing: an orchestrator's default response to
   // a failed write tool is retry, which re-applies the write.
   AnalysisEchoMismatchError:
-    'The update WAS applied — do NOT retry (a retry re-applies the write). The server\'s analysisWrite echo was ' +
-    'missing or carried an unexpected recordMode, so server and SDK disagree about analysis-write semantics. ' +
-    'Re-read the run (get_run_analysis / get_run_details) to inspect what was written, and check API/SDK version alignment.',
+    'If reason is preview-mode-mismatch: NOTHING was written — the server does not speak the requested mode; stop and fix version skew. ' +
+    'Otherwise the update WAS applied — do NOT retry (a retry re-applies the write). If you sent merge and the server echoed replace, ' +
+    'records omitted from your payload MAY HAVE BEEN RETIRED. Note: retired (superseded) rows are INVISIBLE to get_run_analysis / ' +
+    'get_run_details — those read live rows only; the dataset export with include_superseded: true is the surface that still shows them. ' +
+    'Check API/SDK version alignment before writing again.',
   InputValidationError: 'SDK-level validation failed before reaching the API. Check input shapes.',
 };
 

@@ -1423,8 +1423,8 @@ describe('Tool Handlers', () => {
   describe('update_run', () => {
     let mockOpsClient: {
       runs: {
-        updateById: ReturnType<typeof vi.fn>;
-        update: ReturnType<typeof vi.fn>;
+        updateByIdWithEcho: ReturnType<typeof vi.fn>;
+        updateWithEcho: ReturnType<typeof vi.fn>;
       };
     };
     let handler: (args: unknown) => Promise<unknown>;
@@ -1432,8 +1432,8 @@ describe('Tool Handlers', () => {
     beforeEach(() => {
       mockOpsClient = {
         runs: {
-          updateById: vi.fn(),
-          update: vi.fn(),
+          updateByIdWithEcho: vi.fn(),
+          updateWithEcho: vi.fn(),
         },
       };
       registerUpdateRunTool(mockServer, mockOpsClient as unknown as OpsClient);
@@ -1445,10 +1445,10 @@ describe('Tool Handlers', () => {
       expect(name).toBe('update_run');
     });
 
-    it('should update run with tokens via run_id', async () => {
-      mockOpsClient.runs.updateById.mockResolvedValue({
-        run_id: TEST_UUID_1,
-        updated_fields: ['validators'],
+    it('should update run with tokens via run_id (with-echo variant)', async () => {
+      mockOpsClient.runs.updateByIdWithEcho.mockResolvedValue({
+        run: { run_id: TEST_UUID_1, updated_fields: ['validators'] },
+        analysisWrite: null,
       });
 
       await handler({
@@ -1466,34 +1466,59 @@ describe('Tool Handlers', () => {
         ],
       });
 
-      expect(mockOpsClient.runs.updateById).toHaveBeenCalled();
-      const [runId, normalized] = mockOpsClient.runs.updateById.mock.calls[0];
+      expect(mockOpsClient.runs.updateByIdWithEcho).toHaveBeenCalled();
+      const [runId, normalized] = mockOpsClient.runs.updateByIdWithEcho.mock.calls[0];
       expect(runId).toBe(TEST_UUID_1);
       // normalizeKeys converts token fields to camelCase
       expect(normalized.agents[0].cacheCreationTokens).toBe(2000);
       expect(normalized.agents[0].cacheReadTokens).toBe(5000);
     });
 
-    it('should update run metadata', async () => {
-      mockOpsClient.runs.updateById.mockResolvedValue({ run_id: TEST_UUID_1 });
+    it('should update run metadata and forward record_write_mode', async () => {
+      mockOpsClient.runs.updateByIdWithEcho.mockResolvedValue({ run: { run_id: TEST_UUID_1 }, analysisWrite: null });
 
       await handler({
         project: 'test',
         run_id: TEST_UUID_1,
         all_gates_passed: true,
         average_score: 92.5,
+        record_write_mode: 'merge',
       });
 
-      expect(mockOpsClient.runs.updateById).toHaveBeenCalledWith(
+      expect(mockOpsClient.runs.updateByIdWithEcho).toHaveBeenCalledWith(
         TEST_UUID_1,
         expect.objectContaining({
           project: 'test',
           runId: TEST_UUID_1,
           allGatesPassed: true,
           averageScore: 92.5,
+          recordWriteMode: 'merge',
         }),
         { _skipClientValidation: true }
       );
+    });
+
+    it('includes the analysisWrite echo beside the run fields on analysis-bearing updates (F17)', async () => {
+      const echo = { recordMode: 'merge', supersededRecords: 1, supersededSummaries: 0, createdRecords: 2, createdSummaries: 0 };
+      mockOpsClient.runs.updateWithEcho.mockResolvedValue({ run: { id: TEST_UUID_1, runNumber: 5 }, analysisWrite: echo });
+
+      const result = (await handler({ project: 'test', run_number: 5 })) as { content: Array<{ text: string }> };
+      const text = result.content[0]?.text;
+      expect(text).toBeDefined();
+      const payload = JSON.parse(text as string) as Record<string, unknown>;
+      expect(payload['runNumber']).toBe(5);
+      expect(payload['analysisWrite']).toEqual(echo);
+    });
+
+    it('omits analysisWrite entirely on non-analysis updates (null echo)', async () => {
+      mockOpsClient.runs.updateWithEcho.mockResolvedValue({ run: { id: TEST_UUID_1, runNumber: 7 }, analysisWrite: null });
+
+      const result = (await handler({ project: 'test', run_number: 7 })) as { content: Array<{ text: string }> };
+      const text = result.content[0]?.text;
+      expect(text).toBeDefined();
+      const payload = JSON.parse(text as string) as Record<string, unknown>;
+      expect(payload['runNumber']).toBe(7);
+      expect('analysisWrite' in payload).toBe(false);
     });
   });
 
@@ -1589,6 +1614,17 @@ describe('Tool Handlers', () => {
 
       expect(result.isError).toBe(true);
       expect(mockOpsClient.runs.previewUpdate).not.toHaveBeenCalled();
+    });
+
+    it('forwards record_write_mode to the SDK preview (1b — a stripped mode previews the wrong semantics)', async () => {
+      mockOpsClient.runs.previewUpdate.mockResolvedValue({ ...previewPlan, recordMode: 'merge' });
+
+      await handler({ project: 'test', run_number: 5, analysis_records: [record], record_write_mode: 'merge' });
+
+      expect(mockOpsClient.runs.previewUpdate).toHaveBeenCalledWith(
+        expect.objectContaining({ recordWriteMode: 'merge' }),
+        { _skipClientValidation: true }
+      );
     });
   });
 

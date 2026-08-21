@@ -216,8 +216,10 @@ export const toolRegistry: ToolSpec[] = [
     // named in the payload, but within a named agent it still REPLACES rather
     // than appends — keeping an agent's set means resending it in full, so the
     // worst-case payload is unchanged from the run-wide era and equals
-    // save_run's budget. Originally raised from 500 * KB on 2026-08-18 after a
-    // 65-record write failed.
+    // save_run's budget. Re-checked 2026-08-21 for 1b merge: merge sends only
+    // deltas, but replace remains available and its full-set resend still
+    // bounds the worst case — 2 MB stands. Originally raised from 500 * KB on
+    // 2026-08-18 after a 65-record write failed.
     maxArgsSize: 2 * MB,
     maxEgressBytes: 1 * MB,
     quotaPerMinute: 120,

@@ -146,12 +146,13 @@ get_project_summary({ project: "my-project" })
 merge_projects({ source: "-my-project", target: "@org/my-project", dry_run: true })
 merge_projects({ source: "-my-project", target: "@org/my-project" }) // execute
 
-// Enrich a saved run with analysis data. Analysis writes are PER-AGENT
-// REPLACE: each agent named in the payload has its entire live set superseded
-// by these rows; agents not named are untouched, and omitting a record an
-// agent previously had RETIRES it. Preview first when updating an agent that
-// already has records — would_retire_record_ids shows what an omission would
-// destroy, without writing anything.
+// Enrich a saved run with analysis data. Analysis writes are PER-AGENT:
+// under the default replace, each named agent's entire live set is superseded
+// by these rows and omitting a record RETIRES it; under
+// record_write_mode: "merge", matched (agent_name, record_id) keys are
+// superseded, unmatched keys append, and nothing is retired. Preview first
+// when updating an agent that already has records — would_retire_record_ids
+// shows what a replace omission would destroy, without writing anything.
 preview_update_run({
   project: "my-project", run_number: 5,
   analysis_records: [{ agent_name: "nietzsche-analyst", record_type: "convention",
@@ -246,8 +247,8 @@ The per-tool `maxArgsSize` (2 MB for `save_run`) and the 500 KB message envelope
 | `edit_issue` | Edit issue metadata (title, file_path, severity, etc.) |
 | `merge_issues` | Merge duplicate issues into a target issue |
 | `bulk_update_status` | Bulk update multiple issue statuses in one transaction |
-| `update_run` | Update run metadata post-hoc (tokens, scores, timestamps); analysis writes are per-agent scoped replace |
-| `preview_update_run` | Read-only preview of an analysis-bearing update: per agent, what a replace write would supersede, create, and retire |
+| `update_run` | Update run metadata post-hoc (tokens, scores, timestamps); per-agent analysis writes — replace (default) or merge via `record_write_mode`; analysis-bearing responses carry the `analysisWrite` echo (camelCase response key) |
+| `preview_update_run` | Read-only preview of an analysis-bearing update under the requested mode: per agent, what the write would supersede, create, and (replace only) retire |
 | `get_agent_reliability` | Analyze agent effectiveness and reliability scores |
 | `get_agent_lifecycle` | Lifecycle metrics for an agent across runs |
 
