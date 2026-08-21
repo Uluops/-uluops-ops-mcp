@@ -211,12 +211,35 @@ export const toolRegistry: ToolSpec[] = [
     name: 'update_run',
     sideEffects: 'write',
     // Must match save_run: update_run accepts the same analysis_records
-    // (maxItems 100) and recommendations arrays, and analysis_records REPLACES
-    // rather than appends — so a run saved under save_run's budget could not
-    // otherwise be updated at all, and batching would silently drop earlier
-    // records. Raised from 500 * KB on 2026-08-18 after a 65-record write failed.
+    // (maxItems 100) and recommendations arrays. Re-derived 2026-08-20 for the
+    // 1a per-agent replace semantics: replace is now scoped to the agents
+    // named in the payload, but within a named agent it still REPLACES rather
+    // than appends — keeping an agent's set means resending it in full, so the
+    // worst-case payload is unchanged from the run-wide era and equals
+    // save_run's budget. Originally raised from 500 * KB on 2026-08-18 after a
+    // 65-record write failed.
     maxArgsSize: 2 * MB,
     maxEgressBytes: 1 * MB,
+    quotaPerMinute: 120,
+    quotaPerHour: 2000,
+  },
+  {
+    name: 'preview_update_run',
+    // Read-only by contract: POST on the wire, but the endpoint computes the
+    // plan without writing (spec §4; parity with the write path is the API's
+    // §6 test 7, not an assumption here).
+    sideEffects: 'read',
+    // Same worst-case request body as update_run's analysis portion — the
+    // preview accepts the identical analysis_records (maxItems 100) /
+    // analysis_summary (maxItems 20) payload the write does, so the 2 MB
+    // derivation carries over unchanged.
+    maxArgsSize: 2 * MB,
+    // Egress is the per-agent plan: counts plus would_retire_record_ids
+    // (≤100-char slugs, bounded by the agent's live record count). 200 KB
+    // bounds a pathological many-agent run with margin.
+    maxEgressBytes: 200 * KB,
+    // The intended pattern is preview-then-write, so preview volume tracks
+    // update_run's — same 120/2000 rather than a derived-down read quota.
     quotaPerMinute: 120,
     quotaPerHour: 2000,
   },

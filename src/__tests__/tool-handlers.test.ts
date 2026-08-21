@@ -27,6 +27,7 @@ import { registerMergeIssuesTool } from '../tools/merge-issues.js';
 import { registerMergeProjectsTool } from '../tools/merge-projects.js';
 import { registerBulkUpdateStatusTool } from '../tools/bulk-update-status.js';
 import { registerUpdateRunTool } from '../tools/update-run.js';
+import { registerPreviewUpdateRunTool } from '../tools/preview-update-run.js';
 import { registerGetAgentReliabilityTool } from '../tools/get-agent-reliability.js';
 import { registerCreateIssueTool } from '../tools/create-issue.js';
 import { NotFoundError, ConflictError } from '@uluops/ops-sdk';
@@ -1493,6 +1494,101 @@ describe('Tool Handlers', () => {
         }),
         { _skipClientValidation: true }
       );
+    });
+  });
+
+  describe('preview_update_run', () => {
+    let mockOpsClient: {
+      runs: {
+        previewUpdateById: ReturnType<typeof vi.fn>;
+        previewUpdate: ReturnType<typeof vi.fn>;
+      };
+    };
+    let handler: (args: unknown) => Promise<unknown>;
+
+    const previewPlan = {
+      preview: true,
+      recordMode: 'replace',
+      byAgent: {
+        'aristotle-analyst': {
+          wouldSupersedeRecords: 2,
+          wouldSupersedeSummaries: 1,
+          wouldCreateRecords: 1,
+          wouldCreateSummaries: 1,
+          wouldRetireRecordIds: ['old-1'],
+        },
+      },
+    };
+    const record = { agent_name: 'aristotle-analyst', record_type: 'finding', record_id: 'F-1', title: 'T', data: {} };
+
+    beforeEach(() => {
+      mockOpsClient = {
+        runs: {
+          previewUpdateById: vi.fn(),
+          previewUpdate: vi.fn(),
+        },
+      };
+      registerPreviewUpdateRunTool(mockServer, mockOpsClient as unknown as OpsClient);
+      handler = getHandler(mockServer.tool);
+    });
+
+    it('should register with correct name', () => {
+      const [name] = mockServer.tool.mock.calls[0];
+      expect(name).toBe('preview_update_run');
+    });
+
+    it('routes to previewUpdateById when run_id is present', async () => {
+      mockOpsClient.runs.previewUpdateById.mockResolvedValue(previewPlan);
+
+      await handler({ project: 'test', run_id: TEST_UUID_1, analysis_records: [record] });
+
+      expect(mockOpsClient.runs.previewUpdateById).toHaveBeenCalled();
+      const [runId, normalized] = mockOpsClient.runs.previewUpdateById.mock.calls[0];
+      expect(runId).toBe(TEST_UUID_1);
+      expect(normalized.analysisRecords[0].agentName).toBe('aristotle-analyst');
+      expect(mockOpsClient.runs.previewUpdate).not.toHaveBeenCalled();
+    });
+
+    it('routes to previewUpdate by project + run_number without run_id', async () => {
+      mockOpsClient.runs.previewUpdate.mockResolvedValue(previewPlan);
+
+      await handler({ project: 'test', run_number: 5, analysis_records: [record] });
+
+      expect(mockOpsClient.runs.previewUpdate).toHaveBeenCalledWith(
+        expect.objectContaining({ project: 'test', runNumber: 5 }),
+        { _skipClientValidation: true }
+      );
+    });
+
+    it('rejects forbidden update fields by name instead of silently narrowing the preview', async () => {
+      // The scope-rule guard (spec §4): the transport strips unknown keys, so
+      // the API's named 400 is unreachable — this handler-level rejection is
+      // the only layer where the refusal can fire. No SDK call must happen.
+      const result = (await handler({
+        project: 'test',
+        run_number: 5,
+        analysis_records: [record],
+        agents: [{ name: 'code-validator', score: 90 }],
+        average_score: 91,
+      })) as { isError?: boolean; content: Array<{ text: string }> };
+
+      expect(result.isError).toBe(true);
+      expect(result.content[0]?.text).toContain('analysis concerns only');
+      expect(result.content[0]?.text).toContain('agents');
+      expect(result.content[0]?.text).toContain('average_score');
+      expect(mockOpsClient.runs.previewUpdate).not.toHaveBeenCalled();
+      expect(mockOpsClient.runs.previewUpdateById).not.toHaveBeenCalled();
+    });
+
+    it('rejects an empty record_id at the schema before any SDK call', async () => {
+      const result = (await handler({
+        project: 'test',
+        run_number: 5,
+        analysis_records: [{ ...record, record_id: '' }],
+      })) as { isError?: boolean };
+
+      expect(result.isError).toBe(true);
+      expect(mockOpsClient.runs.previewUpdate).not.toHaveBeenCalled();
     });
   });
 

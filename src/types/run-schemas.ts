@@ -120,7 +120,12 @@ export const AnalysisRecordBaseSchema = z.object({
     .optional()
     .describe('Agent name — overrides the run-level default. Set it per record when a run carries records from more than one agent, or every record is attributed to the run definition instead.'),
   record_type: AnalysisRecordTypeSchema.describe('Record type (convention, tension, decay_vector, etc.)'),
-  record_id: z.string().max(ANALYSIS_RECORD_ID_MAX_LENGTH).describe('Agent-local ID — short semantic slug (e.g. foundations-api-aristotle-20260626, max 100 chars). Do NOT embed session/agent UUIDs; use the finding name, not identifiers.'),
+  // min(1): the API 400s empty record_id on the update path (1a, spec §3.5) —
+  // record_id is the per-agent merge key, so an empty one can never match or be
+  // retired deliberately. Rejecting here gives the model a schema error instead
+  // of a round-trip. (Whitespace-only is the API's named 400 — no trim here:
+  // record_id is a stored key and foldAnalysisKey is trim-less.)
+  record_id: z.string().min(1).max(ANALYSIS_RECORD_ID_MAX_LENGTH).describe('Agent-local ID — short semantic slug (e.g. foundations-api-aristotle-20260626, max 100 chars). Do NOT embed session/agent UUIDs; use the finding name, not identifiers. Per-agent replace merge key; matching is case- and accent-insensitive.'),
   title: z.string().max(500).describe('Human-readable title'),
   classification: z.string().max(50).optional().nullable().describe('Type-specific classification (LIVING, CALCIFIED, IMMINENT, etc.)'),
   severity: SeveritySchema.optional().nullable().describe('Severity when applicable'),

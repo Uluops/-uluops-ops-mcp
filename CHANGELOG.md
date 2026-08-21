@@ -7,6 +7,51 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.12.0] - 2026-08-20
+
+Adopts the update-run replacement semantics (ops-uluops-api 1a, in prod since
+2026-08-20; spec v0.5.0 phase 3) on `@uluops/ops-sdk` 5.18.0. The headline is a
+**semantics change with no schema change** on `update_run`'s analysis fields:
+the same payload now supersedes per-agent instead of run-wide — the tool
+descriptions are the channel, and they were rewritten for it.
+
+### Added
+
+- **`preview_update_run`** — read-only preview of an analysis-bearing update
+  (`POST /runs/:id/update-preview` / by-project sibling). Reports, per agent
+  named in the payload, what a replace write would supersede, create, and
+  retire by omission (`would_retire_record_ids`). Accepts analysis concerns
+  only; forbidden update fields are **declared in the shape and rejected by
+  name in the handler** — the MCP transport strips unknown keys before
+  handlers run, so the API's scope-rule 400 is unreachable and an undeclared
+  field would be silently narrowed instead of refused. ToolSpec: read,
+  2 MB args (same derivation as update_run's analysis portion), 200 KB egress,
+  120/2000 quotas (preview-then-write tracks the write's volume).
+- `ERROR_SUGGESTIONS.AnalysisEchoMismatchError` (tracker `aa6280d0`): the SDK's
+  §3.9 skew alarm fires AFTER the write has landed — the suggestion leads with
+  "do NOT retry (a retry re-applies the write)" because an orchestrator's
+  default response to a failed write tool is retry.
+
+### Changed
+
+- `update_run` description strings rewritten for per-agent replace (discharges
+  the supersede-scoping spec's three description sites, open since
+  2026-08-07, at the new-semantics wording): analysis writes supersede only
+  the named agents' rows, cannot remove another agent's data, records/summary
+  never touch each other, summaries have no mode, matching is case- and
+  accent-insensitive, and there is no delete endpoint.
+- `AnalysisRecordBaseSchema.record_id` gains `.min(1)` (spec §3.5/test 11):
+  the API 400s empty record_id on the update path; the schema now refuses it
+  before the round-trip. Shared schema — every tool importing it inherits
+  the floor.
+- `update_run` ToolSpec 2 MB rationale re-derived for per-agent replace:
+  within a named agent replace still means full-set resend, so the worst-case
+  payload is unchanged and the limit stands.
+- `@uluops/ops-sdk` `5.17.0` → `5.18.0` (exact): analysis-bearing updates now
+  read the response envelope and assert the server's `analysisWrite` echo —
+  a new named `AnalysisEchoMismatchError` (mapped above) replaces silent
+  version skew; `archivedReason` wire fix rides along.
+
 ### Changed — the failure-code pattern comes from `@uluops/taxonomy`
 
 Three hard-coded copies of `/^(STR|SEM|PRA|EPI)-[A-Z]{3}\/[CHMLI]$/` — in `create-issue`,

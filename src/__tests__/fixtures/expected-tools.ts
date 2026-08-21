@@ -29,6 +29,7 @@ export const EXPECTED_TOOLS = [
   'merge_projects',
   'bulk_update_status',
   'update_run',
+  'preview_update_run',
   'get_agent_reliability',
   'create_issue',
   // P2 Project Tools

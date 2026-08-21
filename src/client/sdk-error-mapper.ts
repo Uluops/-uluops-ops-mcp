@@ -96,6 +96,13 @@ const ERROR_SUGGESTIONS: Record<string, string> = {
     'a name already in use (choose another, or target the existing resource), a soft-deleted resource holding ' +
     'the name (restore it instead of recreating), or an idempotency_key reused with a different payload (use a new key).',
   UnprocessableError: 'The request is well-formed but cannot be processed. Check business logic constraints.',
+  // §3.9 skew alarm (ops-sdk ≥5.18.0). Fires AFTER the write landed — the
+  // must-not-retry line is load-bearing: an orchestrator's default response to
+  // a failed write tool is retry, which re-applies the write.
+  AnalysisEchoMismatchError:
+    'The update WAS applied — do NOT retry (a retry re-applies the write). The server\'s analysisWrite echo was ' +
+    'missing or carried an unexpected recordMode, so server and SDK disagree about analysis-write semantics. ' +
+    'Re-read the run (get_run_analysis / get_run_details) to inspect what was written, and check API/SDK version alignment.',
   InputValidationError: 'SDK-level validation failed before reaching the API. Check input shapes.',
 };
 

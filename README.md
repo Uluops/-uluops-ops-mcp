@@ -10,7 +10,7 @@
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.7+-blue.svg)](https://www.typescriptlang.org/)
 [![Tests](https://img.shields.io/badge/tests-passing-brightgreen)](src/__tests__/)
 
-MCP (Model Context Protocol) server for the UluOps Platform API. Provides **50 tools** and **3 resources** (2 functional, 1 template placeholder) that enable Claude Code, Cursor, and other MCP hosts to interact with the UluOps Platform.
+MCP (Model Context Protocol) server for the UluOps Platform API. Provides **51 tools** and **3 resources** (2 functional, 1 template placeholder) that enable Claude Code, Cursor, and other MCP hosts to interact with the UluOps Platform.
 
 ## Table of Contents
 
@@ -181,7 +181,7 @@ Claude Code issues tool calls in short, intense bursts (<2s) followed by "thinki
 
 ### Payload Size Limits
 
-`save_run` and `update_run` carry the largest payloads on the surface — long `raw_markdown` reports, plus 40+ recommendations with per-agent analysis summaries. `mcp-secure-server` enforces payload size at several independent layers, and the defaults (tuned for small tool calls) sit far below the per-tool `maxArgsSize`. This server raises each to a common ceiling so the per-tool limit is the one that actually governs:
+`save_run`, `update_run`, and `preview_update_run` carry the largest payloads on the surface — long `raw_markdown` reports, plus 40+ recommendations with per-agent analysis summaries (the preview accepts the same analysis payload the write does). `mcp-secure-server` enforces payload size at several independent layers, and the defaults (tuned for small tool calls) sit far below the per-tool `maxArgsSize`. This server raises each to a common ceiling so the per-tool limit is the one that actually governs:
 
 ```typescript
 {
@@ -223,7 +223,8 @@ The per-tool `maxArgsSize` (2 MB for `save_run`) and the 500 KB message envelope
 | `edit_issue` | Edit issue metadata (title, file_path, severity, etc.) |
 | `merge_issues` | Merge duplicate issues into a target issue |
 | `bulk_update_status` | Bulk update multiple issue statuses in one transaction |
-| `update_run` | Update run metadata post-hoc (tokens, scores, timestamps) |
+| `update_run` | Update run metadata post-hoc (tokens, scores, timestamps); analysis writes are per-agent scoped replace |
+| `preview_update_run` | Read-only preview of an analysis-bearing update: per agent, what a replace write would supersede, create, and retire |
 | `get_agent_reliability` | Analyze agent effectiveness and reliability scores |
 | `get_agent_lifecycle` | Lifecycle metrics for an agent across runs |
 
