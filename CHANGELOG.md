@@ -7,6 +7,36 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.14.0] - 2026-08-21
+
+MCP tool-sweep batch 1 (tracker project `mcp-tool-surface-sweep`) — the same changes as
+`uluops-ops-mcp-client` 1.34.0, plus one this package alone was missing.
+
+### Fixed
+
+- **`failure_code` now enforces the closed 28-code canonical set** (RE-PROBE-02 N2 —
+  **this package missed the sibling's 2026-08-21 fix**; the two MCP packages must move
+  together and this entry is the reminder of why). `STRICT_FAILURE_CODE_PATTERN` from
+  `@uluops/taxonomy` 1.1.0 replaces the format-only pattern; the schema examples no longer
+  advertise `SEM-VAL/H` (a well-formed non-member); test fixtures carrying non-canonical
+  codes (`SEM-VAL/H`, `EPI-DOC/L`, `SEM-ERR/H`) corrected.
+
+### Changed
+
+- **`@uluops/ops-sdk` 5.19.0 → 5.22.0** — keyless `save_run` retries deduplicate
+  (content-derived default idempotency key, T1) and analysis-bearing saves surface the
+  `analysisWrite` confirmation (T21). `save_run`'s `idempotency_key` description states the
+  dedupe contract.
+- **`validate_run` accepts exactly what `save_run` accepts** (T2): `recommendations`
+  defaults to `[]`.
+- **`get_project` description tells the truth** (T4): metadata only; points at
+  `get_project_summary` for stats.
+- **`list_agents` description no longer implies an allowlist** (T12): advisory, derived
+  from run history; the never-returned manifest-path promise is dropped.
+- **Fingerprint derivation documented** (T15) on `get_issue_by_fingerprint` /
+  `update_issue_by_fingerprint`, including the agent's participation and `edit_issue`'s
+  fingerprint retention (the T18 trap).
+
 ## [0.13.0] - 2026-08-21
 
 Adopts update-run 1b (API live 2026-08-21) on `@uluops/ops-sdk` 5.19.0.

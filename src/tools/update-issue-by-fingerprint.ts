@@ -28,7 +28,7 @@ export function registerUpdateIssueByFingerprintTool(
 ): void {
   server.tool(
     'update_issue_by_fingerprint',
-    'Update an issue status by its fingerprint.',
+    'Update an issue status by its fingerprint. See get_issue_by_fingerprint for the fingerprint derivation (sha256 of normalized title|agent|filePath|category).',
     UpdateIssueByFingerprintInputSchema.shape,
     createToolHandler(UpdateIssueByFingerprintInputSchema, (n) => {
       const { fingerprint, project, ...input } = n;

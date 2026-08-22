@@ -23,7 +23,7 @@ export function registerListAgentsTool(
 ): void {
   server.tool(
     'list_agents',
-    'List canonical agents accepted by save_run. Returns enabled status, agent names, and manifest path.',
+    'List agents known to this org, derived from run history. ADVISORY ONLY — this is not an allowlist: save_run accepts any agent name, and a name absent here simply has no recorded runs yet.',
     ListAgentsInputSchema.shape,
     createToolHandler(ListAgentsInputSchema, async () => {
       // SDK returns AgentPerformance[] from analytics endpoint

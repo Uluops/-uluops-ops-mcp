@@ -6,7 +6,13 @@
  */
 
 import { z } from 'zod';
-import { FAILURE_CODE_PATTERN } from '@uluops/taxonomy';
+// STRICT_FAILURE_CODE_PATTERN encodes the closed 28-mode × 5-severity set —
+// modes are domain-bound (VAL is EPI, not SEM), which the format-only
+// FAILURE_CODE_PATTERN cannot express. Advertising the loose pattern let
+// well-formed non-members (SEM-VAL/H) pass validation and silently lose their
+// classification at ingest (RE-PROBE-02 N2 — this package missed the sibling's
+// fix; the two MCP packages must move together).
+import { STRICT_FAILURE_CODE_PATTERN } from '@uluops/taxonomy';
 
 /**
  * Issue priority levels
@@ -239,16 +245,19 @@ export const RecommendationSchema = z
     severity: SeveritySchema.optional().describe('Issue severity'),
     failure_code: z
       .string()
-      .regex(FAILURE_CODE_PATTERN, {
-        message: 'Must match pattern DOMAIN-MODE/SEVERITY (e.g., SEM-VAL/H, STR-OMI/M)',
+      .regex(STRICT_FAILURE_CODE_PATTERN, {
+        message:
+          'Must be one of the 28 canonical failure modes plus severity (e.g., EPI-VAL/H, STR-OMI/M). ' +
+          'Modes are domain-bound — SEM-VAL is not a member (VAL is an EPI mode). ' +
+          'Fetch the taxonomy resource or get_taxonomy for the full set.',
       })
       .optional()
-      .describe('Failure taxonomy code (e.g., SEM-VAL/H)'),
+      .describe('Failure taxonomy code from the closed canonical set (e.g., EPI-VAL/H)'),
     failure_domain: FailureDomainSchema.optional().describe('Failure domain'),
     failure_mode: z
       .string()
       .regex(/^[A-Z]{3}$/, {
-        message: 'Must be exactly 3 uppercase letters (e.g., VAL, OMI, FRA). For the full code (e.g., SEM-VAL/H), use failure_code instead.',
+        message: 'Must be exactly 3 uppercase letters (e.g., VAL, OMI, FRA). For the full code (e.g., EPI-VAL/H), use failure_code instead.',
       })
       .optional()
       .describe('Failure mode identifier — 3 uppercase letters (e.g., VAL, OMI)'),

@@ -28,7 +28,10 @@ export const ValidateRunInputSchema = z.object({
     .max(100)
     .describe('Workflow type (e.g., post-implementation, ship)'),
   agents: z.array(AgentResultSchema).describe('Array of agent results'),
-  recommendations: z.array(RecommendationSchema).describe('Array of issues/recommendations'),
+  // .default([]) matches save_run EXACTLY (tool-sweep T2): a preview stricter
+  // than the write it models rejects payloads the real call accepts, and
+  // teaches callers to skip validation.
+  recommendations: z.array(RecommendationSchema).default([]).describe('Array of issues/recommendations'),
   // Analysis-records preview (API v1.4.1+). Optional; mirrors save_run shape
   // so a dry-run can preview analysis persistence alongside recommendations.
   analysis_records: z.array(AnalysisRecordSchema).max(100).optional().describe('Structured analysis records to preview (mirrors save_run shape)'),
