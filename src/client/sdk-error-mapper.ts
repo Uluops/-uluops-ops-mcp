@@ -183,7 +183,7 @@ export function mapSdkErrorToMcp(error: unknown, toolName?: string): McpToolResp
   const errorType = getErrorTypeName(error);
   // T7: 404 remedies are resource-keyed, naming the discovery tool.
   const suggestion = isNotFoundError(error)
-    ? notFoundSuggestion((error as Error).message ?? '')
+    ? notFoundSuggestion((error as Error).message)
     : ERROR_SUGGESTIONS[errorType];
   const context: Record<string, unknown> = {
     ...(statusCode !== undefined ? { status: statusCode } : {}),
