@@ -17,7 +17,19 @@ const StatusUpdateSchema = z.object({
   title: z.string().optional().describe('Issue title (use with file_path)'),
   status: IssueStatusSchema.describe('New status'),
   reason: z.string().max(STATUS_REASON_MAX_LENGTH).optional().describe('Reason for status change (max 1000 chars)'),
-});
+})
+  // T16: the schema used to accept an identifier-less update the domain
+  // always rejects — and the domain error's remedy pointed back at this
+  // schema. Enforce the invariant where it is declared: every update names
+  // its issue by id (preferred), fingerprint, or file_path+title.
+  .refine(
+    (u) => Boolean(u.id ?? u.issue_id ?? u.fingerprint ?? (u.file_path && u.title)),
+    { message: "Each update needs an identifier: 'id' (preferred), 'issue_id', 'fingerprint', or 'file_path' together with 'title'." },
+  )
+  .refine(
+    (u) => !(u.file_path && !u.title) && !(u.title && !u.file_path) || Boolean(u.id ?? u.issue_id ?? u.fingerprint),
+    { message: "'file_path' and 'title' identify an issue only as a PAIR — supply both, or use 'id'/'fingerprint'." },
+  );
 
 export const UpdateStatusInputSchema = z.object({
   project: z.string().min(1).describe('Project name'),

@@ -156,10 +156,35 @@ function getErrorTypeName(error: unknown): string {
  * - Retry-after information for rate limits
  * - Field-level validation details
  */
+
+/**
+ * T7: name the discovery tool instead of "a query or list tool". The API's
+ * NotFoundError message names the resource ("Project not found", "Run not
+ * found") — key the remedy on it so a 404 carries an executable next step.
+ */
+const NOT_FOUND_DISCOVERY_TOOLS: Array<[RegExp, string]> = [
+  [/\bproject\b/i, 'list_projects'],
+  [/\brun\b/i, 'list_runs'],
+  [/\bissue\b/i, 'query_issues'],
+  [/\bagent\b/i, 'list_agents'],
+];
+
+function notFoundSuggestion(message: string): string {
+  for (const [pattern, tool] of NOT_FOUND_DISCOVERY_TOOLS) {
+    if (pattern.test(message)) {
+      return `Verify the resource ID/name exists — call ${tool} to find valid identifiers.`;
+    }
+  }
+  return ERROR_SUGGESTIONS['NotFoundError'] as string;
+}
+
 export function mapSdkErrorToMcp(error: unknown, toolName?: string): McpToolResponse {
   const statusCode = getStatusCode(error);
   const errorType = getErrorTypeName(error);
-  const suggestion = ERROR_SUGGESTIONS[errorType];
+  // T7: 404 remedies are resource-keyed, naming the discovery tool.
+  const suggestion = isNotFoundError(error)
+    ? notFoundSuggestion((error as Error).message ?? '')
+    : ERROR_SUGGESTIONS[errorType];
   const context: Record<string, unknown> = {
     ...(statusCode !== undefined ? { status: statusCode } : {}),
     error_type: errorType,

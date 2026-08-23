@@ -24,7 +24,7 @@ export const MergeProjectsInputSchema = z.object({
   delete_source: z.boolean().default(true)
     .describe('Soft-delete the source after the merge (false keeps it as an empty project, reserving the name)'),
   confirm_cross_org: z.boolean().default(false)
-    .describe('Required true for system-actor cross-org merges (Q15); no-op for human callers'),
+    .describe('Required true for system-actor cross-org merges; no-op for human callers'),
 });
 
 export type MergeProjectsInput = z.infer<typeof MergeProjectsInputSchema>;

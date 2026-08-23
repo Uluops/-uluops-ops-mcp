@@ -7,6 +7,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.15.0] - 2026-08-23
+
+MCP tool-sweep batch 3 (mechanical tail).
+
+### Changed
+
+- **`update_status` enforces the identifier invariant at the schema** (T16):
+  an identifier-less update used to pass schema and fail at the domain with a
+  remedy pointing back at the schema that misled. Each update now requires
+  `id` (preferred), `issue_id`, `fingerprint`, or `file_path`+`title` as a
+  PAIR — validated where the contract is declared, with messages naming the
+  fix.
+- **404 remedies name the discovery tool** (T7): NotFound suggestions are
+  resource-keyed — "call list_projects / list_runs / query_issues /
+  list_agents" — instead of "use a query or list tool". A hint became an
+  executable next step.
+- **`preview_update_run` description matches its response casing** (T24): the
+  documented field names are now the camelCase the response actually returns
+  (wouldRetireRecordIds etc.), as update_run's already were.
+- **Internal "(Q15)" reference removed from `merge_projects`** (T6).
+
+
 ## [0.14.0] - 2026-08-21
 
 MCP tool-sweep batch 1 (tracker project `mcp-tool-surface-sweep`) — the same changes as
