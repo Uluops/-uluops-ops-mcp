@@ -105,7 +105,8 @@ const ERROR_SUGGESTIONS: Record<string, string> = {
     'records omitted from your payload MAY HAVE BEEN RETIRED. Note: retired (superseded) rows are INVISIBLE to get_run_analysis / ' +
     'get_run_details — those read live rows only; the dataset export with include_superseded: true is the surface that still shows them. ' +
     'Check API/SDK version alignment before writing again.',
-  InputValidationError: 'SDK-level validation failed before reaching the API. Check input shapes.',
+  InputValidationError:
+    "The request was rejected by client-side checks before reaching the API — fix the named field(s) to match the tool's input schema.",
 };
 
 /**
@@ -143,7 +144,12 @@ function buildErrorResponse(
 }
 
 function getErrorTypeName(error: unknown): string {
-  if (error instanceof Error) return error.constructor.name;
+  // Prefer the `name` property over `constructor.name`: SDK error classes set
+  // both to the same string, but `name` survives dual-package class-identity
+  // splits (a nested sdk-core copy has different constructors, same names).
+  if (error instanceof Error) {
+    return error.name !== '' && error.name !== 'Error' ? error.name : error.constructor.name;
+  }
   return 'unknown';
 }
 
@@ -185,9 +191,13 @@ export function mapSdkErrorToMcp(error: unknown, toolName?: string): McpToolResp
   const suggestion = isNotFoundError(error)
     ? notFoundSuggestion((error as Error).message)
     : ERROR_SUGGESTIONS[errorType];
+  // T20: pass the API's cause code through so clients can branch on cause,
+  // not just HTTP status (CONFIRMATION_MISMATCH, UNDO_WINDOW_EXPIRED, ...).
+  const causeCode = (error as { code?: string }).code;
   const context: Record<string, unknown> = {
     ...(statusCode !== undefined ? { status: statusCode } : {}),
     error_type: errorType,
+    ...(typeof causeCode === 'string' ? { code: causeCode } : {}),
     ...(toolName != null ? { tool: toolName } : {}),
     ...(suggestion != null ? { suggestion } : {}),
   };
@@ -244,6 +254,95 @@ export function mapSdkErrorToMcp(error: unknown, toolName?: string): McpToolResp
   }
 
   if (error instanceof ForbiddenError) {
+    const fbCode = (error as { code?: string }).code;
+    const rawFbDetails = (error as { details?: unknown }).details;
+    const fbDetails: Record<string, unknown> =
+      typeof rawFbDetails === 'object' && rawFbDetails !== null
+        ? (rawFbDetails as Record<string, unknown>)
+        : {};
+
+    // TIER_REQUIRED — the server KNOWS this is an entitlement denial, so emit
+    // the upgrade remedy instead of the generic access-denied suggestion that
+    // argued against it ("...before assuming a tier limit" — RE-PROBE-02 N1).
+    // Same shape as the 402 PROJECT_LIMIT branch below. Requires ops-sdk with
+    // sdk-core >=0.17 (older SDKs strip 403 code/details, falling through to
+    // the generic branch — degraded copy, not an error).
+    if (fbCode === 'TIER_REQUIRED') {
+      const required = typeof fbDetails['required'] === 'string' ? fbDetails['required'] : undefined;
+      const current = typeof fbDetails['current'] === 'string' ? fbDetails['current'] : undefined;
+      const feature = typeof fbDetails['feature'] === 'string' ? fbDetails['feature'] : undefined;
+      const upgradeUrl = typeof fbDetails['upgradeUrl'] === 'string' ? fbDetails['upgradeUrl'] : undefined;
+      const sep = upgradeUrl?.includes('?') === true ? '&' : '?';
+      const trackedUrl = upgradeUrl != null ? `${upgradeUrl}${sep}source=mcp` : undefined;
+
+      return buildErrorResponse(
+        `This feature requires ${required ?? 'a higher'} tier.` +
+          (current != null ? ` Your current tier: ${current}.` : '') +
+          (trackedUrl != null ? ` Upgrade: ${trackedUrl}` : ''),
+        {
+          ...context,
+          status: 403,
+          suggestion:
+            'This is a subscription-tier limit, not a permissions problem — the key and target are fine. ' +
+            "Upgrade the org's plan to use this feature.",
+          ...(required != null ? { required_tier: required } : {}),
+          ...(current != null ? { current_tier: current } : {}),
+          ...(feature != null ? { feature } : {}),
+          ...(trackedUrl != null ? { upgrade_url: trackedUrl } : {}),
+        },
+      );
+    }
+
+    // INSUFFICIENT_SCOPE — a read-scope key attempting a write (per-key
+    // scopes, platform authenticate middleware). Nothing about the target or
+    // the org is wrong; only the key's scope is. Without this branch the
+    // generic 403 remedy sends callers to audit ids and org context (T20).
+    if (fbCode === 'INSUFFICIENT_SCOPE') {
+      return buildErrorResponse(
+        sanitizeErrorMessage((error as Error).message || 'This API key is read-only.'),
+        {
+          ...context,
+          status: 403,
+          suggestion:
+            'This API key has read scope and the operation is a write. The target and org are fine — ' +
+            'switch to a key minted with write scope (ulu auth api-keys create --scope write).',
+        },
+      );
+    }
+
+    // UNDO_WINDOW_EXPIRED — the status change is too old to undo. A business
+    // rule, not a permissions problem (T20).
+    if (fbCode === 'UNDO_WINDOW_EXPIRED') {
+      const windowHours = typeof fbDetails['windowHours'] === 'number' ? fbDetails['windowHours'] : undefined;
+      return buildErrorResponse(
+        sanitizeErrorMessage((error as Error).message || 'The change is too old to undo.'),
+        {
+          ...context,
+          status: 403,
+          suggestion:
+            'The status change is older than the undo window — undo is unavailable for it. ' +
+            'Set the desired status directly with update_status instead.',
+          ...(windowHours != null ? { window_hours: windowHours } : {}),
+        },
+      );
+    }
+
+    // ROLE_REQUIRED / INSUFFICIENT_ROLE — role-gated operation on a user key.
+    if (fbCode === 'ROLE_REQUIRED' || fbCode === 'INSUFFICIENT_ROLE') {
+      const required = typeof fbDetails['required'] === 'string' ? fbDetails['required'] : undefined;
+      return buildErrorResponse(
+        sanitizeErrorMessage((error as Error).message || 'Access denied'),
+        {
+          ...context,
+          status: 403,
+          suggestion:
+            "This API key's role is below the required role. Role-gated operations are performed " +
+            'by the UluOps runtime or an operator, not by user keys.',
+          ...(required != null ? { required_role: required } : {}),
+        },
+      );
+    }
+
     return buildErrorResponse(
       sanitizeErrorMessage((error as Error).message || 'Access denied'),
       { ...context, status: 403 },
@@ -372,6 +471,34 @@ export function mapSdkErrorToMcp(error: unknown, toolName?: string): McpToolResp
     return buildErrorResponse(
       sanitizeErrorMessage((error as Error).message),
       context,
+    );
+  }
+
+  // T27: the SDK's client-side parameter validation (InputValidationError)
+  // previously fell through to the bare branch below — a third error shape
+  // with no status. Give it the standard envelope: status 400 (the request
+  // class it would have been had it reached the API), per-field details from
+  // the Zod issues it carries, and a suggestion that speaks in tool terms.
+  // Name-matched rather than instanceof to stay immune to dual-package
+  // class-identity splits (the SdkApiError lesson, tracker bfb1575e).
+  if (error instanceof Error && error.name === 'InputValidationError') {
+    const rawIssues = (error as { errors?: unknown }).errors;
+    const fieldErrors = Array.isArray(rawIssues)
+      ? (rawIssues as unknown[])
+          .filter((i): i is Record<string, unknown> => typeof i === 'object' && i !== null)
+          .map((i) => ({
+            path: Array.isArray(i['path']) ? (i['path'] as Array<string | number>).join('.') : '?',
+            message: typeof i['message'] === 'string' ? i['message'] : 'invalid',
+          }))
+      : undefined;
+    const formatted = fieldErrors?.map((e) => `${e.path}: ${e.message}`).join('; ');
+    return buildErrorResponse(
+      sanitizeErrorMessage(error.message) + (formatted != null && formatted !== '' ? `: ${formatted}` : ''),
+      {
+        ...context,
+        status: 400,
+        ...(fieldErrors !== undefined && fieldErrors.length > 0 ? { field_errors: fieldErrors } : {}),
+      },
     );
   }
 

@@ -167,6 +167,92 @@ describe('SDK Error Mapper', () => {
       expect(suggestion.toLowerCase()).toMatch(/id|org|scope|permission/);
     });
 
+    it('TIER_REQUIRED 403 emits the upgrade remedy, not the generic access-denied copy (N1)', () => {
+      // Simulates what sdk-core >=0.17 produces (ForbiddenError retaining the
+      // API's code/details) — assigned post-construction so the test also runs
+      // against an older pinned SDK whose constructor drops them.
+      const error = new ForbiddenError('This feature requires plus tier or higher.');
+      Object.assign(error as unknown as Record<string, unknown>, {
+        code: 'TIER_REQUIRED',
+        details: {
+          required: 'plus',
+          current: 'free',
+          feature: 'tracker.agentReliability',
+          upgradeUrl: 'https://registry.uluops.ai/orgs/acme/settings/billing?source=api',
+        },
+      });
+      const payload = getErrorPayload(mapSdkErrorToMcp(error));
+      expect(payload['status']).toBe(403);
+      expect(payload['required_tier']).toBe('plus');
+      expect(payload['current_tier']).toBe('free');
+      expect(payload['upgrade_url']).toBe(
+        'https://registry.uluops.ai/orgs/acme/settings/billing?source=api&source=mcp',
+      );
+      expect((payload['suggestion'] as string)).toContain('subscription-tier limit');
+    });
+
+    it('ROLE_REQUIRED 403 names whose job the operation is', () => {
+      const error = new ForbiddenError('Requires admin role');
+      Object.assign(error as unknown as Record<string, unknown>, {
+        code: 'ROLE_REQUIRED',
+        details: { required: 'admin' },
+      });
+      const payload = getErrorPayload(mapSdkErrorToMcp(error));
+      expect(payload['status']).toBe(403);
+      expect(payload['required_role']).toBe('admin');
+      expect((payload['suggestion'] as string)).toContain('UluOps runtime');
+    });
+
+    it('INSUFFICIENT_SCOPE 403 names the scope fix, not the id/org audit (T20)', () => {
+      const error = new ForbiddenError('This API key is read-only. Use a key with write scope.');
+      Object.assign(error as unknown as Record<string, unknown>, { code: 'INSUFFICIENT_SCOPE' });
+      const payload = getErrorPayload(mapSdkErrorToMcp(error, 'save_run'));
+      expect(payload['status']).toBe(403);
+      expect(payload['code']).toBe('INSUFFICIENT_SCOPE');
+      const suggestion = payload['suggestion'] as string;
+      expect(suggestion).toContain('write scope');
+      expect(suggestion).toContain('--scope write');
+      expect(suggestion.toLowerCase()).not.toContain('verify the id');
+    });
+
+    it('UNDO_WINDOW_EXPIRED 403 says the change is too old and names update_status (T20)', () => {
+      const error = new ForbiddenError('Can only undo changes within 24 hours');
+      Object.assign(error as unknown as Record<string, unknown>, {
+        code: 'UNDO_WINDOW_EXPIRED',
+        details: { windowHours: 24 },
+      });
+      const payload = getErrorPayload(mapSdkErrorToMcp(error, 'undo_issue_status'));
+      expect(payload['status']).toBe(403);
+      expect(payload['window_hours']).toBe(24);
+      const suggestion = payload['suggestion'] as string;
+      expect(suggestion).toContain('update_status');
+      expect(suggestion.toLowerCase()).not.toContain('key permissions');
+    });
+
+    it('passes the API cause code through on any branch (T20)', () => {
+      const error = new ForbiddenError('Cannot change your own role');
+      Object.assign(error as unknown as Record<string, unknown>, { code: 'SELF_ROLE_CHANGE' });
+      expect(getErrorPayload(mapSdkErrorToMcp(error))['code']).toBe('SELF_ROLE_CHANGE');
+    });
+
+    it('InputValidationError gets the standard envelope — status, tool, no SDK-speak (T27)', () => {
+      // Name-matched branch: construct a plain Error with the SDK's name and
+      // Zod-issue payload, as the SDK's client-side validators produce.
+      const error = new Error('Invalid days parameter');
+      error.name = 'InputValidationError';
+      Object.assign(error as unknown as Record<string, unknown>, {
+        errors: [{ path: ['days'], message: 'Number must be greater than 0' }],
+      });
+      const payload = getErrorPayload(mapSdkErrorToMcp(error, 'get_velocity'));
+      expect(payload['status']).toBe(400);
+      expect(payload['error_type']).toBe('InputValidationError');
+      expect(payload['tool']).toBe('get_velocity');
+      expect(payload['field_errors']).toEqual([{ path: 'days', message: 'Number must be greater than 0' }]);
+      expect(payload['error']).toContain('days: Number must be greater than 0');
+      expect((payload['suggestion'] as string)).not.toContain('SDK');
+      expect((payload['suggestion'] as string)).toContain('input schema');
+    });
+
     it('should map ConflictError preserving message', () => {
       const error = new ConflictError('Resource already exists');
       const result = mapSdkErrorToMcp(error);

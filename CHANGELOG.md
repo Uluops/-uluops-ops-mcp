@@ -5,6 +5,28 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.16.0] - 2026-08-23
+
+### Added — MCP tool-sweep error-module batch (T3, T20, T27)
+
+- **Cause-branched 403s arrive in this package** — `TIER_REQUIRED` (upgrade
+  remedy with tier/feature/upgrade_url) and `ROLE_REQUIRED`/`INSUFFICIENT_ROLE`
+  (whose job the operation is) had shipped only in `uluops-ops-mcp-client`
+  during RE-PROBE-02 (N1/R16); the twin-drift is reconciled. New alongside
+  them: `INSUFFICIENT_SCOPE` (read key attempting a write — names the
+  write-scope fix, `ulu auth api-keys create --scope write`) and
+  `UNDO_WINDOW_EXPIRED` (change too old to undo — points at `update_status`,
+  carries `window_hours`). The API's cause `code` passes through on every
+  error envelope (T20).
+- **`InputValidationError` joins the standard envelope** (T27): `status: 400`,
+  `error_type`, `tool`, per-field `field_errors`, and a suggestion in tool
+  terms — previously a third error shape with no status and "SDK-level"
+  wording. `error_type` derivation prefers `error.name` over
+  `constructor.name`, surviving dual-package class-identity splits.
+- **Protocol-layer validation errors are readable** (T3, via
+  `mcp-secure-server` 0.0.20-security): raw MCP-SDK Zod dumps rewritten to
+  per-field prose, in both SDK message formats and both delivery channels.
+
 ## [Unreleased]
 
 ## [0.15.0] - 2026-08-23
