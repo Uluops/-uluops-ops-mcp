@@ -952,6 +952,24 @@ describe('Tool Handlers', () => {
 
       expect(mockOpsClient.analytics.getAgentPerformance).toHaveBeenCalled();
     });
+
+    it('returns the family list envelope {data, total} — the success wrapper is gone (T13)', async () => {
+      mockOpsClient.analytics.getAgentPerformance.mockResolvedValue([
+        { name: 'code-validator' },
+        { name: 'foucault-explorer' },
+        { notAName: true },
+      ]);
+
+      const result = (await handler({})) as { content: Array<{ text: string }> };
+      const payload = JSON.parse(result.content[0].text);
+      expect(Object.keys(payload).sort()).toEqual(['data', 'total']);
+      expect(payload.data).toEqual([
+        { name: 'code-validator', enabled: true },
+        { name: 'foucault-explorer', enabled: true },
+      ]);
+      expect(payload.total).toBe(2);
+      expect(payload).not.toHaveProperty('success');
+    });
   });
 
   describe('validate_run', () => {
