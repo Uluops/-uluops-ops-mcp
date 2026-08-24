@@ -5,6 +5,18 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.16.1] - 2026-08-24
+
+### Changed
+
+- @uluops/ops-sdk 5.22.0 -> 5.23.0 — the breaking-train TOLERANT release
+  (Train A). No tool changes. Semantics-without-signature notice: when the
+  tracker API 2.0.0 deploys, run READ tool output (get_run, get_latest_run,
+  diff_runs, get_run_analysis, get_agent_runs_analysis, get_analytics
+  taxonomy_distribution, merge_projects casing) will change shape while this
+  version is installed — that IS the flip; this release exists so it parses
+  cleanly. See the ops-sdk 5.23.0 changelog for the shape inventory.
+
 ## [0.16.0] - 2026-08-23
 
 ### Added — MCP tool-sweep error-module batch (T3, T20, T27)
