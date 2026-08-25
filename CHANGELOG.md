@@ -5,6 +5,23 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.17.0] - 2026-08-24
+
+### BREAKING — breaking-train Train C: strict SDK, tool surfaces flip
+
+- @uluops/ops-sdk -> 6.0.0 (strict; requires tracker API >= 2.0.0, deployed).
+  Tool output changes (passthrough of the flipped shapes): list_projects /
+  list_runs / query_issues return {data, total} (total = full matching count
+  — new pagination signal); get_run / get_latest_run are 14-key read
+  projections; diff_runs embeds read-projection refs; get_run_analysis has
+  recordsTotal/summariesTotal; get_agent_runs_analysis returns {data, total};
+  get_analytics taxonomy_distribution is {data, total}; merge_projects is
+  camelCase (spec 0.3.5).
+- **list_agents drops its {success, agents} wrapper** for the family envelope
+  {data: [{name, enabled}], total} — it was the only success flag in the
+  server, hand-built in this file (T13). Both MCP twins now share the guarded
+  implementation verbatim (twin-diff verified).
+
 ## [0.16.1] - 2026-08-24
 
 ### Changed
