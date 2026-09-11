@@ -35,8 +35,17 @@ export const toolRegistry: ToolSpec[] = [
     name: 'save_run',
     sideEffects: 'write',
     maxArgsSize: 2 * MB,
-    // Response includes full issue list with all fields
-    maxEgressBytes: 1 * MB,
+    // maxEgressBytes is NOT a response bound in practice. mcp-secure-server's
+    // Layer 4 evaluates it at REQUEST time as `argsBytes * 16` (layer4-semantics
+    // `estimatedEgress`, 0.0.20-security) — it never sees a response. Any value
+    // below 16 * maxArgsSize therefore silently overrides maxArgsSize at
+    // maxEgressBytes / 16: the 1 MB that stood here capped args at 64 KB, and a
+    // 97-recommendation ship run was refused 2026-09-10 with
+    // "Estimated egress exceeds policy: 1156352 > 1048576" while 1.1 MB under
+    // maxArgsSize. 32 MB = 16 * 2 MB is the floor at which the args cap is the
+    // binding one again. Real responses are ~10-50 KB; this is a derived floor,
+    // not a response budget.
+    maxEgressBytes: 32 * MB,
     quotaPerMinute: 120,
     quotaPerHour: 2000,
   },
@@ -52,7 +61,8 @@ export const toolRegistry: ToolSpec[] = [
     name: 'update_status',
     sideEffects: 'write',
     maxArgsSize: 200 * KB,
-    maxEgressBytes: 500 * KB,
+    // argsBytes*16 request-time floor (see save_run); was 500 * KB = 32000-byte effective args cap.
+    maxEgressBytes: 3200 * KB,
     quotaPerMinute: 120,
     quotaPerHour: 2000,
   },
@@ -68,7 +78,8 @@ export const toolRegistry: ToolSpec[] = [
     name: 'delete_project',
     sideEffects: 'write',
     maxArgsSize: 10 * KB,
-    maxEgressBytes: 10 * KB,
+    // argsBytes*16 request-time floor (see save_run); was 10 * KB = 640-byte effective args cap.
+    maxEgressBytes: 160 * KB,
     quotaPerMinute: 10,
     quotaPerHour: 50,
   },
@@ -104,7 +115,8 @@ export const toolRegistry: ToolSpec[] = [
     name: 'archive_runs',
     sideEffects: 'write',
     maxArgsSize: 10 * KB,
-    maxEgressBytes: 50 * KB,
+    // argsBytes*16 request-time floor (see save_run); was 50 * KB = 3200-byte effective args cap.
+    maxEgressBytes: 160 * KB,
     quotaPerMinute: 20,
     quotaPerHour: 200,
   },
@@ -144,7 +156,8 @@ export const toolRegistry: ToolSpec[] = [
     name: 'validate_run',
     sideEffects: 'read',
     maxArgsSize: 2 * MB,
-    maxEgressBytes: 1 * MB,
+    // Same payload as save_run (dry-run); same argsBytes*16 floor — see save_run.
+    maxEgressBytes: 32 * MB,
     quotaPerMinute: 60,
     quotaPerHour: 1000,
   },
@@ -167,7 +180,8 @@ export const toolRegistry: ToolSpec[] = [
     // payload (the note + issue context), 20KB was too tight for legitimate
     // stack-trace-heavy notes. Bumped to 100KB.
     maxArgsSize: 80 * KB,
-    maxEgressBytes: 100 * KB,
+    // argsBytes*16 request-time floor (see save_run); was 100 * KB = 6400-byte effective args cap.
+    maxEgressBytes: 1280 * KB,
     quotaPerMinute: 120,
     quotaPerHour: 2000,
   },
@@ -175,7 +189,8 @@ export const toolRegistry: ToolSpec[] = [
     name: 'edit_issue',
     sideEffects: 'write',
     maxArgsSize: 20 * KB,
-    maxEgressBytes: 50 * KB,
+    // argsBytes*16 request-time floor (see save_run); was 50 * KB = 3200-byte effective args cap.
+    maxEgressBytes: 320 * KB,
     quotaPerMinute: 120,
     quotaPerHour: 2000,
   },
@@ -183,7 +198,8 @@ export const toolRegistry: ToolSpec[] = [
     name: 'merge_issues',
     sideEffects: 'write',
     maxArgsSize: 20 * KB,
-    maxEgressBytes: 50 * KB,
+    // argsBytes*16 request-time floor (see save_run); was 50 * KB = 3200-byte effective args cap.
+    maxEgressBytes: 320 * KB,
     quotaPerMinute: 60,
     quotaPerHour: 1000,
   },
@@ -195,7 +211,8 @@ export const toolRegistry: ToolSpec[] = [
     name: 'merge_projects',
     sideEffects: 'write',
     maxArgsSize: 2 * KB,
-    maxEgressBytes: 16 * KB,
+    // argsBytes*16 request-time floor (see save_run); was 16 * KB = 1024-byte effective args cap.
+    maxEgressBytes: 32 * KB,
     quotaPerMinute: 5,
     quotaPerHour: 10,
   },
@@ -203,7 +220,8 @@ export const toolRegistry: ToolSpec[] = [
     name: 'bulk_update_status',
     sideEffects: 'write',
     maxArgsSize: 500 * KB,
-    maxEgressBytes: 1 * MB,
+    // argsBytes*16 request-time floor (see save_run); was 1 * MB = 65536-byte effective args cap.
+    maxEgressBytes: 8000 * KB,
     quotaPerMinute: 60,
     quotaPerHour: 1000,
   },
@@ -221,7 +239,17 @@ export const toolRegistry: ToolSpec[] = [
     // bounds the worst case — 2 MB stands. Originally raised from 500 * KB on
     // 2026-08-18 after a 65-record write failed.
     maxArgsSize: 2 * MB,
-    maxEgressBytes: 1 * MB,
+    // maxEgressBytes is NOT a response bound in practice. mcp-secure-server's
+    // Layer 4 evaluates it at REQUEST time as `argsBytes * 16` (layer4-semantics
+    // `estimatedEgress`, 0.0.20-security) — it never sees a response. Any value
+    // below 16 * maxArgsSize therefore silently overrides maxArgsSize at
+    // maxEgressBytes / 16: the 1 MB that stood here capped args at 64 KB, and a
+    // 97-recommendation ship run was refused 2026-09-10 with
+    // "Estimated egress exceeds policy: 1156352 > 1048576" while 1.1 MB under
+    // maxArgsSize. 32 MB = 16 * 2 MB is the floor at which the args cap is the
+    // binding one again. Real responses are ~10-50 KB; this is a derived floor,
+    // not a response budget.
+    maxEgressBytes: 32 * MB,
     quotaPerMinute: 120,
     quotaPerHour: 2000,
   },
@@ -236,10 +264,21 @@ export const toolRegistry: ToolSpec[] = [
     // analysis_summary (maxItems 20) payload the write does, so the 2 MB
     // derivation carries over unchanged.
     maxArgsSize: 2 * MB,
-    // Egress is the per-agent plan: counts plus would_retire_record_ids
-    // (≤100-char slugs, bounded by the agent's live record count). 200 KB
-    // bounds a pathological many-agent run with margin.
-    maxEgressBytes: 200 * KB,
+    // The real plan (counts plus would_retire_record_ids) fits in 200 KB with
+    // margin — but see save_run: the check is argsBytes * 16 at request time,
+    // so 200 KB capped the preview's args at 12.5 KB, i.e. a preview of any
+    // non-trivial write was refused before the write it was meant to protect.
+    // maxEgressBytes is NOT a response bound in practice. mcp-secure-server's
+    // Layer 4 evaluates it at REQUEST time as `argsBytes * 16` (layer4-semantics
+    // `estimatedEgress`, 0.0.20-security) — it never sees a response. Any value
+    // below 16 * maxArgsSize therefore silently overrides maxArgsSize at
+    // maxEgressBytes / 16: the 1 MB that stood here capped args at 64 KB, and a
+    // 97-recommendation ship run was refused 2026-09-10 with
+    // "Estimated egress exceeds policy: 1156352 > 1048576" while 1.1 MB under
+    // maxArgsSize. 32 MB = 16 * 2 MB is the floor at which the args cap is the
+    // binding one again. Real responses are ~10-50 KB; this is a derived floor,
+    // not a response budget.
+    maxEgressBytes: 32 * MB,
     // The intended pattern is preview-then-write, so preview volume tracks
     // update_run's — same 120/2000 rather than a derived-down read quota.
     quotaPerMinute: 120,
@@ -257,7 +296,8 @@ export const toolRegistry: ToolSpec[] = [
     name: 'create_issue',
     sideEffects: 'write',
     maxArgsSize: 100 * KB,
-    maxEgressBytes: 100 * KB,
+    // argsBytes*16 request-time floor (see save_run); was 100 * KB = 6400-byte effective args cap.
+    maxEgressBytes: 1600 * KB,
     quotaPerMinute: 120,
     quotaPerHour: 2000,
   },
@@ -277,7 +317,8 @@ export const toolRegistry: ToolSpec[] = [
     name: 'get_project',
     sideEffects: 'read',
     maxArgsSize: 10 * KB,
-    maxEgressBytes: 50 * KB,
+    // argsBytes*16 request-time floor (see save_run); was 50 * KB = 3200-byte effective args cap.
+    maxEgressBytes: 160 * KB,
     quotaPerMinute: 240,
     quotaPerHour: 5000,
   },
@@ -293,7 +334,8 @@ export const toolRegistry: ToolSpec[] = [
     name: 'create_project',
     sideEffects: 'write',
     maxArgsSize: 10 * KB,
-    maxEgressBytes: 10 * KB,
+    // argsBytes*16 request-time floor (see save_run); was 10 * KB = 640-byte effective args cap.
+    maxEgressBytes: 160 * KB,
     quotaPerMinute: 60,
     quotaPerHour: 1000,
   },
@@ -301,7 +343,8 @@ export const toolRegistry: ToolSpec[] = [
     name: 'update_profile',
     sideEffects: 'write',
     maxArgsSize: 10 * KB,
-    maxEgressBytes: 10 * KB,
+    // argsBytes*16 request-time floor (see save_run); was 10 * KB = 640-byte effective args cap.
+    maxEgressBytes: 160 * KB,
     quotaPerMinute: 30,
     quotaPerHour: 200,
   },
@@ -309,7 +352,8 @@ export const toolRegistry: ToolSpec[] = [
     name: 'update_project',
     sideEffects: 'write',
     maxArgsSize: 10 * KB,
-    maxEgressBytes: 10 * KB,
+    // argsBytes*16 request-time floor (see save_run); was 10 * KB = 640-byte effective args cap.
+    maxEgressBytes: 160 * KB,
     quotaPerMinute: 60,
     quotaPerHour: 1000,
   },
@@ -317,7 +361,8 @@ export const toolRegistry: ToolSpec[] = [
     name: 'soft_delete_project',
     sideEffects: 'write',
     maxArgsSize: 10 * KB,
-    maxEgressBytes: 10 * KB,
+    // argsBytes*16 request-time floor (see save_run); was 10 * KB = 640-byte effective args cap.
+    maxEgressBytes: 160 * KB,
     quotaPerMinute: 10,
     quotaPerHour: 50,
   },
@@ -325,7 +370,8 @@ export const toolRegistry: ToolSpec[] = [
     name: 'restore_project',
     sideEffects: 'write',
     maxArgsSize: 10 * KB,
-    maxEgressBytes: 10 * KB,
+    // argsBytes*16 request-time floor (see save_run); was 10 * KB = 640-byte effective args cap.
+    maxEgressBytes: 160 * KB,
     quotaPerMinute: 30,
     quotaPerHour: 300,
   },
@@ -361,7 +407,8 @@ export const toolRegistry: ToolSpec[] = [
     name: 'delete_run',
     sideEffects: 'write',
     maxArgsSize: 10 * KB,
-    maxEgressBytes: 10 * KB,
+    // argsBytes*16 request-time floor (see save_run); was 10 * KB = 640-byte effective args cap.
+    maxEgressBytes: 160 * KB,
     quotaPerMinute: 10,
     quotaPerHour: 50,
   },
@@ -373,7 +420,8 @@ export const toolRegistry: ToolSpec[] = [
     name: 'get_issue_by_fingerprint',
     sideEffects: 'read',
     maxArgsSize: 10 * KB,
-    maxEgressBytes: 100 * KB,
+    // argsBytes*16 request-time floor (see save_run); was 100 * KB = 6400-byte effective args cap.
+    maxEgressBytes: 160 * KB,
     quotaPerMinute: 120,
     quotaPerHour: 2000,
   },
@@ -381,7 +429,8 @@ export const toolRegistry: ToolSpec[] = [
     name: 'update_issue_by_fingerprint',
     sideEffects: 'write',
     maxArgsSize: 20 * KB,
-    maxEgressBytes: 20 * KB,
+    // argsBytes*16 request-time floor (see save_run); was 20 * KB = 1280-byte effective args cap.
+    maxEgressBytes: 320 * KB,
     quotaPerMinute: 60,
     quotaPerHour: 1000,
   },
@@ -389,7 +438,8 @@ export const toolRegistry: ToolSpec[] = [
     name: 'restore_issue',
     sideEffects: 'write',
     maxArgsSize: 10 * KB,
-    maxEgressBytes: 100 * KB,
+    // argsBytes*16 request-time floor (see save_run); was 100 * KB = 6400-byte effective args cap.
+    maxEgressBytes: 160 * KB,
     quotaPerMinute: 60,
     quotaPerHour: 1000,
   },
@@ -397,7 +447,8 @@ export const toolRegistry: ToolSpec[] = [
     name: 'soft_delete_issue',
     sideEffects: 'write',
     maxArgsSize: 10 * KB,
-    maxEgressBytes: 10 * KB,
+    // argsBytes*16 request-time floor (see save_run); was 10 * KB = 640-byte effective args cap.
+    maxEgressBytes: 160 * KB,
     quotaPerMinute: 60,
     quotaPerHour: 1000,
   },
@@ -405,7 +456,8 @@ export const toolRegistry: ToolSpec[] = [
     name: 'undo_issue_status',
     sideEffects: 'write',
     maxArgsSize: 10 * KB,
-    maxEgressBytes: 100 * KB,
+    // argsBytes*16 request-time floor (see save_run); was 100 * KB = 6400-byte effective args cap.
+    maxEgressBytes: 160 * KB,
     quotaPerMinute: 30,
     quotaPerHour: 500,
   },
@@ -417,7 +469,8 @@ export const toolRegistry: ToolSpec[] = [
     name: 'get_taxonomy',
     sideEffects: 'read',
     maxArgsSize: 10 * KB,
-    maxEgressBytes: 50 * KB,
+    // argsBytes*16 request-time floor (see save_run); was 50 * KB = 3200-byte effective args cap.
+    maxEgressBytes: 160 * KB,
     quotaPerMinute: 240,
     quotaPerHour: 5000,
   },

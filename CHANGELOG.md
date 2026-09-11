@@ -5,6 +5,23 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.17.1] - 2026-09-10
+
+### Fixed — `maxEgressBytes` was silently capping args on 26 of 51 tools
+
+`maxEgressBytes` raised to `16 × maxArgsSize` wherever it was below that (`src/config/tool-registry.ts`),
+in lockstep with `ops-uluops-mcp` 2.0.2 — the four analysis-bearing tools (`save_run`, `update_run`,
+`validate_run` 1 MB → 32 MB; `preview_update_run` 200 KB → 32 MB) plus 22 others, including
+`create_issue` (100 KB declared, 6.4 KB effective), `add_issue_note` (80 KB → 6.4 KB),
+`bulk_update_status` (500 KB → 64 KB), and `update_profile`, which exists only in this copy.
+
+The field's name says it bounds the response. It does not: `mcp-secure-server`'s Layer 4 evaluates
+it at **request** time as `argsBytes * 16` and never sees a response, so any value below
+`16 * maxArgsSize` silently replaces `maxArgsSize` as the binding cap. Observed 2026-09-10: a
+97-recommendation ship run (~72 KB of args) refused with `Estimated egress exceeds policy:
+1156352 > 1048576`. A per-tool test now holds the invariant, with a control on the pre-fix pair.
+The `× 16` is the library's heuristic; if it changes upstream this floor must be re-derived.
+
 ## [0.17.0] - 2026-08-24
 
 ### BREAKING — breaking-train Train C: strict SDK, tool surfaces flip

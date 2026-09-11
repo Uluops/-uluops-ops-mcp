@@ -111,6 +111,27 @@ describe('toolRegistry', () => {
       expect(validate?.maxEgressBytes).toBe(save?.maxEgressBytes);
     });
 
+    // mcp-secure-server (0.0.20-security, layer4-semantics `estimatedEgress`)
+    // evaluates maxEgressBytes at REQUEST time as argsBytes * 16 and never
+    // measures a response. Below 16 * maxArgsSize it silently replaces
+    // maxArgsSize as the binding cap. 2026-09-10: save_run at 1 MB refused a
+    // 72 KB payload; 21 other tools carried the same latent cap.
+    const EGRESS_ESTIMATE_MULTIPLIER = 16;
+    const shadowed = (t: { maxArgsSize: number; maxEgressBytes: number }) =>
+      t.maxEgressBytes < EGRESS_ESTIMATE_MULTIPLIER * t.maxArgsSize;
+
+    it.each(toolRegistry)(
+      '$name: maxEgressBytes must not shadow maxArgsSize (>= 16 * args)',
+      (tool) => {
+        expect(shadowed(tool)).toBe(false);
+      }
+    );
+
+    it('control: the egress-shadow check fails on the pre-fix save_run shape', () => {
+      // 2 MB args / 1 MB egress — the exact pair that refused the 2026-09-10 run.
+      expect(shadowed({ maxArgsSize: 2 * 1024 * 1024, maxEgressBytes: 1024 * 1024 })).toBe(true);
+    });
+
     it('delete_project should have low quotas for safety', () => {
       const tool = toolRegistry.find((t) => t.name === 'delete_project');
       expect(tool?.quotaPerMinute).toBeLessThanOrEqual(10);
