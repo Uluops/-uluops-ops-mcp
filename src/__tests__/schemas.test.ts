@@ -100,4 +100,48 @@ describe('RecommendationSchema', () => {
       expect(result.success).toBe(true);
     });
   });
+
+  describe('cluster_key (within-run convergence, tracker migration 076)', () => {
+    // The schema is a plain z.object(), so Zod STRIPS undeclared keys rather
+    // than erroring. That is the mechanism this block guards against: the
+    // published @uluops/ops-mcp shipped 0.16.x–0.17.1 with cluster_key
+    // undeclared, so every external save_run silently recorded NULL
+    // convergence (tracker issue 105c478f). Assert the surviving VALUE, never
+    // `.success` alone — a stripped key still parses successfully.
+    it('survives parse with its value intact', () => {
+      const result = RecommendationSchema.safeParse({
+        ...validRecommendation,
+        cluster_key: 'auth-refresh-unhandled-rejection',
+      });
+      expect(result.success).toBe(true);
+      if (result.success) {
+        expect(result.data.cluster_key).toBe('auth-refresh-unhandled-rejection');
+      }
+    });
+
+    it('control: an undeclared key IS stripped — proving the value assertion above can fail', () => {
+      const result = RecommendationSchema.safeParse({
+        ...validRecommendation,
+        not_a_declared_key: 'would be silently lost',
+      });
+      expect(result.success).toBe(true);
+      if (result.success) {
+        expect(result.data).not.toHaveProperty('not_a_declared_key');
+      }
+    });
+
+    it('rejects an empty string and anything over 64 chars', () => {
+      expect(RecommendationSchema.safeParse({ ...validRecommendation, cluster_key: '' }).success).toBe(false);
+      expect(RecommendationSchema.safeParse({ ...validRecommendation, cluster_key: 'k'.repeat(65) }).success).toBe(false);
+      expect(RecommendationSchema.safeParse({ ...validRecommendation, cluster_key: 'k'.repeat(64) }).success).toBe(true);
+    });
+
+    it('is optional — a pipeline with no adjudicating stage omits it', () => {
+      const result = RecommendationSchema.safeParse(validRecommendation);
+      expect(result.success).toBe(true);
+      if (result.success) {
+        expect(result.data.cluster_key).toBeUndefined();
+      }
+    });
+  });
 });

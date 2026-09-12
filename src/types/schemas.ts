@@ -265,6 +265,26 @@ export const RecommendationSchema = z
     classified_by: ClassifierSchema.optional().describe('Classification source'),
     secondary_failure_codes: z.array(z.string()).optional().describe('Secondary failure codes'),
     taxonomy_version: z.string().optional().describe('Taxonomy version used'),
+    // Orchestrator-declared convergence (tracker migration 076). Within-run only.
+    //
+    // Load-bearing that this is declared: the schema is a plain z.object(), so
+    // Zod STRIPS unknown keys rather than erroring. This package shipped
+    // 0.16.x–0.17.1 with cluster_key undeclared while the sibling
+    // ops-uluops-mcp client declared it — so every save_run through the
+    // published @uluops/ops-mcp had the key silently deleted here and the
+    // tracker recorded NULL, which it documents as "a stage was declared and
+    // silently stopped working". The transport manufactured the tracker's
+    // collapsing-pipeline signature (tracker issue 105c478f, 2026-09-11).
+    // Guarded by the value-asserting tests in __tests__/schemas.test.ts and
+    // __tests__/tool-handlers.test.ts; do not remove as unused.
+    cluster_key: z
+      .string()
+      .min(1)
+      .max(64)
+      .optional()
+      .describe(
+        'Within-run convergence cluster. Recommendations sharing this in one run are the same adjudicated defect seen by different agents. Omit when the pipeline has no adjudicating stage.'
+      ),
   })
   .describe('A single issue or recommendation from validation');
 export type Recommendation = z.infer<typeof RecommendationSchema>;

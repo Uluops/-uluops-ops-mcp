@@ -131,7 +131,14 @@ save_run({
     // do not fabricate a score. They are stored as null, not 0/100.
     { name: "aristotle-generator", decision: "ACTUALIZED" }
   ],
-  recommendations: [{ agent: "code-validator", title: "Fix lint error", priority: "suggested" }]
+  recommendations: [
+    { agent: "code-validator", title: "Fix lint error", priority: "suggested" },
+    // Two agents, one adjudicated defect: give both rows the same cluster_key
+    // (≤64 chars) so the tracker records within-run convergence instead of
+    // two unrelated findings. Omit it when the pipeline has no adjudicating stage.
+    { agent: "security-analyst", title: "Refresh token replayable", priority: "high", cluster_key: "auth-refresh-replay" },
+    { agent: "circumvention-forecaster", title: "Refresh token reusable after rotation", priority: "high", cluster_key: "auth-refresh-replay" }
+  ]
 })
 
 // Query open issues for a project

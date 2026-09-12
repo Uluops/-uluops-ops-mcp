@@ -5,6 +5,36 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.17.2] - 2026-09-11
+
+### Fixed — `cluster_key` was silently stripped from every recommendation on `save_run` / `update_run` / `validate_run`
+
+`RecommendationSchema` (`src/types/schemas.ts`) now declares `cluster_key` (string, 1–64 chars,
+optional) — the orchestrator-declared within-run convergence cluster from tracker migration 076,
+already declared by the sibling `ops-uluops-mcp` client since 2.0.x. This package never had it.
+
+Why it mattered: the schema is a plain `z.object()`, so Zod **strips** undeclared keys rather than
+erroring. An orchestrator that set `cluster_key` on two agents' recommendations got a `200`, and the
+SDK received both rows with `clusterKey: undefined`; the tracker recorded `NULL` convergence, which
+it reads as "a stage was declared and silently stopped working". The transport was manufacturing the
+tracker's collapsing-pipeline signature. This is the copy `npm install @uluops/ops-mcp` resolves to
+and the one the docs tell external users to install, so every external run since 0.16.x was affected.
+
+Guarded by value-asserting tests (`__tests__/schemas.test.ts`, `__tests__/tool-handlers.test.ts`):
+the handler test proves two agents' rows reach the SDK with the same `clusterKey`, and a control
+proves an undeclared key still *is* stripped — so the assertion can fail. `.success` alone cannot
+catch this class; a stripped key parses successfully. Found during the 2026-09-11 D2 naming census
+(`uluops-specifications/brand/marketing/d2-recommendations-naming-census-2026-09-11.md` §6.1);
+tracker issue `105c478f`. The two MCP copies still carry separate schema modules — this is the
+second recorded recommendation-schema asymmetry between them.
+
+### Security
+
+- Transitive `fast-uri` 3.1.5 → 3.1.7 (four SSRF / host-confusion advisories, GHSA-5jgf-p345-68v8 et al.,
+  via `@modelcontextprotocol/sdk → ajv`) and `qs` 6.15.2 → 6.16.0 — lockfile-only, within range. The
+  `prepublishOnly` audit gate (`--audit-level=high`) refused 0.17.2 until this landed, which is the gate
+  working. `hono` moderates remain under the deliberate `overrides` pin.
+
 ## [0.17.1] - 2026-09-10
 
 ### Fixed — `maxEgressBytes` was silently capping args on 26 of 51 tools

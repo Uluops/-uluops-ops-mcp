@@ -507,6 +507,38 @@ describe('Tool Handlers', () => {
       expect(call.recommendations[0].lineNumber).toBe(42);
     });
 
+    it('carries cluster_key through to the SDK as clusterKey (not stripped in transit)', async () => {
+      mockOpsClient.runs.save.mockResolvedValue({
+        run_id: TEST_UUID_1,
+        run_number: 1,
+        issues_created: 2,
+        issues_updated: 0,
+      });
+
+      await handler({
+        project: 'test-project',
+        workflow_type: 'security-audit',
+        agents: [
+          { name: 'security-analyst', score: 70, decision: 'CONDITIONAL' },
+          { name: 'circumvention-forecaster', score: 72, decision: 'CONDITIONAL' },
+        ],
+        recommendations: [
+          { agent: 'security-analyst', title: 'Token replay on refresh', priority: 'high', cluster_key: 'auth-refresh-replay' },
+          { agent: 'circumvention-forecaster', title: 'Refresh token reusable after rotation', priority: 'high', cluster_key: 'auth-refresh-replay' },
+        ],
+      });
+
+      const call = mockOpsClient.runs.save.mock.calls[0][0];
+      // Two agents, one adjudicated defect: both rows must reach the SDK with
+      // the same clusterKey. A schema that does not declare cluster_key parses
+      // this input successfully and delivers `undefined` here — which the
+      // tracker records as NULL and reads as a collapsing pipeline.
+      expect(call.recommendations.map((r: { clusterKey?: string }) => r.clusterKey)).toEqual([
+        'auth-refresh-replay',
+        'auth-refresh-replay',
+      ]);
+    });
+
     it('should reject missing required fields', async () => {
       const result = (await handler({
         project: 'test-project',
