@@ -28,9 +28,9 @@ export function registerSoftDeleteProjectTool(
     'soft_delete_project',
     'Soft delete a project (can be restored later). Requires confirmation.',
     SoftDeleteProjectInputSchema.shape,
-    createToolHandler(SoftDeleteProjectInputSchema, (n) => {
+    createToolHandler(SoftDeleteProjectInputSchema, (n, scope) => {
       const { project, ...input } = n;
-      return opsClient.projects.softDelete(project as string, input);
+      return opsClient.projects.softDelete(project as string, input, scope);
     }, { toolName: 'soft_delete_project' })
   );
 }

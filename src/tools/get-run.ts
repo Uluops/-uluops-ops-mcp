@@ -26,8 +26,8 @@ export function registerGetRunTool(
     'get_run',
     'Get a run by UUID.',
     GetRunInputSchema.shape,
-    createToolHandler(GetRunInputSchema, (n) =>
-      opsClient.runs.get(n['runId'] as string),
+    createToolHandler(GetRunInputSchema, (n, scope) =>
+      opsClient.runs.get(n['runId'] as string, scope),
       { toolName: 'get_run' }
     )
   );

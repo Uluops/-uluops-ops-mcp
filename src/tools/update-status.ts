@@ -49,8 +49,8 @@ export function registerUpdateStatusTool(
     'update_status',
     'Update issue status. Identify by ID (preferred), fingerprint, or file_path+title.',
     UpdateStatusInputSchema.shape,
-    createToolHandler(UpdateStatusInputSchema, (n) =>
-      opsClient.projects.bulkUpdateIssueStatus(n['project'], n['updates']),
+    createToolHandler(UpdateStatusInputSchema, (n, scope) =>
+      opsClient.projects.bulkUpdateIssueStatus(n['project'], n['updates'], scope),
       { toolName: 'update_status' }
     )
   );

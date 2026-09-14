@@ -30,6 +30,6 @@ export function registerArchiveRunsTool(
     'archive_runs',
     'Archive old runs without deletion. Specify before_run_number, before_date, or keep_last to select runs. Archived runs remain queryable.',
     ArchiveRunsInputSchema.shape,
-    createToolHandler(ArchiveRunsInputSchema, (n) => opsClient.runs.archive(n), { toolName: 'archive_runs' })
+    createToolHandler(ArchiveRunsInputSchema, (n, scope) => opsClient.runs.archive(n, scope), { toolName: 'archive_runs' })
   );
 }

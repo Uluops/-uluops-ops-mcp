@@ -29,9 +29,9 @@ export function registerListRunsTool(
     'list_runs',
     'List runs for a project.',
     ListRunsInputSchema.shape,
-    createToolHandler(ListRunsInputSchema, (n) => {
+    createToolHandler(ListRunsInputSchema, (n, scope) => {
       const { project, ...query } = n;
-      return opsClient.runs.listByProject(project as string, query);
+      return opsClient.runs.listByProject(project as string, query, scope);
     }, { toolName: 'list_runs' })
   );
 }

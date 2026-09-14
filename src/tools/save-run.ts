@@ -63,7 +63,7 @@ export function registerSaveRunTool(
     SaveRunInputSchema.shape,
     createToolHandler(
       SaveRunInputSchema,
-      (n) => opsClient.runs.save(n, { _skipClientValidation: true }),
+      (n, scope) => opsClient.runs.save(n, { _skipClientValidation: true, ...scope }),
       {
         toolName: 'save_run',
         preProcess: (input) => ({

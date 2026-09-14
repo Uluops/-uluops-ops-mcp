@@ -84,7 +84,7 @@ export function registerPreviewUpdateRunTool(
     'preview_update_run',
     'Read-only preview of an analysis-bearing update_run under the requested record_write_mode (default replace): reports, per agent named in the payload, what the write would supersede, create, and — under replace — retire by omission (wouldRetireRecordIds in the camelCase response; always empty under merge, which cannot retire). Nothing is written. Accepts analysis concerns only; any other update field is rejected by name. Identify run by either run_id OR (project + run_number).',
     PreviewUpdateRunInputSchema.shape,
-    createToolHandler(PreviewUpdateRunInputSchema, (n) => {
+    createToolHandler(PreviewUpdateRunInputSchema, (n, scope) => {
       const offending = FORBIDDEN_PREVIEW_FIELDS.filter(
         (k) => (n as Record<string, unknown>)[toCamel(k)] !== undefined
       );
@@ -97,9 +97,9 @@ export function registerPreviewUpdateRunTool(
       }
       const runId = n['runId'];
       if (typeof runId === 'string') {
-        return opsClient.runs.previewUpdateById(runId, n, { _skipClientValidation: true });
+        return opsClient.runs.previewUpdateById(runId, n, { _skipClientValidation: true, ...scope });
       }
-      return opsClient.runs.previewUpdate(n, { _skipClientValidation: true });
+      return opsClient.runs.previewUpdate(n, { _skipClientValidation: true, ...scope });
     }, { toolName: 'preview_update_run' })
   );
 }

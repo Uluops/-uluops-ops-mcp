@@ -26,8 +26,8 @@ export function registerGetRunAnalysisTool(
     'get_run_analysis',
     'Get structured analysis records and summaries for a specific run. Returns convention inventories, tension maps, decay vectors, system metrics, and epistemic assessments.',
     GetRunAnalysisInputSchema.shape,
-    createToolHandler(GetRunAnalysisInputSchema, (n) =>
-      opsClient.runs.getAnalysis(n['runId'] as string),
+    createToolHandler(GetRunAnalysisInputSchema, (n, scope) =>
+      opsClient.runs.getAnalysis(n['runId'] as string, scope),
       { toolName: 'get_run_analysis' }
     )
   );

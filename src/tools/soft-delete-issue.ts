@@ -26,8 +26,8 @@ export function registerSoftDeleteIssueTool(
     'soft_delete_issue',
     'Soft-delete an active issue. Sets deleted_at; reversible via restore_issue.',
     SoftDeleteIssueInputSchema.shape,
-    createToolHandler(SoftDeleteIssueInputSchema, (n) =>
-      opsClient.issues.softDelete(n['issueId'] as string),
+    createToolHandler(SoftDeleteIssueInputSchema, (n, scope) =>
+      opsClient.issues.softDelete(n['issueId'] as string, scope),
       { toolName: 'soft_delete_issue' }
     )
   );

@@ -33,7 +33,7 @@ export function registerDeleteProjectTool(
     DeleteProjectInputSchema.shape,
     createToolHandler(
       DeleteProjectInputSchema,
-      (n) => opsClient.projects.delete(n['project'], n),
+      (n, scope) => opsClient.projects.delete(n['project'], n, scope),
       {
         toolName: 'delete_project',
         preProcess: (input) => {

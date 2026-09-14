@@ -15,6 +15,13 @@ export interface ApiClientConfig {
   apiKey?: string;
   /** Org slug for multi-tenancy — sets X-Org-Slug header on all requests */
   orgSlug?: string;
+  /**
+   * D15 (spec v0.1.14, security audit run #187): the orgs this server may
+   * EVER target — explicit `org`, workspace file or env. `undefined` = unset =
+   * unbounded (every org the key holder belongs to; the boot log warns).
+   * `personal` is always allowed. Bounds, never defaults: D13 stands.
+   */
+  orgAllow?: string[];
   /** Request timeout in milliseconds (default: 30000) */
   timeout: number;
   /** Number of retry attempts (default: 3) */

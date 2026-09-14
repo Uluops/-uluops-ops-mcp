@@ -27,8 +27,8 @@ export function registerDeleteRunTool(
     'delete_run',
     'Delete a run. Requires confirm=true.',
     DeleteRunInputSchema.shape,
-    createToolHandler(DeleteRunInputSchema, (n) =>
-      opsClient.runs.delete(n['runId'] as string),
+    createToolHandler(DeleteRunInputSchema, (n, scope) =>
+      opsClient.runs.delete(n['runId'] as string, scope),
       { toolName: 'delete_run' }
     )
   );

@@ -26,8 +26,8 @@ export function registerRestoreProjectTool(
     'restore_project',
     'Restore a soft-deleted project. Reactivates the project and all its associated runs, issues, and analytics data.',
     RestoreProjectInputSchema.shape,
-    createToolHandler(RestoreProjectInputSchema, (n) =>
-      opsClient.projects.restore(n['project'] as string),
+    createToolHandler(RestoreProjectInputSchema, (n, scope) =>
+      opsClient.projects.restore(n['project'] as string, scope),
       { toolName: 'restore_project' }
     )
   );

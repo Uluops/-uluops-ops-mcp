@@ -4,6 +4,7 @@
 
 import type { OpsClient } from '@uluops/ops-sdk';
 import type { McpServerToolRegistration } from '../types/index.js';
+import { withOrgArgument } from '../utils/org-scope.js';
 
 // P0 Core Tools
 import { registerSaveRunTool } from './save-run.js';
@@ -74,9 +75,12 @@ import { registerGetAgentMatrixTool } from './get-agent-matrix.js';
  * Register all MCP tools (P0 + P1 + P2)
  */
 export function registerAllTools(
-  server: McpServerToolRegistration,
+  rawServer: McpServerToolRegistration,
   opsClient: OpsClient
 ): void {
+  // Every tool advertises `org` and the D2 sentence (spec §3.3); the handler
+  // side of the same seam is in utils/tool-handler.ts.
+  const server = withOrgArgument(rawServer);
   // P0 Core tools
   registerSaveRunTool(server, opsClient);
   registerQueryIssuesTool(server, opsClient);

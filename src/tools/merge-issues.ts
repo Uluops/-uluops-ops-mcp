@@ -24,9 +24,9 @@ export function registerMergeIssuesTool(
     'merge_issues',
     'Merge multiple issues into a target issue. Migrates occurrences and marks source issues as merged.',
     MergeIssuesInputSchema.shape,
-    createToolHandler(MergeIssuesInputSchema, (n) => {
+    createToolHandler(MergeIssuesInputSchema, (n, scope) => {
       const { project, ...input } = n;
-      return opsClient.projects.mergeIssues(project as string, input);
+      return opsClient.projects.mergeIssues(project as string, input, scope);
     }, { toolName: 'merge_issues' })
   );
 }

@@ -29,8 +29,8 @@ export function registerGetIssueDetailsTool(
     'get_issue_details',
     'Get complete issue details: the issue plus all of its occurrences, notes, and status/regression history.',
     GetIssueDetailsInputSchema.shape,
-    createToolHandler(GetIssueDetailsInputSchema, (n) =>
-      opsClient.issues.getDetails(n['id'] as string),
+    createToolHandler(GetIssueDetailsInputSchema, (n, scope) =>
+      opsClient.issues.getDetails(n['id'] as string, scope),
       { toolName: 'get_issue_details' }
     )
   );

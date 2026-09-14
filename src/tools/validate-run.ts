@@ -56,6 +56,6 @@ export function registerValidateRunTool(
     'validate_run',
     'Preview what save_run would do without modifying the database. Returns would_create, would_update, would_regress, would_create_analysis_records, would_create_analysis_summaries, and validation_errors. Accepts the same shape as save_run including optional analysis_records and analysis_summary so the dry-run faithfully reflects the full set of side effects.',
     ValidateRunInputSchema.shape,
-    createToolHandler(ValidateRunInputSchema, (n) => opsClient.runs.validate(n), { toolName: 'validate_run' })
+    createToolHandler(ValidateRunInputSchema, (n, scope) => opsClient.runs.validate(n, scope), { toolName: 'validate_run' })
   );
 }

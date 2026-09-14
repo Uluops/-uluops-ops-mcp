@@ -26,6 +26,6 @@ export function registerCreateProjectTool(
     'create_project',
     'Create a new project for tracking validation runs, issues, and analytics. Returns the created project with its UUID.',
     CreateProjectInputSchema.shape,
-    createToolHandler(CreateProjectInputSchema, (n) => opsClient.projects.create(n), { toolName: 'create_project' })
+    createToolHandler(CreateProjectInputSchema, (n, scope) => opsClient.projects.create(n, scope), { toolName: 'create_project' })
   );
 }

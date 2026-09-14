@@ -24,6 +24,6 @@ export function registerListProjectsTool(
     'list_projects',
     'List all active projects (excludes soft-deleted).',
     ListProjectsInputSchema.shape,
-    createToolHandler(ListProjectsInputSchema, () => opsClient.projects.list(), { toolName: 'list_projects' })
+    createToolHandler(ListProjectsInputSchema, (_n, scope) => opsClient.projects.list(scope), { toolName: 'list_projects' })
   );
 }

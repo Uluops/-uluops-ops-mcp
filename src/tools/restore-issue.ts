@@ -26,8 +26,8 @@ export function registerRestoreIssueTool(
     'restore_issue',
     'Restore a soft-deleted issue.',
     RestoreIssueInputSchema.shape,
-    createToolHandler(RestoreIssueInputSchema, (n) =>
-      opsClient.issues.restore(n['issueId'] as string),
+    createToolHandler(RestoreIssueInputSchema, (n, scope) =>
+      opsClient.issues.restore(n['issueId'] as string, scope),
       { toolName: 'restore_issue' }
     )
   );

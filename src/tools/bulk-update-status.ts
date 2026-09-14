@@ -34,8 +34,8 @@ export function registerBulkUpdateStatusTool(
     'bulk_update_status',
     'Bulk update multiple issue statuses in a single transaction. Records status history for each change.',
     BulkUpdateStatusInputSchema.shape,
-    createToolHandler(BulkUpdateStatusInputSchema, (n) =>
-      opsClient.issues.bulkUpdateStatus(n['updates']),
+    createToolHandler(BulkUpdateStatusInputSchema, (n, scope) =>
+      opsClient.issues.bulkUpdateStatus(n['updates'], scope),
       { toolName: 'bulk_update_status' }
     )
   );

@@ -26,8 +26,8 @@ export function registerUndoIssueStatusTool(
     'undo_issue_status',
     'Undo the last status change on an issue.',
     UndoIssueStatusInputSchema.shape,
-    createToolHandler(UndoIssueStatusInputSchema, (n) =>
-      opsClient.issues.undoLastChange(n['issueId'] as string),
+    createToolHandler(UndoIssueStatusInputSchema, (n, scope) =>
+      opsClient.issues.undoLastChange(n['issueId'] as string, scope),
       { toolName: 'undo_issue_status' }
     )
   );

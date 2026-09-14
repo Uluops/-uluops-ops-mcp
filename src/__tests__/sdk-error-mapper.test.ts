@@ -5,7 +5,7 @@
  * The mapper now preserves error context while only redacting actual credential values.
  */
 
-import { describe, it, expect } from 'vitest';
+import { OpsApiError,  ForbiddenError,  NotFoundError,  describe, it, expect } from 'vitest';
 import { mapSdkErrorToMcp, mapZodErrorToMcp } from '../client/sdk-error-mapper.js';
 import {
   NotFoundError,
@@ -539,6 +539,71 @@ describe('SDK Error Mapper', () => {
     it('should handle non-Error input gracefully', () => {
       const result = mapZodErrorToMcp('not an error');
       expect(getErrorText(result)).toBe('Invalid input parameters');
+    });
+  });
+
+  describe('org routing (spec D3/S6, D4, D14) — terminal refusals never solicit the org-less retry', () => {
+    it('INSUFFICIENT_ORG_ROLE: API body verbatim, terminal, applied:false, and NOT the generic "verify the org context"', () => {
+      const error = new ForbiddenError('Not applied. You are `viewer` in `acme`; this write requires `publisher`. Do not retry without `org` — an org-less retry would act on your personal org, not acme.');
+      Object.assign(error as unknown as Record<string, unknown>, { code: 'INSUFFICIENT_ORG_ROLE', details: { currentRole: 'viewer', requiredRole: 'publisher', orgSlug: 'acme', applied: false } });
+      const p = getErrorPayload(mapSdkErrorToMcp(error, 'save_run'));
+      expect(p.status).toBe(403);
+      expect(p.code).toBe('INSUFFICIENT_ORG_ROLE');
+      expect(p.terminal).toBe(true);
+      expect(p.applied).toBe(false);
+      expect(p.org).toBe('acme');
+      expect(p.error).toMatch(/^Not applied\./);
+      const s = p.suggestion as string;
+      expect(s).toMatch(/do NOT retry this call without `org`/);
+      expect(s.toLowerCase()).not.toContain('verify the id');
+      expect(s.toLowerCase()).not.toContain('verify the org context');
+    });
+
+    it('ORG_ACCESS_DENIED: terminal, forbids the org-less retry, does not suggest switching org', () => {
+      const error = new ForbiddenError('You are not a member of this organization');
+      Object.assign(error as unknown as Record<string, unknown>, { code: 'ORG_ACCESS_DENIED' });
+      const p = getErrorPayload(mapSdkErrorToMcp(error, 'save_run'));
+      expect(p.terminal).toBe(true);
+      expect(p.applied).toBe(false);
+      expect(p.suggestion as string).toMatch(/Do NOT retry without `org`/);
+      expect((p.suggestion as string).toLowerCase()).not.toContain('verify the org context');
+    });
+
+    it('ORG_NOT_FOUND (404) and ORG_SUSPENDED (403): terminal, not applied, forbid the org-less retry (2.1.1, run #187 A6)', () => {
+      const nf = new NotFoundError('Organization not found');
+      Object.assign(nf as unknown as Record<string, unknown>, { code: 'ORG_NOT_FOUND' });
+      const p1 = getErrorPayload(mapSdkErrorToMcp(nf, 'save_run'));
+      expect(p1.status).toBe(404);
+      expect(p1.terminal).toBe(true);
+      expect(p1.applied).toBe(false);
+      expect(p1.suggestion as string).toMatch(/Do NOT retry without `org`/);
+      const su = new ForbiddenError('This organization is suspended');
+      Object.assign(su as unknown as Record<string, unknown>, { code: 'ORG_SUSPENDED' });
+      const p2 = getErrorPayload(mapSdkErrorToMcp(su, 'save_run'));
+      expect(p2.status).toBe(403);
+      expect(p2.terminal).toBe(true);
+      expect(p2.applied).toBe(false);
+      expect((p2.suggestion as string).toLowerCase()).not.toContain('verify the org context');
+      // CONTROL: a plain 404 on a run keeps the generic, non-terminal remedy
+      const plain = getErrorPayload(mapSdkErrorToMcp(new NotFoundError('Run not found'), 'get_run'));
+      expect(plain.terminal).toBeUndefined();
+    });
+
+    it('PROJECT_REHOMED (410): the ONE refusal that names the org to pass, and forbids the fork', () => {
+      const error = new OpsApiError(410, 'Project has been re-homed', 'PROJECT_REHOMED', { project_id: 'p1', target_org: { id: 'o2', slug: 'ulu-labs' } });
+      const p = getErrorPayload(mapSdkErrorToMcp(error, 'save_run'));
+      expect(p.status).toBe(410);
+      expect(p.code).toBe('PROJECT_REHOMED');
+      expect(p.terminal).toBe(true);
+      expect(p.target_org).toBe('ulu-labs');
+      expect(p.suggestion as string).toContain("org: 'ulu-labs'");
+      expect(p.suggestion as string).toMatch(/Do not create a new project/);
+    });
+
+    it('CONTROL: a plain 403 with no code still gets the generic text (the new branches are code-keyed)', () => {
+      const p = getErrorPayload(mapSdkErrorToMcp(new ForbiddenError('Access denied'), 'save_run'));
+      expect(p.terminal).toBeUndefined();
+      expect(p.suggestion as string).toContain('verify the id(s)');
     });
   });
 });

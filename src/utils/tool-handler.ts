@@ -6,9 +6,13 @@
  */
 
 import { z } from 'zod';
+import { resolveWorkspaceOrg, type OrgScopedOptions } from '@uluops/ops-sdk';
 import { mapSdkErrorToMcp, mapZodErrorToMcp } from '../client/sdk-error-mapper.js';
+import { ORG_ARG_NAME } from './org-scope.js';
 import { normalizeKeys } from './normalize-keys.js';
 import { createSuccessResponse, type McpToolResponse } from '../types/index.js';
+import { emitOrgCall, formatOrgEcho, getOrgAllowlist, isOrgAllowed, UNTRUSTED_CONTENT_NOTICE, type OrgCallRecord } from './org-call-log.js';
+
 
 /**
  * Coerce string values to numbers for fields that the Zod schema expects as numeric.
@@ -92,8 +96,10 @@ function isShortCircuit(value: unknown): value is ShortCircuit {
  *
  * @param schema - Zod schema for input validation (snake_case fields)
  * @param sdkCall - Function that receives the normalized (camelCase) input as
- *   `Record<string, unknown>` and calls the SDK. The runtime contract is upheld
- *   by Zod validation immediately upstream.
+ *   `Record<string, unknown>` and the per-call org scope, and calls the SDK.
+ *   Forward `scope` as the operation's trailing `options` — that is how `org`
+ *   becomes the X-Org-Slug header. The runtime contract is upheld by Zod
+ *   validation immediately upstream.
  * @returns MCP-compatible handler function
  *
  * @example
@@ -117,7 +123,7 @@ export function createToolHandler<TInput>(
   // an internal utility (not re-exported from src/index.ts), so this `any`
   // does not leak to the public npm surface. (no-explicit-any is disabled for
   // this file via the eslint.config.js file-pattern override.)
-  sdkCall: (normalized: any) => Promise<unknown>,
+  sdkCall: (normalized: any, scope: OrgScopedOptions | undefined) => Promise<unknown>,
   options?: {
     /** Tool name for error context. Included in error responses to help MCP clients diagnose failures. */
     toolName?: string;
@@ -133,7 +139,60 @@ export function createToolHandler<TInput>(
 
   return async (args: unknown): Promise<McpToolResponse> => {
     try {
-      let input = schema.parse(coerceNumericFields(args, schema));
+      // Org routing (spec §3.3 / D13): lift `org` out of the RAW args before Zod
+      // sees them — a tool's schema does not declare it, Zod strips unknown keys,
+      // and the API's non-strict body schemas would strip a leaked one silently.
+      // Resolution goes through the SDK (explicit > nearest .uluops.json above
+      // the session's launch directory > ULUOPS_ORG_SLUG > personal); a malformed
+      // value or a forbidden workspace file throws InputValidationError, which
+      // the mapper surfaces as a 400 — loud, never a silently wrong org.
+      const { [ORG_ARG_NAME]: rawOrg, ...bodyArgs } =
+        (typeof args === 'object' && args !== null ? args : {}) as Record<string, unknown>;
+      const resolved = resolveWorkspaceOrg({
+        // A non-string `org` (number, object) is passed as '' so the resolver's
+        // slug check rejects it with a named InputValidationError — never coerced.
+        explicit: typeof rawOrg === 'string' ? rawOrg : rawOrg === undefined ? undefined : '',
+        cwd: process.cwd(),
+        env: process.env,
+      });
+      // `undefined` (not `{}`) when personal: nothing on the wire, and the SDK
+      // call receives exactly what a caller with no org would have passed.
+      const scope: OrgScopedOptions | undefined = resolved.org !== undefined ? { org: resolved.org } : undefined;
+      const orgRecord: OrgCallRecord = {
+        tool: toolName ?? 'unknown',
+        org: resolved.org ?? 'personal',
+        orgSource: resolved.source,
+        ...(resolved.path !== undefined ? { orgFile: resolved.path } : {}),
+      };
+      // D15: refuse BEFORE the SDK call when the org is outside the allowlist.
+      // Terminal and not applied — and the suggestion does not say "retry
+      // without org", because for an allowlist refusal the right move is to
+      // stop and tell the user, not to file the work personally.
+      if (!isOrgAllowed(resolved.org)) {
+        const allowed = getOrgAllowlist() ?? [];
+        emitOrgCall({ ...orgRecord, refused: 'not-allowed' });
+        return {
+          content: [{ type: 'text', text: JSON.stringify({
+            error: `Org \`${String(resolved.org)}\` is not in this server's allowlist (ULUOPS_ORG_ALLOW: ${allowed.join(', ') || '(empty)'}). Nothing was applied.`,
+            ...(toolName !== undefined ? { tool: toolName } : {}),
+            code: 'ORG_NOT_ALLOWED',
+            status: 403,
+            terminal: true,
+            applied: false,
+            org: resolved.org,
+            org_source: resolved.source,
+            allowed_orgs: allowed,
+            suggestion:
+              'Terminal — this MCP server may only act in the orgs its operator listed. Do NOT retry with a different org ' +
+              'and do NOT retry without `org`. Tell the user which org was named and where it came from; the operator ' +
+              'adds it to ULUOPS_ORG_ALLOW in the server registration if it belongs there.',
+          }) }],
+          isError: true,
+        };
+      }
+      emitOrgCall(orgRecord);
+
+      let input = schema.parse(coerceNumericFields(bodyArgs, schema));
 
       if (options?.preProcess) {
         const preResult = options.preProcess(input);
@@ -144,8 +203,16 @@ export function createToolHandler<TInput>(
       }
 
       const normalized = normalizeKeys(input) as Record<string, unknown>;
-      const result = await sdkCall(normalized);
-      return createSuccessResponse(result);
+      const result = await sdkCall(normalized, scope);
+      const response = createSuccessResponse(result);
+      // Echo where it landed as a SECOND content block: the first block stays
+      // the SDK payload byte-for-byte (consumers parse it), and the model sees
+      // the destination beside every result, reads included (D12 — a read
+      // against the wrong org is silently wrong data).
+      response.content.push({ type: 'text', text: formatOrgEcho(orgRecord) });
+      // D16: the untrusted-content notice, last, on every success.
+      response.content.push({ type: 'text', text: UNTRUSTED_CONTENT_NOTICE });
+      return response;
     } catch (error) {
       // Log errors to stderr for debugging (MCP transport uses stdout)
       const errorMsg = error instanceof Error ? error.message : String(error);

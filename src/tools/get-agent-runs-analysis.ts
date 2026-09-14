@@ -30,7 +30,7 @@ export function registerGetAgentRunsAnalysisTool(
     'get_agent_runs_analysis',
     'Get analysis summaries with run context for a specific agent. Returns decision, score, category scores, system metrics, epistemic assessment alongside run number, timestamp, and workflow type.',
     GetAgentRunsAnalysisInputSchema.shape,
-    createToolHandler(GetAgentRunsAnalysisInputSchema, (n) =>
+    createToolHandler(GetAgentRunsAnalysisInputSchema, (n, scope) =>
       opsClient.runs.getAgentRunsAnalysis(
         n['agentName'] as string,
         {
@@ -38,7 +38,8 @@ export function registerGetAgentRunsAnalysisTool(
           decision: n['decision'] as string | undefined,
           limit: n['limit'] as number | undefined,
           offset: n['offset'] as number | undefined,
-        }
+        },
+        scope
       ),
       { toolName: 'get_agent_runs_analysis' }
     )

@@ -8,7 +8,7 @@
 
 import { SecureMcpServer } from 'mcp-secure-server';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
-import { OpsClient } from '@uluops/ops-sdk';
+import { OpsClient, resolveWorkspaceOrg } from '@uluops/ops-sdk';
 import { createRequire } from 'module';
 
 import { loadConfig, validateConfig, apiKeyFingerprint } from './config/index.js';
@@ -16,6 +16,7 @@ import { toolRegistry } from './config/tool-registry.js';
 import { registerAllTools } from './tools/index.js';
 import { registerAllResources } from './resources/index.js';
 import { createLogger } from './utils/logger.js';
+import { setOrgCallSink, setOrgAllowlist } from './utils/org-call-log.js';
 import type { Logger } from './utils/logger.js';
 import type { McpServerToolRegistration, ToolHandler } from './types/index.js';
 import type { ZodRawShape } from 'zod';
@@ -184,7 +185,57 @@ async function main(): Promise<void> {
     logger.warn(warning);
   }
 
+  const orgDefault = ((): { org: string | undefined; source: string; path?: string; error?: string } => {
+
+    try {
+
+      return resolveWorkspaceOrg({ cwd: process.cwd(), env: process.env });
+
+    } catch (err) {
+
+      return { org: undefined, source: 'invalid' as const, error: err instanceof Error ? err.message : String(err) };
+
+    }
+
+  })();
+
+  // Per-call org provenance → the structured log (security audit run #187 F8).
+
+  setOrgCallSink((record) => { logger.info('tool call org', { ...record }); });
+
+  // D15: bound the orgs this process may ever target. Unset = unbounded, and
+
+  // that is worth a warning every boot — the key is unbound and the `org`
+
+  // argument is model-chosen, so without a list every member org is reachable.
+
+  setOrgAllowlist(config.api.orgAllow);
+
+  if (config.api.orgAllow === undefined) {
+
+    logger.warn('ULUOPS_ORG_ALLOW is not set: this server may target ANY org the key holder is a member of (D15). Set it in the registration to bound that.');
+
+  }
+
   logger.info('Starting @uluops/ops-mcp server', {
+
+    // Where org-less calls will land, and why. `cwd` is the SESSION LAUNCH
+
+    // directory (S11): a session that wanders into another repo keeps this
+
+    // default until relaunched; the per-call `org` argument is the override.
+
+    orgDefault: orgDefault.org ?? 'personal',
+
+    orgSource: orgDefault.source,
+
+    orgAllow: config.api.orgAllow === undefined ? '(unbounded)' : config.api.orgAllow.join(','),
+
+    ...(orgDefault.path !== undefined ? { orgFile: orgDefault.path } : {}),
+
+    ...(orgDefault.error !== undefined ? { orgError: orgDefault.error } : {}),
+
+    cwd: process.cwd(),
     version,
     apiUrl: config.api.baseUrl ?? '(SDK default)',
     apiKeyFingerprint: apiKeyFingerprint(config.api.apiKey),
@@ -194,7 +245,11 @@ async function main(): Promise<void> {
   const opsClient = new OpsClient({
     baseUrl: config.api.baseUrl,
     apiKey: config.api.apiKey,
-    orgSlug: config.api.orgSlug,
+    // NOT orgSlug here (spec §3.3 / D13): the org is resolved PER CALL by the
+    // tool handler (explicit > nearest .uluops.json above this process's launch
+    // directory > ULUOPS_ORG_SLUG > personal). A constructor-level org could not
+    // be undone by a workspace file that says "personal", so the env fallback
+    // lives in the resolver instead. config.api.orgSlug is logged only.
     timeout: config.api.timeout,
     retries: config.api.retries,
   });

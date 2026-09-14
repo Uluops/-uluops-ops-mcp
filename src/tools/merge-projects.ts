@@ -37,8 +37,8 @@ export function registerMergeProjectsTool(
     'merge_projects',
     'Merge one project into another: runs and issues are re-keyed into the target, colliding issues deduplicated by fingerprint, and the source soft-deleted. Pairwise only — chain calls to consolidate several duplicates. Use dry_run:true first to preview. On 409 MERGE_LOCK_UNAVAILABLE, retry after the hinted delay; this tool does not auto-retry.',
     MergeProjectsInputSchema.shape,
-    createToolHandler(MergeProjectsInputSchema, (n) =>
-      opsClient.projects.mergeProjects(n),
+    createToolHandler(MergeProjectsInputSchema, (n, scope) =>
+      opsClient.projects.mergeProjects(n, scope),
     { toolName: 'merge_projects' })
   );
 }

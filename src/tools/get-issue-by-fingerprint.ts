@@ -27,8 +27,8 @@ export function registerGetIssueByFingerprintTool(
     'get_issue_by_fingerprint',
     'Get an issue by its SHA-256 fingerprint. Derivation (computable client-side): sha256 hex of components joined by "|" — normalized title, normalized agent name, then filePath and category only when present. Text normalization: NFC, lowercase, whitespace collapsed to single spaces, "|" characters removed, trimmed. filePath: backslashes to "/", leading/trailing slashes stripped, lowercased. Note the AGENT participates: the same finding from a different agent has a different fingerprint, and edit_issue retains the original fingerprint after a retitle.',
     GetIssueByFingerprintInputSchema.shape,
-    createToolHandler(GetIssueByFingerprintInputSchema, (n) =>
-      opsClient.issues.getByFingerprint(n['fingerprint'] as string, n['project'] as string),
+    createToolHandler(GetIssueByFingerprintInputSchema, (n, scope) =>
+      opsClient.issues.getByFingerprint(n['fingerprint'] as string, n['project'] as string, scope),
       { toolName: 'get_issue_by_fingerprint' }
     )
   );

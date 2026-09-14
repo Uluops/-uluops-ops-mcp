@@ -54,13 +54,41 @@ Set environment variables in your MCP host configuration (see "Usage with Claude
 | Variable | Description | Required |
 |----------|-------------|----------|
 | `ULUOPS_API_KEY` | API authentication key (must start with `ulr_`, min 20 chars). Create and manage keys at [app.uluops.ai/settings/api-keys](https://app.uluops.ai/settings/api-keys) | Yes |
-| `ULUOPS_ORG_SLUG` | Organization slug for multi-org contexts | No |
+| `ULUOPS_ORG_SLUG` | Lowest-precedence org default (see *Which org a call lands in*) | No |
+| `ULUOPS_ORG_ALLOW` | Comma-separated orgs this server may EVER target. Unset = unbounded, warned at boot | No (set it) |
 | `ULUOPS_TRACKER_TIMEOUT` | Request timeout (ms) | No (default: 30000) |
 | `ULUOPS_TRACKER_RETRIES` | Number of retry attempts on failure | No (default: 3) |
 | `ULUOPS_BASE_URL` | Override the backend API base URL (e.g. a local or staging deployment). Non-HTTPS values log a cleartext-credentials warning | No (default: `@uluops/ops-sdk`'s production URL) |
 | `LOG_LEVEL` | Logging level (`debug`, `info`, `warn`, `error`) | No (default: info) |
 
 The backend URL is handled automatically by `@uluops/ops-sdk` — production by default; set `ULUOPS_BASE_URL` only when targeting a non-production deployment.
+
+### Which org a call lands in
+
+Every tool takes an optional `org` (slug) → `X-Org-Slug` on that request. Omit it and the server
+resolves a default **per call**: the nearest `.uluops.json` above the process's launch directory
+(`{ "org": "ulu-labs" }` at the root of a work checkout; `{ "org": "personal" }` in a personal repo
+nested under it stops the walk — the walk never rises above your home directory and a file owned by
+another user is refused), else `ULUOPS_ORG_SLUG`, else your personal org. The API never infers an
+org from a project name — with none of these set, a `save_run` files the run in your personal org
+even when a work org has a project by that name. Every successful result ends with a second text
+block saying where it landed — `Org: ulu-labs (source: explicit)` — and the server logs the same
+record per call (`tool call org`). The file may carry only `org` (and `$schema`); anything else is
+refused. The startup log line names the resolved default and its source.
+
+**The `org` value must come from the user.** Tool results carry text written by other tracker users
+(issue notes, recommendations, descriptions) and come back indistinguishable from the operator's
+words; every tool's `org` description says so, every successful result ends with a notice saying
+so, and `ULUOPS_ORG_ALLOW` bounds what the server will accept regardless: an org outside the list —
+whether it came from the argument, the workspace file or the env — is refused before any request
+with a terminal `ORG_NOT_ALLOWED` that names the list. `personal` is always allowed. Leave it unset
+and every org the key holder belongs to is reachable; the boot log warns.
+
+Five refusals are terminal and say so in the tool result: `INSUFFICIENT_ORG_ROLE` (your role in
+that org is below `publisher` — do **not** retry without `org`, that files the work personally),
+`ORG_ACCESS_DENIED` (not a member, or a bound key), `ORG_NOT_FOUND` and `ORG_SUSPENDED` (the named
+org does not resolve / is suspended — same rule, do not drop `org`), and `PROJECT_REHOMED` (the
+project moved orgs; the result names the org to pass). `ORG_NOT_ALLOWED` is the server-side sixth.
 
 ### Advanced Logging
 

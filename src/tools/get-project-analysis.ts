@@ -31,7 +31,7 @@ export function registerGetProjectAnalysisTool(
     'get_project_analysis',
     'Get analysis summaries for a project over time. Shows system metrics, category scores, epistemic assessments, and audit implications from cognitive lens runs.',
     GetProjectAnalysisInputSchema.shape,
-    createToolHandler(GetProjectAnalysisInputSchema, (n) =>
+    createToolHandler(GetProjectAnalysisInputSchema, (n, scope) =>
       opsClient.runs.getProjectAnalysis(
         n['project'] as string,
         {
@@ -40,7 +40,8 @@ export function registerGetProjectAnalysisTool(
           decision: n['decision'] as string | undefined,
           limit: n['limit'] as number | undefined,
           offset: n['offset'] as number | undefined,
-        }
+        },
+        scope
       ),
       { toolName: 'get_project_analysis' }
     )

@@ -27,8 +27,8 @@ export function registerGetLatestRunTool(
     'get_latest_run',
     'Get the latest run for a project.',
     GetLatestRunInputSchema.shape,
-    createToolHandler(GetLatestRunInputSchema, (n) =>
-      opsClient.runs.getLatest(n['project'] as string, n['workflowType'] as string | undefined),
+    createToolHandler(GetLatestRunInputSchema, (n, scope) =>
+      opsClient.runs.getLatest(n['project'] as string, n['workflowType'] as string | undefined, scope),
       { toolName: 'get_latest_run' }
     )
   );

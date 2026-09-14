@@ -72,9 +72,9 @@ export function registerEditIssueTool(
     'edit_issue',
     'Edit issue metadata. Can update title, priority, type, file_path, category, severity, failure_code, line_number. Does not change the fingerprint.',
     EditIssueInputSchema.shape,
-    createToolHandler(EditIssueInputSchema, (n) => {
+    createToolHandler(EditIssueInputSchema, (n, scope) => {
       const { issueId, ...input } = n;
-      return opsClient.issues.update(issueId as string, input);
+      return opsClient.issues.update(issueId as string, input, scope);
     }, { toolName: 'edit_issue' })
   );
 }

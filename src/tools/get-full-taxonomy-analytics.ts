@@ -28,8 +28,8 @@ export function registerGetFullTaxonomyAnalyticsTool(
     'get_full_taxonomy_analytics',
     'Get full taxonomy analytics with distribution by domain, severity, mode, and agent.',
     GetFullTaxonomyAnalyticsInputSchema.shape,
-    createToolHandler(GetFullTaxonomyAnalyticsInputSchema, (n) =>
-      opsClient.analytics.getFullTaxonomy(n),
+    createToolHandler(GetFullTaxonomyAnalyticsInputSchema, (n, scope) =>
+      opsClient.analytics.getFullTaxonomy(n, scope),
       { toolName: 'get_full_taxonomy_analytics' }
     )
   );

@@ -27,9 +27,9 @@ export function registerUpdateProjectTool(
     'update_project',
     'Update a project name. Identifies the project by current name or UUID, then applies the new name.',
     UpdateProjectInputSchema.shape,
-    createToolHandler(UpdateProjectInputSchema, (n) => {
+    createToolHandler(UpdateProjectInputSchema, (n, scope) => {
       const { project, ...input } = n;
-      return opsClient.projects.update(project as string, input);
+      return opsClient.projects.update(project as string, input, scope);
     }, { toolName: 'update_project' })
   );
 }

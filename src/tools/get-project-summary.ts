@@ -26,8 +26,8 @@ export function registerGetProjectSummaryTool(
     'get_project_summary',
     'Get current validation status summary including workflows, issues, and agent trends.',
     GetProjectSummaryInputSchema.shape,
-    createToolHandler(GetProjectSummaryInputSchema, (n) =>
-      opsClient.projects.getSummary(n['project'] as string),
+    createToolHandler(GetProjectSummaryInputSchema, (n, scope) =>
+      opsClient.projects.getSummary(n['project'] as string, scope),
       { toolName: 'get_project_summary' }
     )
   );

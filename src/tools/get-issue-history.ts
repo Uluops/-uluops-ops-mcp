@@ -26,8 +26,8 @@ export function registerGetIssueHistoryTool(
     'get_issue_history',
     'Get the merged audit history for an issue: occurrences, status changes (with undo tombstones), and notes, sorted newest-first and capped at 1000 events. Returns { issueId, events, totalEvents, truncated }; each event has a type discriminator (occurrence | status | note).',
     GetIssueHistoryInputSchema.shape,
-    createToolHandler(GetIssueHistoryInputSchema, (n) =>
-      opsClient.issues.getHistory(n['issueId'] as string),
+    createToolHandler(GetIssueHistoryInputSchema, (n, scope) =>
+      opsClient.issues.getHistory(n['issueId'] as string, scope),
       { toolName: 'get_issue_history' }
     )
   );

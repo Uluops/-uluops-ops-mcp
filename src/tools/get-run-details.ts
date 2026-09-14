@@ -28,8 +28,8 @@ export function registerGetRunDetailsTool(
     'get_run_details',
     'Get detailed run information with all recommendations and summary stats. Each recommendation carries TWO status fields: `status` is correlation-in-run (new/recurring/regression/observed — frozen; it never changes when the issue is closed) and `issueStatus` is the linked issue\'s current lifecycle (open/completed/…) — read issueStatus to know whether the work is done. Omit run_number to get latest.',
     GetRunDetailsInputSchema.shape,
-    createToolHandler(GetRunDetailsInputSchema, (n) =>
-      opsClient.runs.getDetails(n['project'] as string, n['runNumber'] as number | undefined),
+    createToolHandler(GetRunDetailsInputSchema, (n, scope) =>
+      opsClient.runs.getDetails(n['project'] as string, n['runNumber'] as number | undefined, scope),
       { toolName: 'get_run_details' }
     )
   );

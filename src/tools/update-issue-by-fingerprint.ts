@@ -30,12 +30,13 @@ export function registerUpdateIssueByFingerprintTool(
     'update_issue_by_fingerprint',
     'Update an issue status by its fingerprint. See get_issue_by_fingerprint for the fingerprint derivation (sha256 of normalized title|agent|filePath|category).',
     UpdateIssueByFingerprintInputSchema.shape,
-    createToolHandler(UpdateIssueByFingerprintInputSchema, (n) => {
+    createToolHandler(UpdateIssueByFingerprintInputSchema, (n, scope) => {
       const { fingerprint, project, ...input } = n;
       return opsClient.issues.updateStatusByFingerprint(
         fingerprint as string,
         project as string,
-        input
+        input,
+        scope
       );
     }, { toolName: 'update_issue_by_fingerprint' })
   );

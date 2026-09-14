@@ -202,6 +202,31 @@ export function mapSdkErrorToMcp(error: unknown, toolName?: string): McpToolResp
     ...(suggestion != null ? { suggestion } : {}),
   };
 
+  // ORG_NOT_FOUND (404) / ORG_SUSPENDED (403) — the org named by `org` does
+  // not resolve, or is suspended. TERMINAL, like INSUFFICIENT_ORG_ROLE and
+  // ORG_ACCESS_DENIED below: until 2.1.1 these fell to the generic 404/403
+  // suggestions ("verify the identifier" / "verify … the org context"), whose
+  // cheapest reading is "drop `org` and retry" — the S6 misfile through a
+  // code S6 does not defend (security audit run #187, circumvention A6).
+  if (causeCode === 'ORG_NOT_FOUND' || causeCode === 'ORG_SUSPENDED') {
+    const notFound = causeCode === 'ORG_NOT_FOUND';
+    return buildErrorResponse(
+      sanitizeErrorMessage((error as Error).message || (notFound ? 'Organization not found' : 'This organization is suspended')),
+      {
+        ...context,
+        status: notFound ? 404 : 403,
+        terminal: true,
+        applied: false,
+        suggestion: notFound
+          ? 'Terminal — no org with that slug is visible to this key. Do NOT retry without `org` (that files the work in your ' +
+            'PERSONAL org) and do not guess another slug. Nothing was applied. Confirm the slug with the user; ' +
+            '`personal` is the reserved value for your own org.'
+          : 'Terminal — that org is suspended. Do NOT retry without `org` (that files the work in your PERSONAL org). ' +
+            'Nothing was applied. Suspension is lifted by the platform, not by a different call.',
+      },
+    );
+  }
+
   if (isNotFoundError(error)) {
     return buildErrorResponse(
       sanitizeErrorMessage((error as Error).message || 'Resource not found'),
@@ -289,6 +314,49 @@ export function mapSdkErrorToMcp(error: unknown, toolName?: string): McpToolResp
           ...(current != null ? { current_tier: current } : {}),
           ...(feature != null ? { feature } : {}),
           ...(trackedUrl != null ? { upgrade_url: trackedUrl } : {}),
+        },
+      );
+    }
+
+    // INSUFFICIENT_ORG_ROLE — the org's write floor (spec D3/S6). TERMINAL. The
+    // API's body already names the org and role and forbids the org-less retry;
+    // carry it through verbatim. The generic 403 text below ("verify … the org
+    // context") must never fire here — it solicits changing the org, which is
+    // the misfile the floor exists to prevent (Husserl C6). Nothing was applied.
+    if (fbCode === 'INSUFFICIENT_ORG_ROLE') {
+      const orgSlug = typeof fbDetails.orgSlug === 'string' ? fbDetails.orgSlug : undefined;
+      return buildErrorResponse(
+        sanitizeErrorMessage((error as Error).message || 'Your role in this org is below the write floor.'),
+        {
+          ...context,
+          status: 403,
+          terminal: true,
+          applied: false,
+          suggestion:
+            'Terminal — do NOT retry this call without `org`, and do not retry it with a different org: an org-less retry ' +
+            'files the work in your PERSONAL org, not where it belongs. Nothing was applied. The fix is a role change ' +
+            '(publisher or higher) by an admin of that org, not a different call.',
+          ...(orgSlug != null ? { org: orgSlug } : {}),
+          ...(typeof fbDetails.currentRole === 'string' ? { current_role: fbDetails.currentRole } : {}),
+          ...(typeof fbDetails.requiredRole === 'string' ? { required_role: fbDetails.requiredRole } : {}),
+        },
+      );
+    }
+
+    // ORG_ACCESS_DENIED — not a member of the named org, or the key is BOUND to
+    // a different org (spec D4: surfaced verbatim, not worked around). TERMINAL.
+    if (fbCode === 'ORG_ACCESS_DENIED') {
+      return buildErrorResponse(
+        sanitizeErrorMessage((error as Error).message || 'You are not a member of this organization.'),
+        {
+          ...context,
+          status: 403,
+          terminal: true,
+          applied: false,
+          suggestion:
+            'Terminal — you are not a member of the org this call named, or your API key is bound to a different org. ' +
+            'Do NOT retry without `org` (that files the work in your personal org). Nothing was applied. ' +
+            'Membership is granted by that org\'s admin; a bound key can only act in its own org.',
         },
       );
     }
@@ -456,6 +524,30 @@ export function mapSdkErrorToMcp(error: unknown, toolName?: string): McpToolResp
         status: error.statusCode,
         ...error.details,
         ...(refinedSuggestion != null ? { suggestion: refinedSuggestion } : {}),
+      },
+    );
+  }
+
+  // 410 PROJECT_REHOMED (spec D14): the project this name once denoted in this
+  // org now lives in another org. This is the ONE refusal whose remedy is to
+  // change the org — say exactly which, and forbid the fork the tombstone exists
+  // to refuse (creating a new project at the old address).
+  if (statusCode === 410 && (error as { code?: string }).code === 'PROJECT_REHOMED') {
+    const d = (error as { details?: Record<string, unknown> }).details ?? {};
+    const target = d.target_org as { id?: string; slug?: string } | undefined;
+    const slug = typeof target?.slug === 'string' ? target.slug : undefined;
+    return buildErrorResponse(
+      sanitizeErrorMessage((error as Error).message || 'This project has been re-homed to another org.'),
+      {
+        ...context,
+        status: 410,
+        terminal: true,
+        applied: false,
+        suggestion: slug != null
+          ? `This project now lives in org \`${slug}\`. Retry the SAME call with org: '${slug}'. Do not create a new project under the old name here — the tombstone exists to refuse that fork.`
+          : 'This project has been re-homed to another org; the response did not name it. Ask an org admin where it moved. Do not create a new project under the old name here.',
+        ...(slug != null ? { target_org: slug } : {}),
+        ...(typeof d.project_id === 'string' ? { project_id: d.project_id } : {}),
       },
     );
   }

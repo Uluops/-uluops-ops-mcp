@@ -23,8 +23,8 @@ export function registerGetAgentReliabilityTool(
     'get_agent_reliability',
     'Analyze agent effectiveness. Returns false positive rates, resolution rates, and reliability scores.',
     GetAgentReliabilityInputSchema.shape,
-    createToolHandler(GetAgentReliabilityInputSchema, (n) =>
-      opsClient.analytics.getAgentReliability(n),
+    createToolHandler(GetAgentReliabilityInputSchema, (n, scope) =>
+      opsClient.analytics.getAgentReliability(n, scope),
       { toolName: 'get_agent_reliability' }
     )
   );

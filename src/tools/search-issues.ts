@@ -39,6 +39,6 @@ export function registerSearchIssuesTool(
     'search_issues',
     'Search issues across projects with relevance ranking. Filter by project, agent, status, and priority.',
     SearchIssuesInputSchema.shape,
-    createToolHandler(SearchIssuesInputSchema, (n) => opsClient.issues.search(n), { toolName: 'search_issues' })
+    createToolHandler(SearchIssuesInputSchema, (n, scope) => opsClient.issues.search(n, scope), { toolName: 'search_issues' })
   );
 }

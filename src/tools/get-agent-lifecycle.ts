@@ -26,10 +26,10 @@ export function registerGetAgentLifecycleTool(
     GetAgentLifecycleInputSchema.shape,
     createToolHandler(
       GetAgentLifecycleInputSchema,
-      (input) => opsClient.analytics.getAgentLifecycle(input.name as string, {
+      (input, scope) => opsClient.analytics.getAgentLifecycle(input.name as string, {
         project: input.project as string | undefined,
         days: input.days as number | undefined,
-      }),
+      }, scope),
       { toolName: 'get_agent_lifecycle' },
     ),
   );

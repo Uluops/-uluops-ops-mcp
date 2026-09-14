@@ -36,6 +36,6 @@ export function registerGetAgentMatrixTool(
     'get_agent_matrix',
     'Get agent-taxonomy matrix showing coverage analysis. Identifies blind spots (missing domains), single points of failure (only one agent detects a mode), and high overlap (3+ agents detect same mode).',
     GetAgentMatrixInputSchema.shape,
-    createToolHandler(GetAgentMatrixInputSchema, (n) => opsClient.analytics.getAgentMatrix(n), { toolName: 'get_agent_matrix' })
+    createToolHandler(GetAgentMatrixInputSchema, (n, scope) => opsClient.analytics.getAgentMatrix(n, scope), { toolName: 'get_agent_matrix' })
   );
 }

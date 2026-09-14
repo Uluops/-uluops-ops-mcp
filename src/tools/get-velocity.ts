@@ -35,6 +35,6 @@ export function registerGetVelocityTool(
     'get_velocity',
     'Get velocity metrics per failure mode (e.g., STR-OMI, SEM-VAL) showing rate of change with sparkline data and trend reliability assessment.',
     GetVelocityInputSchema.shape,
-    createToolHandler(GetVelocityInputSchema, (n) => opsClient.analytics.getVelocity(n), { toolName: 'get_velocity' })
+    createToolHandler(GetVelocityInputSchema, (n, scope) => opsClient.analytics.getVelocity(n, scope), { toolName: 'get_velocity' })
   );
 }

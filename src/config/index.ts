@@ -49,6 +49,26 @@ function parseInteger(value: string | undefined, defaultValue: number): number {
   return isNaN(parsed) ? defaultValue : parsed;
 }
 
+/** Same pattern as the SDK's ORG_SLUG_PATTERN (not exported from its root); a slug is a header value. */
+const ORG_SLUG_PATTERN = /^[a-zA-Z0-9][a-zA-Z0-9_-]{0,99}$/;
+
+/**
+ * `ULUOPS_ORG_ALLOW` — D15. Comma-separated slugs; whitespace tolerated;
+ * `personal` may be listed but is implied. Unset or empty → `undefined`
+ * (unbounded). An invalid slug REFUSES TO START: an allowlist that silently
+ * dropped a misspelt entry would silently widen the bound.
+ */
+export function parseOrgAllow(raw: string | undefined): string[] | undefined {
+  if (raw === undefined) return undefined;
+  const entries = raw.split(',').map((e) => e.trim()).filter((e) => e !== '');
+  if (entries.length === 0) return undefined;
+  const bad = entries.filter((e) => e !== 'personal' && !ORG_SLUG_PATTERN.test(e));
+  if (bad.length > 0) {
+    throw new Error(`ULUOPS_ORG_ALLOW contains invalid org slug(s): ${bad.map((b) => JSON.stringify(b)).join(', ')} — 1-100 alphanumeric characters, hyphens, or underscores, comma-separated`);
+  }
+  return [...new Set(entries.filter((e) => e !== 'personal'))];
+}
+
 /**
  * Load configuration from environment variables.
  *
@@ -64,12 +84,14 @@ export function loadConfig(): { config: UluopsTrackerConfig; warnings: string[] 
   const apiKey = process.env['ULUOPS_API_KEY'];
 
   const orgSlug = process.env['ULUOPS_ORG_SLUG'];
+  const orgAllow = parseOrgAllow(process.env['ULUOPS_ORG_ALLOW']);
 
   const config: UluopsTrackerConfig = {
     api: {
       baseUrl: apiUrl,
       apiKey,
       orgSlug,
+      ...(orgAllow !== undefined ? { orgAllow } : {}),
       timeout: parseInteger(process.env['ULUOPS_TRACKER_TIMEOUT'], DEFAULT_TIMEOUT),
       retries: parseInteger(process.env['ULUOPS_TRACKER_RETRIES'], DEFAULT_RETRIES),
     },

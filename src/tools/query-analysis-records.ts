@@ -32,7 +32,7 @@ export function registerQueryAnalysisRecordsTool(
     'query_analysis_records',
     'Query analysis records across all projects. Find calcified conventions, degraded tensions, imminent decay vectors, and other structured findings from cognitive lens agents.',
     QueryAnalysisRecordsInputSchema.shape,
-    createToolHandler(QueryAnalysisRecordsInputSchema, (n) =>
+    createToolHandler(QueryAnalysisRecordsInputSchema, (n, scope) =>
       opsClient.runs.queryAnalysisRecords({
         recordType: n['recordType'] as string | undefined,
         classification: n['classification'] as string | undefined,
@@ -41,7 +41,7 @@ export function registerQueryAnalysisRecordsTool(
         severity: n['severity'] as string | undefined,
         limit: n['limit'] as number | undefined,
         offset: n['offset'] as number | undefined,
-      }),
+      }, scope),
       { toolName: 'query_analysis_records' }
     )
   );

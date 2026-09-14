@@ -73,15 +73,15 @@ export function registerUpdateRunTool(
     'update_run',
     'Update run metadata post-hoc (tokens, scores, timestamps). Also supports adding recommendations/issues, and PER-AGENT analysis writes after initial save — replace (default) or merge, via record_write_mode; writes supersede only the agents named in the payload and cannot remove another agent\'s rows (there is no delete endpoint). Analysis-bearing responses include the analysisWrite echo (a camelCase response key: superseded/created counts — supersededRecords 0 on an enrichment that expected to replace means the named agents had no live rows). Preview with preview_update_run. Identify run by either run_id OR (project + run_number).',
     UpdateRunInputSchema.shape,
-    createToolHandler(UpdateRunInputSchema, async (n) => {
+    createToolHandler(UpdateRunInputSchema, async (n, scope) => {
       // With-echo variants (F17): the §3.9 echo's counts are the success
       // path's only view of what the write superseded. Additive response:
       // run fields unchanged, `analysisWrite` beside them on
       // analysis-bearing updates only (the server emits no echo otherwise).
       const runId = n['runId'];
       const result = typeof runId === 'string'
-        ? await opsClient.runs.updateByIdWithEcho(runId, n, { _skipClientValidation: true })
-        : await opsClient.runs.updateWithEcho(n, { _skipClientValidation: true });
+        ? await opsClient.runs.updateByIdWithEcho(runId, n, { _skipClientValidation: true, ...scope })
+        : await opsClient.runs.updateWithEcho(n, { _skipClientValidation: true, ...scope });
       return result.analysisWrite ? { ...result.run, analysisWrite: result.analysisWrite } : result.run;
     }, { toolName: 'update_run' })
   );

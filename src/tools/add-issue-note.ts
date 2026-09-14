@@ -24,9 +24,9 @@ export function registerAddIssueNoteTool(
     'add_issue_note',
     'Add a note to an issue. Note types: context (additional context), resolution (how to resolve), blocker (why blocking).',
     AddIssueNoteInputSchema.shape,
-    createToolHandler(AddIssueNoteInputSchema, (n) => {
+    createToolHandler(AddIssueNoteInputSchema, (n, scope) => {
       const { issueId, ...input } = n;
-      return opsClient.issues.addNote(issueId as string, input);
+      return opsClient.issues.addNote(issueId as string, input, scope);
     }, { toolName: 'add_issue_note' })
   );
 }

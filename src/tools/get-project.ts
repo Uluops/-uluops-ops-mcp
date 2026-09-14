@@ -26,8 +26,8 @@ export function registerGetProjectTool(
     'get_project',
     'Get a single project by ID or name. Returns project metadata only: id, name, domain, owner, created/updated timestamps. For run counts, latest run, and issue statistics use get_project_summary.',
     GetProjectInputSchema.shape,
-    createToolHandler(GetProjectInputSchema, (n) =>
-      opsClient.projects.get(n['project'] as string),
+    createToolHandler(GetProjectInputSchema, (n, scope) =>
+      opsClient.projects.get(n['project'] as string, scope),
       { toolName: 'get_project' }
     )
   );

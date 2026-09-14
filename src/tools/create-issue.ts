@@ -55,6 +55,6 @@ export function registerCreateIssueTool(
     'create_issue',
     'Create a user-submitted issue directly. Use this to log issues discovered outside of validation runs. Required fields: project, title, priority.',
     CreateIssueInputSchema.shape,
-    createToolHandler(CreateIssueInputSchema, (n) => opsClient.issues.create(n), { toolName: 'create_issue' })
+    createToolHandler(CreateIssueInputSchema, (n, scope) => opsClient.issues.create(n, scope), { toolName: 'create_issue' })
   );
 }

@@ -25,12 +25,12 @@ export function registerListAgentsTool(
     'list_agents',
     'List agents known to this org, derived from run history — {data, total}. ADVISORY ONLY — this is not an allowlist: save_run accepts any agent name, and a name absent here simply has no recorded runs yet.',
     ListAgentsInputSchema.shape,
-    createToolHandler(ListAgentsInputSchema, async () => {
+    createToolHandler(ListAgentsInputSchema, async (_n, scope) => {
       // T13 (breaking train, Train C): family list envelope {data, total} —
       // the {success, agents} wrapper was hand-built here (the only success
       // flag in the server) and is gone. getAgentPerformance returns
       // AgentPerformance[]; guard shape defensively before projecting.
-      const perf = await opsClient.analytics.getAgentPerformance();
+      const perf = await opsClient.analytics.getAgentPerformance(undefined, scope);
       const agents = (Array.isArray(perf) ? perf : [])
         .filter((v: unknown): v is { name: string } =>
           typeof v === 'object' && v !== null && typeof (v as { name?: unknown }).name === 'string'

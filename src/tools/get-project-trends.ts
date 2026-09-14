@@ -33,9 +33,9 @@ export function registerGetProjectTrendsTool(
     'get_project_trends',
     'Get issue trends over time for a project.',
     GetProjectTrendsInputSchema.shape,
-    createToolHandler(GetProjectTrendsInputSchema, (n) => {
+    createToolHandler(GetProjectTrendsInputSchema, (n, scope) => {
       const { project, ...query } = n;
-      return opsClient.projects.getTrends(project as string, query);
+      return opsClient.projects.getTrends(project as string, query, scope);
     }, { toolName: 'get_project_trends' })
   );
 }

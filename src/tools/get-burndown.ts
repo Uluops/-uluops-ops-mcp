@@ -33,6 +33,6 @@ export function registerGetBurndownTool(
     'get_burndown',
     'Get taxonomy burndown with time series and trend analysis per failure domain (STR, SEM, PRA, EPI). Includes statistical diagnostics for trend reliability.',
     GetBurndownInputSchema.shape,
-    createToolHandler(GetBurndownInputSchema, (n) => opsClient.analytics.getBurndown(n), { toolName: 'get_burndown' })
+    createToolHandler(GetBurndownInputSchema, (n, scope) => opsClient.analytics.getBurndown(n, scope), { toolName: 'get_burndown' })
   );
 }

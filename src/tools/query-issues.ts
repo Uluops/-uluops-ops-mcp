@@ -43,7 +43,7 @@ export function registerQueryIssuesTool(
     'query_issues',
     'Query issues by project, workflow, status, priority, agent, or persistence.',
     QueryIssuesInputSchema.shape,
-    createToolHandler(QueryIssuesInputSchema, (n) => {
+    createToolHandler(QueryIssuesInputSchema, (n, scope) => {
       const project = n.project as string;
       // Explicitly pick SDK-compatible fields to avoid passing extra MCP-only fields.
       //
@@ -66,7 +66,7 @@ export function registerQueryIssuesTool(
       ]) {
         if (n[key] !== undefined) query[key] = n[key];
       }
-      return opsClient.projects.listIssues(project, query);
+      return opsClient.projects.listIssues(project, query, scope);
     }, { toolName: 'query_issues' })
   );
 }

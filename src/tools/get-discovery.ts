@@ -33,6 +33,6 @@ export function registerGetDiscoveryTool(
     'get_discovery',
     'Get discovery timeline showing new vs recurring issues over time. Helps track whether validation is finding new problems or re-detecting existing ones.',
     GetDiscoveryInputSchema.shape,
-    createToolHandler(GetDiscoveryInputSchema, (n) => opsClient.analytics.getDiscovery(n), { toolName: 'get_discovery' })
+    createToolHandler(GetDiscoveryInputSchema, (n, scope) => opsClient.analytics.getDiscovery(n, scope), { toolName: 'get_discovery' })
   );
 }
