@@ -21,7 +21,7 @@ describe('toolRegistry', () => {
     }
   });
 
-  it('should have exactly 50 tools', () => {
+  it('should have exactly the expected tool count', () => {
     expect(toolRegistry.length).toBe(EXPECTED_TOOL_COUNT);
   });
 

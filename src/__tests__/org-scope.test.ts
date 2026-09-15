@@ -190,13 +190,13 @@ describe('withOrgArgument — every advertised tool schema carries `org` and the
     tool: (name, description, shape) => { recorded.push({ name, description, shape }); },
   };
 
-  it('registerAllTools registers 51 tools; all but get_taxonomy advertise `org`', () => {
+  it('registerAllTools registers 53 tools; all but get_taxonomy advertise `org`', () => {
     registerAllTools(fakeServer, {} as OpsClient);
-    expect(recorded.length).toBe(51);
+    expect(recorded.length).toBe(53);
     const missing = recorded.filter((t) => t.name !== 'get_taxonomy' && !('org' in t.shape)).map((t) => t.name);
     expect(missing).toEqual([]);
     const withSentence = recorded.filter((t) => t.description.endsWith(ORG_ARG_DESCRIPTION) || t.description.endsWith(ORG_ARG_DESCRIPTION_READ)).length;
-    expect(withSentence).toBe(50);
+    expect(withSentence).toBe(52);
     const taxonomy = recorded.find((t) => t.name === 'get_taxonomy');
     expect(taxonomy?.shape).toBeDefined();
     expect(taxonomy?.shape).not.toHaveProperty('org');

@@ -375,6 +375,28 @@ export const toolRegistry: ToolSpec[] = [
     quotaPerMinute: 30,
     quotaPerHour: 300,
   },
+  {
+    // Project re-home (project-org-routing-and-rehome spec §4.1, D14) — moves
+    // a project's whole history between orgs. Same posture as merge_projects:
+    // infrequent, durable (reversible only by another move), never a fan-out.
+    // The hourly cap is the throttle against an unmodeled retry loop.
+    name: 'rehome_project',
+    sideEffects: 'write',
+    maxArgsSize: 2 * KB,
+    maxEgressBytes: 32 * KB,
+    quotaPerMinute: 5,
+    quotaPerHour: 20,
+  },
+  {
+    // The D19 member-visible audit feed — a paged read; egress sized for a
+    // 200-entry page of audit rows with details blobs.
+    name: 'get_org_audit_feed',
+    sideEffects: 'read',
+    maxArgsSize: 2 * KB,
+    maxEgressBytes: 512 * KB,
+    quotaPerMinute: 60,
+    quotaPerHour: 600,
+  },
 
   // ============================================================================
   // P2 Run Tools

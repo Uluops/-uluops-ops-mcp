@@ -124,6 +124,19 @@ const CONFLICT_REASON_SUGGESTIONS: Record<string, string> = {
   name_taken: 'A project with this name already exists in this scope. Choose a different name, or target the existing project.',
   soft_deleted_conflict: 'A soft-deleted project of this name exists. Restore it (restore_project) instead of recreating, or choose a different name.',
   idempotency_reuse: 'This idempotency_key was already used with a different payload. Use a new idempotency_key, or update the existing run via update_run.',
+  // Re-home refusals (project-org-routing-and-rehome spec §4.4, §4.7 disposition table).
+  rehomed_away_conflict: 'Another project already reserved this name in the target org by moving away from it. Rename first (a separate step), or choose a different target. Do not retry the same call.',
+  moved_during_request: 'The project changed org while this request waited. Re-read the project to see where it is now, then decide — retry at most once.',
+  deadlock_retry: 'The database chose this request as a deadlock victim; nothing was applied. Retry once.',
+  concurrent_modification: 'The project was modified concurrently; nothing was applied. Re-read it, then retry once.',
+  export_in_progress: 'An export job holds one of the two orgs. Wait for it to finish, then retry. Do not retry in a loop.',
+};
+
+/** 400s that carry a business `details.reason` (re-home, spec §4.4/§4.7) — decisions, not malformed arguments. */
+const VALIDATION_REASON_SUGGESTIONS: Record<string, string> = {
+  same_org: 'The project is already in that org — nothing to do. Treat this as done; do not retry and do not change `org` to make it succeed.',
+  project_has_no_org: 'This project row has no org (pre-org legacy data) and cannot be moved as-is. Stop and tell the user; an operator must repair the row first.',
+  project_soft_deleted: 'The project is soft-deleted. Restore it (restore_project) in its current org first, then move it.',
 };
 
 /**
@@ -266,6 +279,21 @@ export function mapSdkErrorToMcp(error: unknown, toolName?: string): McpToolResp
         `${baseMessage}: ${formatted}`,
         { ...context, field_errors: fieldErrors },
       );
+    }
+
+    // A 400 with a business `reason` is a decision, not a malformed argument —
+    // the generic "check parameter types" suggestion would send the model to
+    // re-read the schema for a call that was well-formed. Re-home's `same_org`
+    // is the one that matters: it is the §4.7 idempotence signal ("already
+    // done"), and a caller that reads it as a schema error retries. Carry the
+    // reason and say what it means; unknown reasons keep the generic text.
+    const reason = typeof details?.['reason'] === 'string' ? details['reason'] : undefined;
+    if (reason !== undefined) {
+      return buildErrorResponse(baseMessage, {
+        ...context,
+        reason,
+        ...(VALIDATION_REASON_SUGGESTIONS[reason] !== undefined ? { suggestion: VALIDATION_REASON_SUGGESTIONS[reason], terminal: true, applied: false } : {}),
+      });
     }
 
     return buildErrorResponse(baseMessage, context);

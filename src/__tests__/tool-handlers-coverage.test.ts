@@ -38,6 +38,8 @@ import { registerListRunsTool } from '../tools/list-runs.js';
 import { registerQueryAnalysisRecordsTool } from '../tools/query-analysis-records.js';
 import { registerRestoreIssueTool } from '../tools/restore-issue.js';
 import { registerRestoreProjectTool } from '../tools/restore-project.js';
+import { registerRehomeProjectTool } from '../tools/rehome-project.js';
+import { registerGetOrgAuditFeedTool } from '../tools/get-org-audit-feed.js';
 import { registerSoftDeleteIssueTool } from '../tools/soft-delete-issue.js';
 import { registerSoftDeleteProjectTool } from '../tools/soft-delete-project.js';
 import { registerUndoIssueStatusTool } from '../tools/undo-issue-status.js';
@@ -80,6 +82,9 @@ const cases: Case[] = [
   { name: 'query_analysis_records', register: registerQueryAnalysisRecordsTool, domain: 'runs', method: 'queryAnalysisRecords', input: {} },
   { name: 'restore_issue', register: registerRestoreIssueTool, domain: 'issues', method: 'restore', input: { issue_id: TEST_UUID } },
   { name: 'restore_project', register: registerRestoreProjectTool, domain: 'projects', method: 'restore', input: { project: 'p' } },
+  { name: 'rehome_project', register: registerRehomeProjectTool, domain: 'projects', method: 'rehome', input: { project: 'p', target_org: 'ulu-labs' } },
+  // `org` is the feed's org (required in effect); the mock returns a feed-shaped envelope so the handler's map runs.
+  { name: 'get_org_audit_feed', register: registerGetOrgAuditFeedTool, domain: 'orgs', method: 'getVisibleAuditLog', input: { org: 'acme' } },
   { name: 'soft_delete_issue', register: registerSoftDeleteIssueTool, domain: 'issues', method: 'softDelete', input: { issue_id: TEST_UUID } },
   { name: 'soft_delete_project', register: registerSoftDeleteProjectTool, domain: 'projects', method: 'softDelete', input: { project: 'p', confirm: true, confirmation_phrase: 'p' } },
   { name: 'undo_issue_status', register: registerUndoIssueStatusTool, domain: 'issues', method: 'undoLastChange', input: { issue_id: TEST_UUID } },
@@ -98,7 +103,11 @@ type MockClient = Record<string, Record<string, ReturnType<typeof vi.fn>>>;
 function makeMockClient(): MockClient {
   const client: MockClient = {};
   for (const { domain, method } of cases) {
-    (client[domain] ??= {})[method] ??= vi.fn().mockResolvedValue({ ok: true });
+    (client[domain] ??= {})[method] ??= vi.fn().mockResolvedValue(
+      method === 'getVisibleAuditLog'
+        ? { data: { entries: [] }, count: 0, hasMore: false, nextCursor: null }
+        : { ok: true },
+    );
   }
   return client;
 }

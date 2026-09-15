@@ -5,6 +5,51 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.19.0] - 2026-09-15
+
+### Added — `rehome_project` and `get_org_audit_feed` (project-org-routing-and-rehome §4.1, D19)
+
+The tool surface for the re-home endpoint deployed 2026-09-15 (API 2.x, `@uluops/ops-sdk` 6.4.0).
+53 tools.
+
+- **`rehome_project({ project, target_org, reason?, org? })`** — move a project and its whole
+  history into another org, via `client.projects.rehome`. **`org` is the SOURCE**: the org context
+  the API looks the project up in (the generic argument, resolved like every other tool's — explicit
+  > workspace file > `ULUOPS_ORG_SLUG` > personal); `target_org` is the destination. The description
+  says so twice, because the failure mode of getting it wrong is quiet: an unscoped call for a
+  work-org project is a 404 from the personal org, not a search. Member path only — admin/owner in
+  both orgs, a personal target only if it is yours (C6). The platform-admin path (`POST
+  /admin/projects/:id/rehome`) is session-only by design (D20) and deliberately has **no tool**: an
+  MCP server holds a key, and a key is exactly what that route refuses. ToolSpec: write, 2 KB args,
+  5/min, **20/hour** — same posture as `merge_projects` (durable, never a fan-out).
+- **`get_org_audit_feed({ org, cursor?, limit? })`** — the D19 member-visible audit feed
+  (`GET /orgs/:slug/audit-log/global`): rows a writer marked `visibility: 'org'` — today, projects
+  leaving the org for someone's personal org. `org` names the org whose feed to read and is required
+  in effect: a resolution that lands on personal is refused with a 400 naming the argument (a
+  personal org has no slug the client can name), never guessed. Each re-home entry gets a one-line
+  `summary` (`project "billing" moved to \`alexself2\` — a personal org — reason: …`) beside the raw
+  entry; other org-visible rows come back raw with `summary: null`. Pages with `next_cursor`
+  (opaque, `<iso>|<uuid>` on platform ≥ 1.28.4). ToolSpec: read, 512 KB egress, 60/min.
+- **Error mapping.** A 400 that carries a business `details.reason` is relayed with the reason and,
+  for the known ones, a suggestion that says what it means — `same_org` is *"already in that org —
+  nothing to do"* with `terminal: true, applied: false`, not the generic "check parameter types"
+  text (it is the §4.7 idempotence signal; a model that reads it as a schema error retries).
+  Conflict suggestions added for `rehomed_away_conflict`, `moved_during_request`, `deadlock_retry`,
+  `concurrent_modification`, `export_in_progress`.
+
+### Changed
+
+- `@uluops/ops-sdk` 6.3.1 → 6.4.0 (`projects.rehome`, `orgs.getVisibleAuditLog`,
+  `readRehomeAuditDetails`; `ProjectResponseSchema` now carries `orgId`, so every project result
+  this server relays gains that field).
+
+### Notes
+
+- Both tools were driven live through the real handler → SDK → the current API build on a
+  prod-copy database (not only the unit suite): move to a team org, `same_org`, the unscoped 404,
+  the reverse move into the caller's personal org, the feed on the team org with the summary
+  rendered, the no-`org` refusal, and a non-member `ORG_ACCESS_DENIED` control.
+
 ## [0.18.0] - 2026-09-14
 
 ### Added — `org` on every tool: which org a call lands in

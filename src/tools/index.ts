@@ -43,6 +43,8 @@ import { registerUpdateProfileTool } from './update-profile.js';
 import { registerUpdateProjectTool } from './update-project.js';
 import { registerSoftDeleteProjectTool } from './soft-delete-project.js';
 import { registerRestoreProjectTool } from './restore-project.js';
+import { registerRehomeProjectTool } from './rehome-project.js';
+import { registerGetOrgAuditFeedTool } from './get-org-audit-feed.js';
 
 // P2 Run Tools
 import { registerGetRunTool } from './get-run.js';
@@ -118,6 +120,8 @@ export function registerAllTools(
   registerUpdateProjectTool(server, opsClient);
   registerSoftDeleteProjectTool(server, opsClient);
   registerRestoreProjectTool(server, opsClient);
+  registerRehomeProjectTool(server, opsClient);
+  registerGetOrgAuditFeedTool(server, opsClient);
 
   // P2 Run tools
   registerGetRunTool(server, opsClient);

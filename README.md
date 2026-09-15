@@ -10,7 +10,7 @@
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.7+-blue.svg)](https://www.typescriptlang.org/)
 [![Tests](https://img.shields.io/badge/tests-passing-brightgreen)](src/__tests__/)
 
-MCP (Model Context Protocol) server for the UluOps Platform API. Provides **51 tools** and **3 resources** (2 functional, 1 template placeholder) that enable Claude Code, Cursor, and other MCP hosts to interact with the UluOps Platform.
+MCP (Model Context Protocol) server for the UluOps Platform API. Provides **53 tools** and **3 resources** (2 functional, 1 template placeholder) that enable Claude Code, Cursor, and other MCP hosts to interact with the UluOps Platform.
 
 ## Table of Contents
 
@@ -89,6 +89,15 @@ that org is below `publisher` — do **not** retry without `org`, that files the
 `ORG_ACCESS_DENIED` (not a member, or a bound key), `ORG_NOT_FOUND` and `ORG_SUSPENDED` (the named
 org does not resolve / is suspended — same rule, do not drop `org`), and `PROJECT_REHOMED` (the
 project moved orgs; the result names the org to pass). `ORG_NOT_ALLOWED` is the server-side sixth.
+
+**Moving a project between orgs** is `rehome_project` — the member path of the spec's §4.1. Two
+arguments name two orgs and the description says which is which: `org` is where the project is
+*now* (the API looks it up there — omit it for a work-org project and you get a 404 from your
+personal org, not a search), `target_org` is where it goes. A `same_org` 400 means "already there"
+and the result says so (`terminal`, `applied: false`) — it is the idempotence signal, not a schema
+error. The other refusals name their reason too (`name_collision`, `soft_deleted_conflict`,
+`rehomed_away_conflict`, `export_in_progress`, `moved_during_request`). What moved, and who moved
+it into a personal org, is readable by any member through `get_org_audit_feed`.
 
 ### Advanced Logging
 
@@ -299,6 +308,8 @@ The per-tool `maxArgsSize` (2 MB for `save_run`) and the 500 KB message envelope
 | `restore_project` | Restore a soft-deleted project |
 | `update_profile` | Update the authenticated user's profile (username, name, bio, timezone, websiteUrl). Setting `username` confirms it **one-time** — required before creating or publishing registry definitions |
 | `merge_projects` | Merge one project into another — runs and issues re-keyed into the target, colliding issues deduplicated by fingerprint, source soft-deleted. Durable (no undo) — always `dry_run` first |
+| `rehome_project` | Move a project and its whole history into another org (project-org-routing-and-rehome §4.1). **`org` is the SOURCE** (where the project is now), `target_org` the destination; admin/owner in both. The old `(org, name)` becomes a `410 PROJECT_REHOMED` tombstone, not a fork; reversible by moving back. Member path only — the platform-admin path is session-only (D20) and has no tool |
+| `get_org_audit_feed` | Read an org's member-visible audit feed (D19): today, projects that left the org for someone's personal org — who, when, where to, why. `org` names the org whose feed to read (required in effect). Each re-home entry carries a one-line `summary`; page with `next_cursor` |
 
 ### Run Tools (P2)
 | Tool | Description |

@@ -40,6 +40,8 @@ export const EXPECTED_TOOLS = [
   'update_project',
   'soft_delete_project',
   'restore_project',
+  'rehome_project',
+  'get_org_audit_feed',
   // User profile
   'update_profile',
   // P2 Run Tools
