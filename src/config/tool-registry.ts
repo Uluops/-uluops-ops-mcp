@@ -397,6 +397,30 @@ export const toolRegistry: ToolSpec[] = [
     quotaPerMinute: 60,
     quotaPerHour: 600,
   },
+  // ulu log (spec §3.8 D8). Both are reads; the org is the generic `org` argument.
+  {
+    name: 'get_project_log',
+    sideEffects: 'read',
+    maxArgsSize: 4 * KB,
+    // One page is at most 500 events; a `run` event with its agents[] and
+    // counts is ~400 B, a `decision` with a long tracker reason (up to 1000
+    // chars) ~1.3 KB. 500 × 1.3 KB ≈ 650 KB worst case; 1 MB keeps a full
+    // reason-heavy page out of silent truncation.
+    maxEgressBytes: 1024 * KB,
+    quotaPerMinute: 120,
+    quotaPerHour: 2000,
+  },
+  {
+    name: 'get_log_stat',
+    sideEffects: 'read',
+    maxArgsSize: 2 * KB,
+    // A project rollup is ~1 KB plus one row per workflow type (unbounded by
+    // design, ~40 B each; 46 types on the largest project today). The org
+    // rollup adds up to 100 project rows (~120 B each). 128 KB is generous.
+    maxEgressBytes: 128 * KB,
+    quotaPerMinute: 120,
+    quotaPerHour: 2000,
+  },
 
   // ============================================================================
   // P2 Run Tools

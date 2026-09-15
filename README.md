@@ -323,6 +323,17 @@ The per-tool `maxArgsSize` (2 MB for `save_run`) and the 500 KB message envelope
 | `rehome_project` | Move a project and its whole history into another org (project-org-routing-and-rehome §4.1). **`org` is the SOURCE** (where the project is now), `target_org` the destination; admin/owner in both. The old `(org, name)` becomes a `410 PROJECT_REHOMED` tombstone, not a fork; reversible by moving back. Member path only — the platform-admin path is session-only (D20) and has no tool |
 | `get_org_audit_feed` | Read an org's member-visible audit feed (D19): today, projects that left the org for someone's personal org — who, when, where to. `org` names the org whose feed to read (required in effect). Each re-home entry carries a one-line `summary`; the operator's `reason` is redacted; page with `next_cursor` (limit 1–100) |
 
+### Log Tools — the project's second history (ulu log)
+| Tool | Description |
+|------|-------------|
+| `get_project_log` | One page of the project log: `run` (what was examined), `decision` (what was decided, with reasons) and `regression` (what a run re-detected) events interleaved newest first; keyset-paged — pass `nextCursor` back as `cursor`. Filters: `since`/`until`, `limit` 1–500, `kind[]`, `workflow_type` (runs only), `agent`, `include_archived`. Never collapsed. Read it right: `reason: null` = no reason recorded (the ledger's silence, not a person's); `source: null` = unattributed, never "human"; a `regression` came back via a **run** (`viaRunNumber`), a `resolved → open` decision with no run was *reopened by decision*; a run's `counts: null` = saved before counts were recorded |
+| `get_log_stat` | The rollup — examined / found / decided / cameBack / activity — for `project` when given, else for the org the call resolves to (`org`, else the workspace default, else your personal org — looked up, never guessed). Two frames on two clocks: `decided` is the *current* status of the window's findings (sums to `found.issues`; `completed` is what the CLI prints as "fixed"), `activity` is what changed in the window by ledger time (`byStatus.open` = reopens). The org rollup adds `projects[]` (capped at 100, `hasMoreProjects`) and `computedAt` — it is cached 60 s server-side |
+
+Both read through `@uluops/ops-sdk` ≥ 6.5.0 and echo the SDK's parsed shapes (camelCase). Inputs are
+snake_case as on every tool here. This release also moves the server's `.uluops.json` reader to the
+6.5.0 allowlist (`org`, `project`, `$schema`): a checkout whose workspace file carries `project`
+(read by `ulu log`) no longer makes this server refuse every call in that tree.
+
 ### Run Tools (P2)
 | Tool | Description |
 |------|-------------|

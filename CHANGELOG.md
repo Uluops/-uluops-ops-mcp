@@ -5,6 +5,18 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.20.0] - 2026-09-15
+
+### Added
+
+- **`get_project_log`** — one page of the project's second history (ulu log spec v0.1.13 §3.2/§3.8, D8): `run` / `decision` / `regression` events interleaved newest first, keyset-paged (`nextCursor` → `cursor`), with `since`/`until`, `limit` (1–500), `kind[]`, `workflow_type`, `agent`, `include_archived`. Inputs are snake_case and reach the SDK as camelCase (the test carries the control: `workflow_type` never reaches the SDK, because the API would silently ignore it). The page is relayed as the SDK parsed it — never collapsed (D11 is the CLI's rendering rule). The description carries the ledger facts a model must keep (`reason: null`, `source: null`, run-detected vs reopened-by-decision, `counts: null`).
+- **`get_log_stat`** — the rollup (§3.3): for `project` when given, else the ORG rollup of the org the call resolves to (§3.6: `projects[]` capped at 100, `computedAt` from the API's 60 s cache, D16). When the resolution lands on the caller's personal org the tool looks the personal slug up via `orgs.list()` rather than guessing; if the key lists none, a 400 names what to pass.
+- `ToolSpec`s for both (`sideEffects: read`; egress 1 MB for a reason-heavy 500-event page, 128 KB for the rollup; 120/min, 2000/h). Every optional input `.describe()`d. 53 → 55 tools.
+
+### Dependencies
+
+- `@uluops/ops-sdk` 6.4.1 → **6.5.0**. Beyond the four log reads, this moves the server's `.uluops.json` reader (`resolveWorkspaceOrg`, the org rung of every tool) to the widened allowlist — `org`, `project`, `$schema` (ulu log D5). **Before this release, a checkout whose workspace file carried `project` (the key `ulu log` 0.31.0 reads) made this server refuse EVERY tool call launched from that tree** — the old reader throws on the unknown key. This is the last load-bearing old reader on a developer machine after cli 0.31.0 / core 0.43.5; with it installed globally, `project` can be written into a real checkout.
+
 ## [0.19.0] - 2026-09-15
 
 ### Added — `rehome_project` and `get_org_audit_feed` (project-org-routing-and-rehome §4.1, D19)
