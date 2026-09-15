@@ -45,6 +45,8 @@ import { registerSoftDeleteProjectTool } from './soft-delete-project.js';
 import { registerRestoreProjectTool } from './restore-project.js';
 import { registerRehomeProjectTool } from './rehome-project.js';
 import { registerGetOrgAuditFeedTool } from './get-org-audit-feed.js';
+import { registerGetProjectLogTool } from './get-project-log.js';
+import { registerGetLogStatTool } from './get-log-stat.js';
 
 // P2 Run Tools
 import { registerGetRunTool } from './get-run.js';
@@ -122,6 +124,9 @@ export function registerAllTools(
   registerRestoreProjectTool(server, opsClient);
   registerRehomeProjectTool(server, opsClient);
   registerGetOrgAuditFeedTool(server, opsClient);
+  // ulu log (spec §3.8 D8)
+  registerGetProjectLogTool(server, opsClient);
+  registerGetLogStatTool(server, opsClient);
 
   // P2 Run tools
   registerGetRunTool(server, opsClient);

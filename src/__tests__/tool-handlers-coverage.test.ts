@@ -28,6 +28,8 @@ import { registerGetIssueByFingerprintTool } from '../tools/get-issue-by-fingerp
 import { registerGetLatestRunTool } from '../tools/get-latest-run.js';
 import { registerGetProjectAnalysisTool } from '../tools/get-project-analysis.js';
 import { registerGetProjectTrendsTool } from '../tools/get-project-trends.js';
+import { registerGetProjectLogTool } from '../tools/get-project-log.js';
+import { registerGetLogStatTool } from '../tools/get-log-stat.js';
 import { registerGetProjectTool } from '../tools/get-project.js';
 import { registerGetRunAnalysisTool } from '../tools/get-run-analysis.js';
 import { registerGetRunTool } from '../tools/get-run.js';
@@ -72,6 +74,8 @@ const cases: Case[] = [
   { name: 'get_latest_run', register: registerGetLatestRunTool, domain: 'runs', method: 'getLatest', input: { project: 'p' } },
   { name: 'get_project_analysis', register: registerGetProjectAnalysisTool, domain: 'runs', method: 'getProjectAnalysis', input: { project: 'p' } },
   { name: 'get_project_trends', register: registerGetProjectTrendsTool, domain: 'projects', method: 'getTrends', input: { project: 'p' } },
+  { name: 'get_project_log', register: registerGetProjectLogTool, domain: 'projects', method: 'getLog', input: { project: 'p' } },
+  { name: 'get_log_stat', register: registerGetLogStatTool, domain: 'projects', method: 'getLogStat', input: { project: 'p' } },
   { name: 'get_project', register: registerGetProjectTool, domain: 'projects', method: 'get', input: { project: 'p' } },
   { name: 'get_run_analysis', register: registerGetRunAnalysisTool, domain: 'runs', method: 'getAnalysis', input: { run_id: TEST_UUID } },
   { name: 'get_run', register: registerGetRunTool, domain: 'runs', method: 'get', input: { run_id: TEST_UUID } },

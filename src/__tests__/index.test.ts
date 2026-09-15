@@ -393,8 +393,8 @@ describe('Tool Registry Integration', () => {
     expect(Array.isArray(toolRegistry)).toBe(true);
   });
 
-  it('should have 53 tools registered', async () => {
+  it('should have 55 tools registered', async () => {
     const { toolRegistry } = await import('../config/tool-registry.js');
-    expect(toolRegistry.length).toBe(53);
+    expect(toolRegistry.length).toBe(55);
   });
 });
