@@ -25,8 +25,16 @@ export interface OrgCallRecord {
   orgSource: string;
   /** The `.uluops.json` that answered, when one did. */
   orgFile?: string;
+  /**
+   * For the tools that name a SECOND org in their body (`rehome_project`'s
+   * `target_org`): where the write LANDS. `org` above is the source. Before
+   * the 0.19.0 pre-publish review the record and the echo carried the source only — "the detector"
+   * named the org a move came FROM and nothing named where it went
+   * (anxiety-reader F5, 2026-09-15).
+   */
+  targetOrg?: string;
   /** Set when the call was refused before the SDK: the org is outside `ULUOPS_ORG_ALLOW` (D15). */
-  refused?: 'not-allowed';
+  refused?: 'not-allowed' | 'target-not-allowed';
 }
 
 export type OrgCallSink = (record: OrgCallRecord) => void;
@@ -54,7 +62,8 @@ export function setOrgCallSink(sink: OrgCallSink | undefined): void {
 
 /** The echo line appended to every successful response — same shape the CLI prints after `run save`. */
 export function formatOrgEcho(r: OrgCallRecord): string {
-  return `Org: ${r.org} (source: ${r.orgSource}${r.orgFile !== undefined ? `, file ${r.orgFile}` : ''})`;
+  const base = `Org: ${r.org} (source: ${r.orgSource}${r.orgFile !== undefined ? `, file ${r.orgFile}` : ''})`;
+  return r.targetOrg !== undefined ? `${base} → target org: ${r.targetOrg}` : base;
 }
 
 // ---------------------------------------------------------------------------

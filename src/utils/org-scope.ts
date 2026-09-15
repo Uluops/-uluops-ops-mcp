@@ -45,6 +45,26 @@ export const ORG_ARG_NAME = 'org';
 const ORG_LESS_TOOLS = new Set(['get_taxonomy']);
 
 /**
+ * Tools for which the generic `org` sentence is WRONG and must be replaced,
+ * not appended to. The generic text says "name a work org explicitly to
+ * write there" — for a tool that names a second org in its body, `org` is
+ * where the operation STARTS and the body field is where it lands, so the
+ * appended sentence made the schema advertise two destinations and no source
+ * (anxiety-reader F1, 2026-09-15: the SOURCE sentence sat mid-prose, and the
+ * test that asserted it read the unwrapped description this wrapper never
+ * touched). The override is applied in both places the generic text goes —
+ * the description tail and the `org` field's own `describe`.
+ */
+const ORG_ARG_OVERRIDES: Record<string, string> = {
+  rehome_project:
+    '`org` is the SOURCE — the org the project is in NOW (omit it for the workspace default: nearest .uluops.json above the session\'s launch directory, else ULUOPS_ORG_SLUG, else your personal org). The DESTINATION is `target_org`, never `org`. ' +
+    ORG_ARG_GROUNDING,
+  get_org_audit_feed:
+    '`org` is the org whose feed to read, and is required in effect: a personal org has no feed to name, so a resolution that lands on personal is refused with a 400. ' +
+    ORG_ARG_GROUNDING,
+};
+
+/**
  * Wrap a tool registrar so every tool advertises `org` and says what omitting
  * it means. The handler side is the seam in createToolHandler; this is the
  * schema side. Both must exist: an argument the client cannot see is one it
@@ -58,7 +78,7 @@ export function withOrgArgument(server: McpServerToolRegistration): McpServerToo
         server.tool(name, description, schema, handler);
         return;
       }
-      const orgText = READ_TOOLS.has(name) ? ORG_ARG_DESCRIPTION_READ : ORG_ARG_DESCRIPTION;
+      const orgText = ORG_ARG_OVERRIDES[name] ?? (READ_TOOLS.has(name) ? ORG_ARG_DESCRIPTION_READ : ORG_ARG_DESCRIPTION);
       server.tool(
         name,
         `${description.trimEnd()} ${orgText}`,

@@ -39,9 +39,55 @@ The tool surface for the re-home endpoint deployed 2026-09-15 (API 2.x, `@uluops
 
 ### Changed
 
-- `@uluops/ops-sdk` 6.3.1 → 6.4.0 (`projects.rehome`, `orgs.getVisibleAuditLog`,
+- `@uluops/ops-sdk` 6.3.1 → 6.4.1 (`projects.rehome`, `orgs.getVisibleAuditLog`,
   `readRehomeAuditDetails`; `ProjectResponseSchema` now carries `orgId`, so every project result
   this server relays gains that field).
+
+### Pre-publish review fold (anxiety-reader 87 / code-auditor 94 / dx-validator 94 / docs-validator 93 on the 0.19.0 diff, 2026-09-15)
+
+The 0.19.0 diff above was reviewed before publish and these changes are in the same release. The
+pattern the anxiety reader named is the one to keep: every one-org invariant of 0.18.0 — the
+allowlist, the detector, the echo, the `org` sentence, the error copy — had been restated verbatim
+over the first tool that names **two** orgs.
+
+- **`ULUOPS_ORG_ALLOW` now bounds `target_org` too.** `createToolHandler` gained `targetOrgOf`;
+  a target outside the list is refused before the SDK call with a terminal `ORG_NOT_ALLOWED`
+  naming `target_org`. Until now the README's "orgs this server may EVER target" was false for this
+  tool: a model could move a project *into* any org the key administers.
+- **The detector and the echo name the destination.** `OrgCallRecord.targetOrg`; the echo reads
+  `Org: acme (source: explicit) → target org: ulu-labs`. The log line said which org a move came
+  *from* and nothing said where it went.
+- **The `org` argument's schema text says SOURCE on `rehome_project`.** `withOrgArgument` appends
+  "name a work org explicitly to *write there*" to every tool and sets it as `org`'s own describe —
+  so the schema advertised two destinations and the SOURCE sentence sat mid-prose, invisible to
+  the test that read the unwrapped description. `ORG_ARG_OVERRIDES` replaces the sentence for
+  `rehome_project` and `get_org_audit_feed`; the composed description is now what is tested.
+- **`reason` is redacted from the feed** — summary and raw `details` (`reason_redacted: true`).
+  Spec §4.4a says the re-home reason is never relayed to an MCP client; the first cut put it in
+  the one line the tool exists to relay.
+- **`same_org` is the admin path's idempotence signal, not the member path's.** The member lookup
+  is source-scoped: a re-run after the move is a **404**. The rehome 404 now explains the source
+  scope and the lost-response case ("check the target with `get_project` before retrying") instead
+  of "call `list_projects`" (which stays in the same scope). `same_org` also carries the API's
+  `orgSlug` so "already there" says *where*.
+- **Two-org error copy**: `ORG_ACCESS_DENIED` on `rehome_project` says it is about the *target*
+  and not to change `org`; 402 `PROJECT_LIMIT` is described as the target's cap, not a
+  subscription gate, and does not suggest reusing a name (a nudge toward `merge_projects`, which
+  is not reversible).
+- **Zod 4 vs Zod 3.** ops-sdk parses responses with zod 4; this server's `instanceof ZodError` is
+  zod 3. A response-schema failure after a *landed* write fell to the bare-Error branch with no
+  `status` and no `applied`. Name-matched now and mapped to `SDK_RESPONSE_SHAPE_MISMATCH` with
+  `status: 200`, `applied: 'unknown'` for writes and "read state first, never retry the write
+  blind".
+- `project_soft_deleted` moved to the 409 map (the API throws it as a `ConflictError`; its
+  restore-first remedy was unreachable); the tool description now lists all ten reasons with their
+  dispositions; `target_org` mirrors the SDK's slug regex so a malformed slug is refused naming
+  `target_org`, not the SDK's `targetOrg`; reason lookups use `Object.hasOwn` (a server-supplied
+  `reason: "constructor"` resolved a prototype function); the feed's `limit` is 1–100 (the API
+  answers 400 above 100, it does not clamp).
+- Known, not fixed: the feed's no-`org` refusal happens inside the SDK call, after the per-call
+  record was already emitted for a call that never went out; the `org` argument is advertised
+  optional on every tool by construction, including the one that needs it.
 
 ### Notes
 

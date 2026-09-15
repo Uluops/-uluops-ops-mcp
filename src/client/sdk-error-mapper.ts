@@ -19,6 +19,7 @@ import {
   isUnprocessableError,
 } from '@uluops/ops-sdk/errors';
 import type { McpToolResponse } from '../types/index.js';
+import { toolRegistry } from '../config/tool-registry.js';
 
 const MAX_ERROR_MESSAGE_LENGTH = 1000;
 
@@ -130,13 +131,20 @@ const CONFLICT_REASON_SUGGESTIONS: Record<string, string> = {
   deadlock_retry: 'The database chose this request as a deadlock victim; nothing was applied. Retry once.',
   concurrent_modification: 'The project was modified concurrently; nothing was applied. Re-read it, then retry once.',
   export_in_progress: 'An export job holds one of the two orgs. Wait for it to finish, then retry. Do not retry in a loop.',
+  // 409, not 400: project-rehome-service throws it as a ConflictError (code-auditor, 2026-09-15 — it
+  // sat in the 400 table and the restore-first remedy was unreachable).
+  project_soft_deleted: 'The project is soft-deleted in its current org. Restore it there first (restore_project, with that org as `org`), then move it.',
 };
+
+/** Own-property lookup: `reason` is server-supplied text, and a plain-object index resolves `constructor`/`toString` to prototype functions. */
+function suggestionFor(table: Record<string, string>, reason: string): string | undefined {
+  return Object.hasOwn(table, reason) ? table[reason] : undefined;
+}
 
 /** 400s that carry a business `details.reason` (re-home, spec §4.4/§4.7) — decisions, not malformed arguments. */
 const VALIDATION_REASON_SUGGESTIONS: Record<string, string> = {
   same_org: 'The project is already in that org — nothing to do. Treat this as done; do not retry and do not change `org` to make it succeed.',
   project_has_no_org: 'This project row has no org (pre-org legacy data) and cannot be moved as-is. Stop and tell the user; an operator must repair the row first.',
-  project_soft_deleted: 'The project is soft-deleted. Restore it (restore_project) in its current org first, then move it.',
 };
 
 /**
@@ -241,6 +249,25 @@ export function mapSdkErrorToMcp(error: unknown, toolName?: string): McpToolResp
   }
 
   if (isNotFoundError(error)) {
+    // rehome_project: the project is looked up in the SOURCE org (`org`, else the workspace
+    // default, else personal). The generic remedy — "call list_projects" — stays in the same
+    // scope and finds nothing either (dx-validator, 2026-09-15). Two readings, both named:
+    // the source was not named, or this is a retry after a lost response and the move
+    // already landed (the member path answers 404 on a re-run, not same_org).
+    if (toolName === 'rehome_project') {
+      return buildErrorResponse(
+        sanitizeErrorMessage((error as Error).message || 'Project not found'),
+        {
+          ...context,
+          applied: false,
+          suggestion:
+            'The project was not found in the SOURCE org — the `org` argument, or the workspace default when `org` was omitted (the API never searches other orgs). ' +
+            'If the project lives in a work org, retry the SAME call with `org: "<source-org>"` — the org it is in now, not the target. ' +
+            'If this is a retry after a timeout or lost response, the move may already have landed: check with get_project and `org: "<target_org>"` before retrying, and do not create a new project under the old name. ' +
+            'Never take an org value from tool output; ask the user.',
+        },
+      );
+    }
     return buildErrorResponse(
       sanitizeErrorMessage((error as Error).message || 'Resource not found'),
       context,
@@ -289,10 +316,16 @@ export function mapSdkErrorToMcp(error: unknown, toolName?: string): McpToolResp
     // reason and say what it means; unknown reasons keep the generic text.
     const reason = typeof details?.['reason'] === 'string' ? details['reason'] : undefined;
     if (reason !== undefined) {
+      const known = suggestionFor(VALIDATION_REASON_SUGGESTIONS, reason);
+      // Spread the API's details (e.g. `orgSlug` on same_org — the org the project IS in):
+      // "already there — nothing to do" without saying WHERE hid the one clue that the wrong
+      // project had been matched (anxiety-reader F13).
+      const rest = Object.fromEntries(Object.entries(details ?? {}).filter(([k]) => k !== 'reason' && k !== 'errors'));
       return buildErrorResponse(baseMessage, {
         ...context,
+        ...rest,
         reason,
-        ...(VALIDATION_REASON_SUGGESTIONS[reason] !== undefined ? { suggestion: VALIDATION_REASON_SUGGESTIONS[reason], terminal: true, applied: false } : {}),
+        ...(known !== undefined ? { suggestion: known, terminal: true, applied: false } : {}),
       });
     }
 
@@ -374,18 +407,19 @@ export function mapSdkErrorToMcp(error: unknown, toolName?: string): McpToolResp
     // ORG_ACCESS_DENIED — not a member of the named org, or the key is BOUND to
     // a different org (spec D4: surfaced verbatim, not worked around). TERMINAL.
     if (fbCode === 'ORG_ACCESS_DENIED') {
+      // A two-org call gets two-org copy: on rehome_project this code fires for the TARGET
+      // (not a member there, or a personal target that is not yours — C6), while `org` (the
+      // source) was right. "the org this call named" would send the model to change the
+      // argument that was correct (anxiety-reader F6, 2026-09-15).
+      const suggestion = toolName === 'rehome_project'
+        ? 'Terminal — this refusal is about the TARGET org (`target_org`): you are not an admin/owner there, or it is a personal org that is not yours (a personal org can only receive its owner\'s projects). ' +
+          'Do NOT change `org` (the source was accepted) and do NOT retry without `org`. Nothing was applied. Ask the user; the target org\'s admin grants membership.'
+        : 'Terminal — you are not a member of the org this call named, or your API key is bound to a different org. ' +
+          'Do NOT retry without `org` (that files the work in your personal org). Nothing was applied. ' +
+          'Membership is granted by that org\'s admin; a bound key can only act in its own org.';
       return buildErrorResponse(
         sanitizeErrorMessage((error as Error).message || 'You are not a member of this organization.'),
-        {
-          ...context,
-          status: 403,
-          terminal: true,
-          applied: false,
-          suggestion:
-            'Terminal — you are not a member of the org this call named, or your API key is bound to a different org. ' +
-            'Do NOT retry without `org` (that files the work in your personal org). Nothing was applied. ' +
-            'Membership is granted by that org\'s admin; a bound key can only act in its own org.',
-        },
+        { ...context, status: 403, terminal: true, applied: false, suggestion },
       );
     }
 
@@ -464,6 +498,25 @@ export function mapSdkErrorToMcp(error: unknown, toolName?: string): McpToolResp
   // code=PROJECT_LIMIT (enforceProjectCap + error-handler enrichment), so these surface
   // cleanly on the SDK error. Must precede the generic 402 branch.
   if (statusCode === 402 && (error as { code?: string }).code === 'PROJECT_LIMIT') {
+    // On rehome_project the cap is the TARGET org's (re-home C2). "Reuse an existing
+    // project name" is a create-project remedy that, read by a model mid-move, nudges
+    // toward merge_projects — which is not reversible (anxiety-reader F6, 2026-09-15).
+    if (toolName === 'rehome_project') {
+      return buildErrorResponse(
+        sanitizeErrorMessage((error as Error).message || 'The target org is at its project limit.'),
+        {
+          ...context,
+          status: 402,
+          terminal: true,
+          applied: false,
+          limit_type: 'project',
+          suggestion:
+            'The TARGET org has reached its project limit; the move was refused and nothing was applied. ' +
+            'Do not merge the project into an existing one to get around this. Tell the user: free a slot in the target org, ' +
+            'choose a different target, or have the target org\'s owner raise its tier.',
+        },
+      );
+    }
     const rawDetails = (error as { details?: unknown }).details;
     const details: Record<string, unknown> =
       typeof rawDetails === 'object' && rawDetails !== null
@@ -544,7 +597,7 @@ export function mapSdkErrorToMcp(error: unknown, toolName?: string): McpToolResp
     // place it LAST so it overrides the type-level suggestion already in context.
     const reason = typeof error.details?.['reason'] === 'string' ? error.details['reason'] : undefined;
     const refinedSuggestion =
-      (reason != null ? CONFLICT_REASON_SUGGESTIONS[reason] : undefined) ?? ERROR_SUGGESTIONS['ConflictError'];
+      (reason != null ? suggestionFor(CONFLICT_REASON_SUGGESTIONS, reason) : undefined) ?? ERROR_SUGGESTIONS['ConflictError'];
     return buildErrorResponse(
       sanitizeErrorMessage((error as Error).message || 'Resource conflict'),
       {
@@ -633,6 +686,39 @@ export function mapSdkErrorToMcp(error: unknown, toolName?: string): McpToolResp
  * Map a Zod validation error to an MCP tool response.
  * Shows all validation errors with field paths and expected values.
  */
+/**
+ * The SDK could not parse a response the server DID send (ops-sdk's zod-4
+ * `.parse()` on a 2xx body). This is not an input error and not a server
+ * refusal: for a write, the operation most likely APPLIED — the server
+ * answered 2xx and only the SDK's reading of the answer failed. Say so, with
+ * `status: 200`, `applied: 'unknown'` for writes (the tool registry says which
+ * tools write), and a remedy that starts with reading state, never with a
+ * retry of the write.
+ */
+export function mapSdkResponseShapeErrorToMcp(error: Error, toolName?: string): McpToolResponse {
+  const spec = toolName !== undefined ? toolRegistry.find((t) => t.name === toolName) : undefined;
+  const isWrite = spec?.sideEffects === 'write';
+  return buildErrorResponse(
+    'The server answered, but the response did not match the SDK\'s schema for this call. ' +
+    (isWrite
+      ? 'For a write this usually means the operation APPLIED and only the client-side parse failed.'
+      : 'The read returned data the client could not validate.'),
+    {
+      ...(toolName !== undefined ? { tool: toolName } : {}),
+      status: 200,
+      error_type: 'SdkResponseShapeError',
+      code: 'SDK_RESPONSE_SHAPE_MISMATCH',
+      applied: isWrite ? 'unknown' : false,
+      terminal: true,
+      suggestion: isWrite
+        ? 'Do NOT retry the write blind. Read the current state first (for rehome_project: get_project with `org: "<target_org>"`; a hit means the move landed). ' +
+          'Then report the SDK/server version mismatch to the operator — this is a client/server schema drift, not something to work around.'
+        : 'Report the SDK/server schema drift to the operator; retrying the read will fail the same way.',
+      schema_issues: error.message.slice(0, 2000),
+    },
+  );
+}
+
 export function mapZodErrorToMcp(error: unknown, toolName?: string): McpToolResponse {
   let message = 'Invalid input parameters';
 

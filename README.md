@@ -82,7 +82,10 @@ words; every tool's `org` description says so, every successful result ends with
 so, and `ULUOPS_ORG_ALLOW` bounds what the server will accept regardless: an org outside the list —
 whether it came from the argument, the workspace file or the env — is refused before any request
 with a terminal `ORG_NOT_ALLOWED` that names the list. `personal` is always allowed. Leave it unset
-and every org the key holder belongs to is reachable; the boot log warns.
+and every org the key holder belongs to is reachable; the boot log warns. The bound covers **both
+orgs of a two-org call**: `rehome_project`'s `target_org` is checked against the same list before
+any request, so the server can neither read from nor move a project *into* an org the operator
+excluded.
 
 Five refusals are terminal and say so in the tool result: `INSUFFICIENT_ORG_ROLE` (your role in
 that org is below `publisher` — do **not** retry without `org`, that files the work personally),
@@ -91,13 +94,22 @@ org does not resolve / is suspended — same rule, do not drop `org`), and `PROJ
 project moved orgs; the result names the org to pass). `ORG_NOT_ALLOWED` is the server-side sixth.
 
 **Moving a project between orgs** is `rehome_project` — the member path of the spec's §4.1. Two
-arguments name two orgs and the description says which is which: `org` is where the project is
-*now* (the API looks it up there — omit it for a work-org project and you get a 404 from your
-personal org, not a search), `target_org` is where it goes. A `same_org` 400 means "already there"
-and the result says so (`terminal`, `applied: false`) — it is the idempotence signal, not a schema
-error. The other refusals name their reason too (`name_collision`, `soft_deleted_conflict`,
-`rehomed_away_conflict`, `export_in_progress`, `moved_during_request`). What moved, and who moved
-it into a personal org, is readable by any member through `get_org_audit_feed`.
+arguments name two orgs and both the description and the `org` field's own schema text say which
+is which: `org` is where the project is *now* (the API looks it up there — omit it for a work-org
+project and it looks in the workspace default or your personal org, moves a same-named project if
+one lives there, and otherwise 404s; never a search), `target_org` is where it goes. Every result's
+echo line names both: `Org: acme (source: explicit) → target org: ulu-labs`, and the per-call log
+record carries `targetOrg`. A `same_org` 400 means "already there" and the result says so
+(`terminal`, `applied: false`, with the API's `orgSlug`) — but note it is the idempotence signal
+of the *admin* path only: the member path looks the project up in the **source**, so a re-run after
+the move answers **404**, and the 404 text says so and tells the model to check the target with
+`get_project` before doing anything else. The other refusals name their reason too
+(`name_collision`, `soft_deleted_conflict`, `rehomed_away_conflict`, `project_soft_deleted`,
+`export_in_progress`, `moved_during_request`, …) and a 402 `PROJECT_LIMIT` is described as the
+target's cap, not a subscription gate. What moved, and who moved it into a personal org, is
+readable by any member through `get_org_audit_feed` — **minus the operator's free-text `reason`**,
+which this server never relays (spec §4.4a: it is text written by one member and read by another,
+one line away from an instruction); the CLI, read by a human, shows it.
 
 ### Advanced Logging
 
@@ -309,7 +321,7 @@ The per-tool `maxArgsSize` (2 MB for `save_run`) and the 500 KB message envelope
 | `update_profile` | Update the authenticated user's profile (username, name, bio, timezone, websiteUrl). Setting `username` confirms it **one-time** — required before creating or publishing registry definitions |
 | `merge_projects` | Merge one project into another — runs and issues re-keyed into the target, colliding issues deduplicated by fingerprint, source soft-deleted. Durable (no undo) — always `dry_run` first |
 | `rehome_project` | Move a project and its whole history into another org (project-org-routing-and-rehome §4.1). **`org` is the SOURCE** (where the project is now), `target_org` the destination; admin/owner in both. The old `(org, name)` becomes a `410 PROJECT_REHOMED` tombstone, not a fork; reversible by moving back. Member path only — the platform-admin path is session-only (D20) and has no tool |
-| `get_org_audit_feed` | Read an org's member-visible audit feed (D19): today, projects that left the org for someone's personal org — who, when, where to, why. `org` names the org whose feed to read (required in effect). Each re-home entry carries a one-line `summary`; page with `next_cursor` |
+| `get_org_audit_feed` | Read an org's member-visible audit feed (D19): today, projects that left the org for someone's personal org — who, when, where to. `org` names the org whose feed to read (required in effect). Each re-home entry carries a one-line `summary`; the operator's `reason` is redacted; page with `next_cursor` (limit 1–100) |
 
 ### Run Tools (P2)
 | Tool | Description |

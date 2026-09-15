@@ -16,8 +16,15 @@
  *
  * Rendering: each entry's `details` is narrowed with the SDK's
  * `readRehomeAuditDetails`; a re-home row is summarised in one line
- * (`summary`) beside the raw entry, anything else is returned raw. The SDK
- * payload is kept intact as the first content block like every other tool.
+ * (`summary`) beside the raw entry, anything else is returned raw.
+ *
+ * **`reason` is redacted from what this server relays** — from the summary
+ * AND from the raw `details`. Spec §4.4a (security audit run #187, A4): the
+ * re-home `reason` is operator-authored free text "one line away from an
+ * agent-facing instruction" and is never relayed to an MCP client; D19 chose
+ * to expose the destination SLUG, not the text. The first cut of this tool
+ * interpolated it into the summary (pre-publish review, anxiety-reader F8).
+ * The CLI, read by a human, keeps it.
  */
 
 import { z } from 'zod';
@@ -28,8 +35,9 @@ import { createToolHandler } from '../utils/tool-handler.js';
 export const GetOrgAuditFeedInputSchema = z.object({
   cursor: z.string().min(1).max(200).optional()
     .describe('Opaque paging cursor — pass a previous page\'s `next_cursor` back verbatim'),
-  limit: z.number().int().min(1).max(200).optional()
-    .describe('Page size (default 50, max 200)'),
+  // 1–100: the API's OrgVisibleAuditLogQuery is .min(1).max(100) and answers 400, it does not clamp.
+  limit: z.number().int().min(1).max(100).optional()
+    .describe('Page size (1–100; the API default is 50)'),
 });
 
 export type GetOrgAuditFeedInput = z.infer<typeof GetOrgAuditFeedInputSchema>;
@@ -42,7 +50,14 @@ export function summarizeFeedEntry(entry: OrgAuditEntry): string | null {
   const other = d.action === 'project.rehome_in' ? d.from_org.slug : d.to_org.slug;
   const via = d.via_admin_path ? ' (platform admin)' : '';
   const personal = d.to_personal_org ? ' — a personal org' : '';
-  return `${entry.createdAt}: project "${d.project_name}" ${verb} \`${other}\`${personal}${via}${d.reason !== null ? ` — reason: ${d.reason}` : ''}`;
+  return `${entry.createdAt}: project "${d.project_name}" ${verb} \`${other}\`${personal}${via}`;
+}
+
+/** Strip the operator-authored `reason` from a feed row before it leaves this server (spec §4.4a). */
+export function redactFeedEntry(entry: OrgAuditEntry): OrgAuditEntry {
+  if (!Object.hasOwn(entry.details, 'reason')) return entry;
+  const details = Object.fromEntries(Object.entries(entry.details).filter(([k]) => k !== 'reason'));
+  return { ...entry, details: { ...details, reason_redacted: true } };
 }
 
 export function registerGetOrgAuditFeedTool(
@@ -51,7 +66,7 @@ export function registerGetOrgAuditFeedTool(
 ): void {
   server.tool(
     'get_org_audit_feed',
-    'Read an org\'s member-visible audit feed: the events its writers marked org-visible — today, projects that left this org for someone\'s personal org (who, when, where to, why). ' +
+    'Read an org\'s member-visible audit feed: the events its writers marked org-visible — today, projects that left this org for someone\'s personal org (who, when, where to — the operator\'s free-text reason is not relayed). ' +
     'Any member may read it. `org` names the org whose feed you want and is required in effect (a personal org has no feed to name). ' +
     'Returns raw entries plus a one-line `summary` per re-home entry; page with `next_cursor`.',
     GetOrgAuditFeedInputSchema.shape,
@@ -69,7 +84,7 @@ export function registerGetOrgAuditFeedTool(
       });
       return {
         org: slug,
-        entries: feed.data.entries.map((entry) => ({ ...entry, summary: summarizeFeedEntry(entry) })),
+        entries: feed.data.entries.map((entry) => ({ ...redactFeedEntry(entry), summary: summarizeFeedEntry(entry) })),
         count: feed.count,
         has_more: feed.hasMore,
         next_cursor: feed.nextCursor,

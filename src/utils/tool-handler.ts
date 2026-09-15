@@ -7,7 +7,7 @@
 
 import { z } from 'zod';
 import { resolveWorkspaceOrg, type OrgScopedOptions } from '@uluops/ops-sdk';
-import { mapSdkErrorToMcp, mapZodErrorToMcp } from '../client/sdk-error-mapper.js';
+import { mapSdkErrorToMcp, mapSdkResponseShapeErrorToMcp, mapZodErrorToMcp } from '../client/sdk-error-mapper.js';
 import { ORG_ARG_NAME } from './org-scope.js';
 import { normalizeKeys } from './normalize-keys.js';
 import { createSuccessResponse, type McpToolResponse } from '../types/index.js';
@@ -133,6 +133,16 @@ export function createToolHandler<TInput>(
      * directly to the caller.
      */
     preProcess?: (input: TInput) => TInput | ShortCircuit;
+    /**
+     * For tools whose BODY names a second org (rehome_project's `target_org`):
+     * read it from the normalized input. When present, the target is (a)
+     * checked against `ULUOPS_ORG_ALLOW` before the SDK call — D15 bounds
+     * every org this server may touch, and before the 0.19.0 pre-publish review it bounded the source
+     * only (anxiety-reader F3) — and (b) recorded on the per-call org record
+     * and the echo, so the destination of a move is in the log and beside the
+     * result, not only inside the SDK payload (F5).
+     */
+    targetOrgOf?: (normalized: Record<string, unknown>) => string | undefined;
   }
 ): (args: unknown) => Promise<McpToolResponse> {
   const toolName = options?.toolName;
@@ -203,6 +213,33 @@ export function createToolHandler<TInput>(
       }
 
       const normalized = normalizeKeys(input) as Record<string, unknown>;
+      const targetOrg = options?.targetOrgOf?.(normalized);
+      if (targetOrg !== undefined) {
+        orgRecord.targetOrg = targetOrg;
+        if (!isOrgAllowed(targetOrg)) {
+          const allowed = getOrgAllowlist() ?? [];
+          emitOrgCall({ ...orgRecord, refused: 'target-not-allowed' });
+          return {
+            content: [{ type: 'text', text: JSON.stringify({
+              error: `Target org \`${targetOrg}\` is not in this server's allowlist (ULUOPS_ORG_ALLOW: ${allowed.join(', ') || '(empty)'}). Nothing was applied.`,
+              ...(toolName !== undefined ? { tool: toolName } : {}),
+              code: 'ORG_NOT_ALLOWED',
+              status: 403,
+              terminal: true,
+              applied: false,
+              org: resolved.org ?? 'personal',
+              org_source: resolved.source,
+              target_org: targetOrg,
+              allowed_orgs: allowed,
+              suggestion:
+                'Terminal — this MCP server may only move projects INTO orgs its operator listed, the same bound it applies to `org`. ' +
+                'Do NOT retry with a different target_org and do NOT drop `org`. Tell the user which target was named; the operator ' +
+                'adds it to ULUOPS_ORG_ALLOW in the server registration if it belongs there.',
+            }) }],
+            isError: true,
+          };
+        }
+      }
       const result = await sdkCall(normalized, scope);
       const response = createSuccessResponse(result);
       // Echo where it landed as a SECOND content block: the first block stays
@@ -224,6 +261,15 @@ export function createToolHandler<TInput>(
 
       if (error instanceof z.ZodError) {
         return mapZodErrorToMcp(error, toolName);
+      }
+      // A ZodError that is NOT ours: ops-sdk bundles zod 4 and parses every
+      // response with it, so an SDK response-schema failure is a ZodError this
+      // file's zod-3 `instanceof` does not recognise. Before the 0.19.0 pre-publish review it fell to
+      // the bare-Error branch — no status, no `applied` — AFTER a write had
+      // landed (code-auditor, 2026-09-15, reproduced). Name-match it and say
+      // what it is: the server answered, the SDK could not read the answer.
+      if (error instanceof Error && error.name === 'ZodError') {
+        return mapSdkResponseShapeErrorToMcp(error, toolName);
       }
       return mapSdkErrorToMcp(error, toolName);
     }
