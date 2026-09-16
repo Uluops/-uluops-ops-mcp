@@ -255,6 +255,10 @@ The `× 16` is the library's heuristic; if it changes upstream this floor must b
 
 ## [Unreleased]
 
+### Changed
+
+- **npm `description`** — "MCP server for the UluOps tracker API — runs, findings, issues, and analytics" replaces "… Platform API — validation tracking, analytics, and issue management". The string is what npm shows above the README and what a harness reads first; "validation tracking" is the retired category (messaging foundation §4.10/§5). Tool descriptions themselves are unchanged in this entry — that census (§9.2 4a) is still open.
+
 ### Fixed
 
 - **`package.json` `repository`/`homepage`/`bugs` now point at the public repo, `github.com/Uluops/-uluops-ops-mcp`** — it pointed at {'type': 'git', 'url': 'git+https://github.com/Uluops/ops-uluops-mcp.git'}, which npm renders as the package's GitHub link (2026-09-16, found while adding npm + GitHub links to every SDK page on docs.uluops.ai).
