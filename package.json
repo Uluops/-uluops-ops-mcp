@@ -1,7 +1,7 @@
 {
   "name": "@uluops/ops-mcp",
   "version": "0.20.0",
-  "description": "MCP server for the UluOps Platform API — validation tracking, analytics, and issue management",
+  "description": "MCP server for the UluOps Platform API \u2014 validation tracking, analytics, and issue management",
   "type": "module",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -53,11 +53,11 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/Uluops/ops-uluops-mcp.git"
+    "url": "git+https://github.com/Uluops/-uluops-ops-mcp.git"
   },
-  "homepage": "https://github.com/Uluops/ops-uluops-mcp#readme",
+  "homepage": "https://github.com/Uluops/-uluops-ops-mcp#readme",
   "bugs": {
-    "url": "https://github.com/Uluops/ops-uluops-mcp/issues"
+    "url": "https://github.com/Uluops/-uluops-ops-mcp/issues"
   },
   "engines": {
     "node": ">=18.0.0"

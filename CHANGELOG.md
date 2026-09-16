@@ -255,6 +255,10 @@ The `× 16` is the library's heuristic; if it changes upstream this floor must b
 
 ## [Unreleased]
 
+### Fixed
+
+- **`package.json` `repository`/`homepage`/`bugs` now point at the public repo, `github.com/Uluops/-uluops-ops-mcp`** — it pointed at {'type': 'git', 'url': 'git+https://github.com/Uluops/ops-uluops-mcp.git'}, which npm renders as the package's GitHub link (2026-09-16, found while adding npm + GitHub links to every SDK page on docs.uluops.ai).
+
 ## [0.15.0] - 2026-08-23
 
 MCP tool-sweep batch 3 (mechanical tail).
