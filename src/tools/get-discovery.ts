@@ -2,7 +2,7 @@
  * Get Discovery Tool
  *
  * Retrieves discovery timeline showing new vs recurring issues over time.
- * Helps track whether validation is finding new problems or re-detecting existing ones.
+ * Helps track whether runs are finding new problems or re-detecting existing ones (fingerprint recurrence).
  */
 
 import { z } from 'zod';
@@ -31,7 +31,7 @@ export function registerGetDiscoveryTool(
 ): void {
   server.tool(
     'get_discovery',
-    'Get discovery timeline showing new vs recurring issues over time. Helps track whether validation is finding new problems or re-detecting existing ones.',
+    'Get discovery timeline showing new vs recurring issues over time. Helps track whether runs are finding new problems or re-detecting existing ones (fingerprint recurrence).',
     GetDiscoveryInputSchema.shape,
     createToolHandler(GetDiscoveryInputSchema, (n, scope) => opsClient.analytics.getDiscovery(n, scope), { toolName: 'get_discovery' })
   );

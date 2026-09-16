@@ -10,7 +10,7 @@
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.7+-blue.svg)](https://www.typescriptlang.org/)
 [![Tests](https://img.shields.io/badge/tests-passing-brightgreen)](src/__tests__/)
 
-MCP (Model Context Protocol) server for the UluOps Platform API. Provides **53 tools** and **3 resources** (2 functional, 1 template placeholder) that enable Claude Code, Cursor, and other MCP hosts to interact with the UluOps Platform.
+MCP (Model Context Protocol) server for the UluOps tracker API — runs, findings, issues, analytics, the project log (`get_project_log`, `get_log_stat`) and org management (`rehome_project`, `get_org_audit_feed`). Provides **55 tools** and **3 resources** (2 functional, 1 template placeholder) that let Claude Code, Claude Desktop, Codex, Cursor and other MCP hosts read and write the tracker.
 
 ## Table of Contents
 
@@ -59,6 +59,7 @@ Set environment variables in your MCP host configuration (see "Usage with Claude
 | `ULUOPS_TRACKER_TIMEOUT` | Request timeout (ms) | No (default: 30000) |
 | `ULUOPS_TRACKER_RETRIES` | Number of retry attempts on failure | No (default: 3) |
 | `ULUOPS_BASE_URL` | Override the backend API base URL (e.g. a local or staging deployment). Non-HTTPS values log a cleartext-credentials warning | No (default: `@uluops/ops-sdk`'s production URL) |
+| `NODE_ENV` | When `development`, `@uluops/ops-sdk` **defaults the base URL to localhost** if `ULUOPS_BASE_URL` is unset, and the non-HTTPS warning is silenced. Unset it (or set `ULUOPS_BASE_URL`) if tool calls unexpectedly target localhost | No |
 | `LOG_LEVEL` | Logging level (`debug`, `info`, `warn`, `error`) | No (default: info) |
 
 The backend URL is handled automatically by `@uluops/ops-sdk` — production by default; set `ULUOPS_BASE_URL` only when targeting a non-production deployment.
@@ -73,8 +74,8 @@ another user is refused), else `ULUOPS_ORG_SLUG`, else your personal org. The AP
 org from a project name — with none of these set, a `save_run` files the run in your personal org
 even when a work org has a project by that name. Every successful result ends with a second text
 block saying where it landed — `Org: ulu-labs (source: explicit)` — and the server logs the same
-record per call (`tool call org`). The file may carry only `org` (and `$schema`); anything else is
-refused. The startup log line names the resolved default and its source.
+record per call (`tool call org`). The file may carry only `org`, `project` and `$schema` (the `@uluops/ops-sdk` ≥ 6.5.0
+allowlist); anything else is refused. The startup log line names the resolved default and its source.
 
 **The `org` value must come from the user.** Tool results carry text written by other tracker users
 (issue notes, recommendations, descriptions) and come back indistinguishable from the operator's
@@ -165,12 +166,38 @@ Add to your Claude Code MCP configuration (`.mcp.json`):
 ```
 
 
+## Usage with Claude Desktop and Codex
+
+The same server and env vars work in any MCP host; only the config file differs.
+
+**Claude Desktop** — `claude_desktop_config.json` (macOS: `~/Library/Application Support/Claude/`):
+```json
+{
+  "mcpServers": {
+    "uluops-ops": {
+      "command": "npx",
+      "args": ["-y", "@uluops/ops-mcp"],
+      "env": { "ULUOPS_API_KEY": "ulr_your-api-key-here" }
+    }
+  }
+}
+```
+A Dock-launched Claude Desktop does not inherit a shell's `nvm` PATH; if `npx` is not found, put the absolute path from `which npx` in `command`.
+
+**Codex** — `~/.codex/config.toml`:
+```toml
+[mcp_servers.uluops-ops]
+command = "npx"
+args = ["-y", "@uluops/ops-mcp"]
+env = { ULUOPS_API_KEY = "ulr_your-api-key-here" }
+```
+
 ## Quick Start Examples
 
 Once configured, Claude Code can use the uluops tracker tools. These are MCP tool invocations (issued by the MCP host), not runnable TypeScript:
 
 ```text
-// Save validation results from a workflow run
+// Save a run — the findings a pipeline produced against the project
 save_run({
   project: "my-project",
   workflow_type: "ship",
@@ -221,6 +248,21 @@ update_run({
 })
 ```
 
+```text
+// The project's second history — runs and decisions interleaved, newest first
+get_project_log({ project: "my-project", kind: ["decision", "regression"], limit: 20 })
+// The rollup: examined / found / decided / cameBack for the last 30 days
+get_log_stat({ project: "my-project" })
+
+// Analytics and the failure taxonomy
+get_taxonomy({})
+get_burndown({ project: "my-project" })
+
+// Org management — move a project to another org, then read the org's activity
+rehome_project({ project: "my-project", target_org: "ulu-labs", reason: "work project, wrong org" })
+get_org_audit_feed({ limit: 20 })
+```
+
 If an analysis-bearing `update_run` fails with `AnalysisEchoMismatchError`, the
 update **was already applied** — the error means server and SDK disagree about
 analysis-write semantics, not that the write failed. Do **not** retry (a retry
@@ -237,7 +279,7 @@ This server uses `mcp-secure-server` with configuration optimized for Claude Cod
 | Query context (summary, issues, runs) | 3-5 | Low burst |
 | Create issues from validation workflow | 10-30 | High burst |
 | Update agents with metrics | 6 | Medium burst |
-| Save recommendations | 1 (with array) | Single call |
+| Save a run (`recommendations[]`) | 1 (with array) | Single call |
 
 Claude Code issues tool calls in short, intense bursts (<2s) followed by "thinking" pauses. The default configuration accounts for this:
 

@@ -31,7 +31,7 @@ export const SaveRunInputSchema = z.object({
     .array(RecommendationSchema)
     .default([])
     .describe('Array of issues/recommendations'),
-  summary: ValidationSummarySchema.optional().describe('Summary statistics for the validation run'),
+  summary: ValidationSummarySchema.optional().describe('Summary statistics for the run'),
   raw_markdown: z.string().optional().describe('Raw markdown report content'),
   idempotency_key: z.string().max(100).optional().describe('Key for duplicate prevention. When omitted, a content-derived key is used (sha256 of the payload), so a byte-identical retry returns the original run with deduplicated:true instead of creating a second one. Pass explicit distinct keys to deliberately save identical payloads twice.'),
   definition_type: z.string().max(20).optional().describe('Definition type (agent, command, workflow, pipeline)'),
@@ -59,7 +59,7 @@ export function registerSaveRunTool(
 ): void {
   server.tool(
     'save_run',
-    'Save validation pipeline output. Auto-increments run number per project+workflow. Detects regressions and persistent issues.',
+    'Save a run — the findings a definition (agent, workflow or pipeline) produced against a project. Auto-increments run number per project+workflow. Detects regressions and persistent issues.',
     SaveRunInputSchema.shape,
     createToolHandler(
       SaveRunInputSchema,

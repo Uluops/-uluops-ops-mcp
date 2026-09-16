@@ -39,6 +39,8 @@ const TOOL_POLICIES_PATH = require.resolve('../tool-policies.json');
  * JSON-RPC -32602 (Invalid params) — a protocol-layer vocabulary that gives
  * the developer no route back to the file they forgot to edit. This check
  * surfaces the omission at boot, by name, in the registry's own terms.
+ *
+ * @internal Boot-time diagnostic. Exported so `tool-spec-parity.test.ts` can exercise it; not part of the MCP surface and not a supported import.
  */
 export function checkToolSpecParity(
   registeredNames: readonly string[],

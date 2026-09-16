@@ -24,7 +24,7 @@ export function registerGetProjectSummaryTool(
 ): void {
   server.tool(
     'get_project_summary',
-    'Get current validation status summary including workflows, issues, and agent trends.',
+    "Get the project's current status summary — workflows, issues, and agent trends.",
     GetProjectSummaryInputSchema.shape,
     createToolHandler(GetProjectSummaryInputSchema, (n, scope) =>
       opsClient.projects.getSummary(n['project'] as string, scope),

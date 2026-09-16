@@ -53,7 +53,7 @@ export function registerCreateIssueTool(
 ): void {
   server.tool(
     'create_issue',
-    'Create a user-submitted issue directly. Use this to log issues discovered outside of validation runs. Required fields: project, title, priority.',
+    'Create a user-submitted issue directly. Use this to file a finding a human made outside of any run. Required fields: project, title, priority.',
     CreateIssueInputSchema.shape,
     createToolHandler(CreateIssueInputSchema, (n, scope) => opsClient.issues.create(n, scope), { toolName: 'create_issue' })
   );

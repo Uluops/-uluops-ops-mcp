@@ -24,7 +24,7 @@ export function registerCreateProjectTool(
 ): void {
   server.tool(
     'create_project',
-    'Create a new project for tracking validation runs, issues, and analytics. Returns the created project with its UUID.',
+    'Create a new project — the unit that runs, findings, issues and analytics are tracked under. Returns the created project with its UUID.',
     CreateProjectInputSchema.shape,
     createToolHandler(CreateProjectInputSchema, (n, scope) => opsClient.projects.create(n, scope), { toolName: 'create_project' })
   );

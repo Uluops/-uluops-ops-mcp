@@ -5,6 +5,24 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Changed
+
+- **npm `description`** — "MCP server for the UluOps tracker API — runs, findings, issues, and analytics" replaces "… Platform API — validation tracking, analytics, and issue management". The string is what npm shows above the README and what a harness reads first; "validation tracking" is the retired category (messaging foundation §4.10/§5). Tool descriptions themselves are unchanged in this entry — that census (§9.2 4a) is still open.
+
+### Fixed
+
+- **`package.json` `repository`/`homepage`/`bugs` now point at the public repo, `github.com/Uluops/-uluops-ops-mcp`** — it pointed at {'type': 'git', 'url': 'git+https://github.com/Uluops/-uluops-ops-mcp.git'}, which npm renders as the package's GitHub link (2026-09-16, found while adding npm + GitHub links to every SDK page on docs.uluops.ai).
+- **README byline** `Operating Intelligence as Infrastructure` → `The operations layer for agentic work` (f28aa75, 2026-09-16; messaging foundation §4.1).
+- **The 4a tool-description census is now closed for this package (consumer-validate run #8):** the nine consumer-visible strings that still said "validation" as the category — `create_issue`, `create_project`, `diff_runs`, `get_discovery`, `get_project_summary`, `save_run` (tool and `summary` field) and the shared `recommendations[]` / `summary` / `all_gates_passed` `.describe()` text — now use the promoted vocabulary (run, finding, fingerprint recurrence, gates). What a harness reads in `tools/list` changes; what every tool does is unchanged. `keywords` likewise: `validation` → `findings`, `issues`, `regression`, `tracker`; `description` names the project log and org management.
+- **README**: tool count 53 → 55 (the 0.20.0 additions were never reflected in the overview line); `.uluops.json` allowlist paragraph matches the 6.5.0 reader (`org`, `project`, `$schema`) — it contradicted the release note further down; `NODE_ENV` in the configuration table (it silently retargets the default base URL to localhost); Claude Desktop and Codex config blocks; Quick Start examples for the project log, analytics/taxonomy and org management.
+
+### Fixed
+
+- **The non-HTTPS `ULUOPS_BASE_URL` warning no longer suggests a fix that cannot work.** It said "set `NODE_ENV=development` to silence this warning for local testing", but `@uluops/sdk-core` refuses plain HTTP for any host other than loopback and RFC1918 IPv4 literals, so a staging URL would follow the advice and still fail at startup with an unrelated-looking error. The warning now states the SDK's rule (consumer-validate run #8, dx-validator).
+- **CHANGELOG**: `[Unreleased]` had drifted below 0.16.0 and captured this week's entries; moved to the top. The compare links at the foot of the file pointed at the retired private repo (`ops-uluops-mcp`) with a `v0.4.7` base; they now point at `Uluops/-uluops-ops-mcp` from `v0.20.0`.
+
 ## [0.20.0] - 2026-09-15
 
 ### Added
@@ -252,16 +270,6 @@ The `× 16` is the library's heuristic; if it changes upstream this floor must b
 - **Protocol-layer validation errors are readable** (T3, via
   `mcp-secure-server` 0.0.20-security): raw MCP-SDK Zod dumps rewritten to
   per-field prose, in both SDK message formats and both delivery channels.
-
-## [Unreleased]
-
-### Changed
-
-- **npm `description`** — "MCP server for the UluOps tracker API — runs, findings, issues, and analytics" replaces "… Platform API — validation tracking, analytics, and issue management". The string is what npm shows above the README and what a harness reads first; "validation tracking" is the retired category (messaging foundation §4.10/§5). Tool descriptions themselves are unchanged in this entry — that census (§9.2 4a) is still open.
-
-### Fixed
-
-- **`package.json` `repository`/`homepage`/`bugs` now point at the public repo, `github.com/Uluops/-uluops-ops-mcp`** — it pointed at {'type': 'git', 'url': 'git+https://github.com/Uluops/ops-uluops-mcp.git'}, which npm renders as the package's GitHub link (2026-09-16, found while adding npm + GitHub links to every SDK page on docs.uluops.ai).
 
 ## [0.15.0] - 2026-08-23
 
@@ -1227,38 +1235,38 @@ and aligns the package with the broader UluOps supply-chain policy.
 - Security limits increased for large validation payloads
 - `id` field handling standardized in status update tools
 
-[Unreleased]: https://github.com/Uluops/ops-uluops-mcp/compare/v0.4.7...HEAD
-[0.4.7]: https://github.com/Uluops/ops-uluops-mcp/compare/v0.4.6...v0.4.7
-[0.4.6]: https://github.com/Uluops/ops-uluops-mcp/compare/v0.4.5...v0.4.6
-[0.4.5]: https://github.com/Uluops/ops-uluops-mcp/compare/v0.4.4...v0.4.5
-[0.4.4]: https://github.com/Uluops/ops-uluops-mcp/compare/v0.4.3...v0.4.4
-[0.4.3]: https://github.com/Uluops/ops-uluops-mcp/compare/v0.4.2...v0.4.3
-[0.4.2]: https://github.com/Uluops/ops-uluops-mcp/compare/v0.4.1...v0.4.2
-[0.4.1]: https://github.com/Uluops/ops-uluops-mcp/compare/v0.4.0...v0.4.1
-[0.4.0]: https://github.com/Uluops/ops-uluops-mcp/compare/v0.3.1...v0.4.0
-[0.3.1]: https://github.com/Uluops/ops-uluops-mcp/compare/v0.3.0...v0.3.1
-[0.3.0]: https://github.com/Uluops/ops-uluops-mcp/compare/v0.2.1...v0.3.0
-[0.2.1]: https://github.com/Uluops/ops-uluops-mcp/compare/v0.2.0...v0.2.1
-[0.2.0]: https://github.com/Uluops/ops-uluops-mcp/compare/v1.21.0...v0.2.0
-[1.21.0]: https://github.com/Uluops/ops-uluops-mcp/compare/v1.20.0...v1.21.0
-[1.20.0]: https://github.com/Uluops/ops-uluops-mcp/compare/v1.19.0...v1.20.0
-[1.19.0]: https://github.com/Uluops/ops-uluops-mcp/compare/v1.18.0...v1.19.0
-[1.18.0]: https://github.com/Uluops/ops-uluops-mcp/compare/v1.17.0...v1.18.0
-[1.17.0]: https://github.com/Uluops/ops-uluops-mcp/compare/v1.16.0...v1.17.0
-[1.16.0]: https://github.com/Uluops/ops-uluops-mcp/compare/v1.15.0...v1.16.0
-[1.15.0]: https://github.com/Uluops/ops-uluops-mcp/compare/v1.14.0...v1.15.0
-[1.14.0]: https://github.com/Uluops/ops-uluops-mcp/compare/v1.13.0...v1.14.0
-[1.13.0]: https://github.com/Uluops/ops-uluops-mcp/compare/v1.12.0...v1.13.0
-[1.12.0]: https://github.com/Uluops/ops-uluops-mcp/compare/v1.11.0...v1.12.0
-[1.11.0]: https://github.com/Uluops/ops-uluops-mcp/compare/v1.10.0...v1.11.0
-[1.10.0]: https://github.com/Uluops/ops-uluops-mcp/compare/v1.9.0...v1.10.0
-[1.9.0]: https://github.com/Uluops/ops-uluops-mcp/compare/v1.8.0...v1.9.0
-[1.8.0]: https://github.com/Uluops/ops-uluops-mcp/compare/v1.7.0...v1.8.0
-[1.7.0]: https://github.com/Uluops/ops-uluops-mcp/compare/v1.6.0...v1.7.0
-[1.6.0]: https://github.com/Uluops/ops-uluops-mcp/compare/v1.5.0...v1.6.0
-[1.5.0]: https://github.com/Uluops/ops-uluops-mcp/compare/v1.4.0...v1.5.0
-[1.4.0]: https://github.com/Uluops/ops-uluops-mcp/compare/v1.3.0...v1.4.0
-[1.3.0]: https://github.com/Uluops/ops-uluops-mcp/compare/v1.2.0...v1.3.0
-[1.2.0]: https://github.com/Uluops/ops-uluops-mcp/compare/v1.1.0...v1.2.0
-[1.1.0]: https://github.com/Uluops/ops-uluops-mcp/compare/v1.0.0...v1.1.0
-[1.0.0]: https://github.com/Uluops/ops-uluops-mcp/releases/tag/v1.0.0
+[Unreleased]: https://github.com/Uluops/-uluops-ops-mcp/compare/v0.20.0...HEAD
+[0.4.7]: https://github.com/Uluops/-uluops-ops-mcp/compare/v0.4.6...v0.4.7
+[0.4.6]: https://github.com/Uluops/-uluops-ops-mcp/compare/v0.4.5...v0.4.6
+[0.4.5]: https://github.com/Uluops/-uluops-ops-mcp/compare/v0.4.4...v0.4.5
+[0.4.4]: https://github.com/Uluops/-uluops-ops-mcp/compare/v0.4.3...v0.4.4
+[0.4.3]: https://github.com/Uluops/-uluops-ops-mcp/compare/v0.4.2...v0.4.3
+[0.4.2]: https://github.com/Uluops/-uluops-ops-mcp/compare/v0.4.1...v0.4.2
+[0.4.1]: https://github.com/Uluops/-uluops-ops-mcp/compare/v0.4.0...v0.4.1
+[0.4.0]: https://github.com/Uluops/-uluops-ops-mcp/compare/v0.3.1...v0.4.0
+[0.3.1]: https://github.com/Uluops/-uluops-ops-mcp/compare/v0.3.0...v0.3.1
+[0.3.0]: https://github.com/Uluops/-uluops-ops-mcp/compare/v0.2.1...v0.3.0
+[0.2.1]: https://github.com/Uluops/-uluops-ops-mcp/compare/v0.2.0...v0.2.1
+[0.2.0]: https://github.com/Uluops/-uluops-ops-mcp/compare/v1.21.0...v0.2.0
+[1.21.0]: https://github.com/Uluops/-uluops-ops-mcp/compare/v1.20.0...v1.21.0
+[1.20.0]: https://github.com/Uluops/-uluops-ops-mcp/compare/v1.19.0...v1.20.0
+[1.19.0]: https://github.com/Uluops/-uluops-ops-mcp/compare/v1.18.0...v1.19.0
+[1.18.0]: https://github.com/Uluops/-uluops-ops-mcp/compare/v1.17.0...v1.18.0
+[1.17.0]: https://github.com/Uluops/-uluops-ops-mcp/compare/v1.16.0...v1.17.0
+[1.16.0]: https://github.com/Uluops/-uluops-ops-mcp/compare/v1.15.0...v1.16.0
+[1.15.0]: https://github.com/Uluops/-uluops-ops-mcp/compare/v1.14.0...v1.15.0
+[1.14.0]: https://github.com/Uluops/-uluops-ops-mcp/compare/v1.13.0...v1.14.0
+[1.13.0]: https://github.com/Uluops/-uluops-ops-mcp/compare/v1.12.0...v1.13.0
+[1.12.0]: https://github.com/Uluops/-uluops-ops-mcp/compare/v1.11.0...v1.12.0
+[1.11.0]: https://github.com/Uluops/-uluops-ops-mcp/compare/v1.10.0...v1.11.0
+[1.10.0]: https://github.com/Uluops/-uluops-ops-mcp/compare/v1.9.0...v1.10.0
+[1.9.0]: https://github.com/Uluops/-uluops-ops-mcp/compare/v1.8.0...v1.9.0
+[1.8.0]: https://github.com/Uluops/-uluops-ops-mcp/compare/v1.7.0...v1.8.0
+[1.7.0]: https://github.com/Uluops/-uluops-ops-mcp/compare/v1.6.0...v1.7.0
+[1.6.0]: https://github.com/Uluops/-uluops-ops-mcp/compare/v1.5.0...v1.6.0
+[1.5.0]: https://github.com/Uluops/-uluops-ops-mcp/compare/v1.4.0...v1.5.0
+[1.4.0]: https://github.com/Uluops/-uluops-ops-mcp/compare/v1.3.0...v1.4.0
+[1.3.0]: https://github.com/Uluops/-uluops-ops-mcp/compare/v1.2.0...v1.3.0
+[1.2.0]: https://github.com/Uluops/-uluops-ops-mcp/compare/v1.1.0...v1.2.0
+[1.1.0]: https://github.com/Uluops/-uluops-ops-mcp/compare/v1.0.0...v1.1.0
+[1.0.0]: https://github.com/Uluops/-uluops-ops-mcp/releases/tag/v1.0.0

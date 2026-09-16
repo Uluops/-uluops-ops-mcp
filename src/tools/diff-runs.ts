@@ -27,7 +27,7 @@ export function registerDiffRunsTool(
 ): void {
   server.tool(
     'diff_runs',
-    'Compare two validation runs. Returns fixed issues (in base but not compare), new issues (in compare but not base), unchanged issues, and agent score changes.',
+    'Compare two runs. Returns fixed issues (in base but not compare), new issues (in compare but not base), unchanged issues, and agent score changes.',
     DiffRunsInputSchema.shape,
     createToolHandler(DiffRunsInputSchema, (n, scope) => opsClient.runs.diff(n, scope), { toolName: 'diff_runs' })
   );

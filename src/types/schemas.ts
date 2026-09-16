@@ -286,7 +286,7 @@ export const RecommendationSchema = z
         'Within-run convergence cluster. Recommendations sharing this in one run are the same adjudicated defect seen by different agents. Omit when the pipeline has no adjudicating stage.'
       ),
   })
-  .describe('A single issue or recommendation from validation');
+  .describe('A single finding from the run — the wire key is `recommendations`; each becomes (or recurs against) a tracked issue');
 export type Recommendation = z.infer<typeof RecommendationSchema>;
 
 /**
@@ -294,8 +294,8 @@ export type Recommendation = z.infer<typeof RecommendationSchema>;
  */
 export const ValidationSummarySchema = z
   .object({
-    all_gates_passed: z.boolean().optional().describe('Whether all validation gates passed'),
+    all_gates_passed: z.boolean().optional().describe("Whether all of the run's gates passed"),
     average_score: z.number().optional().describe('Average score across all agents'),
   })
-  .describe('Summary statistics for the validation run');
+  .describe('Summary statistics for the run');
 export type ValidationSummary = z.infer<typeof ValidationSummarySchema>;

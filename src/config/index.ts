@@ -112,7 +112,7 @@ export function loadConfig(): { config: UluopsTrackerConfig; warnings: string[] 
       const parsed = new URL(apiUrl);
       if (parsed.protocol !== 'https:' && process.env['NODE_ENV'] !== 'development') {
         warnings.push(
-          `ULUOPS_BASE_URL uses ${parsed.protocol} (not HTTPS). Your API key will be transmitted in cleartext. Set NODE_ENV=development to silence this warning for local testing.`,
+          `ULUOPS_BASE_URL uses ${parsed.protocol} (not HTTPS). Your API key would be transmitted in cleartext. The SDK accepts plain HTTP only for localhost, 127.0.0.1, [::1] and RFC1918 IPv4 literals and refuses any other host at startup; for those local targets, set NODE_ENV=development to silence this warning.`,
         );
       }
     } catch {
