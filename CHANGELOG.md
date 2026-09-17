@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- **`@uluops/ops-sdk` 6.5.0 → 6.5.1.** Behaviour the server inherits: concurrent org-scoped tool calls share one token refresh instead of each re-logging-in (the per-call `withOrg` views used to shadow sdk-core's dedup gate), rate-limit state recorded on org-scoped calls is visible on the client, and `save_run` with an empty `analysis_summary` array no longer throws a false `AnalysisEchoMismatchError` after a successful write. No server code changes.
 - **npm `description`** — "MCP server for the UluOps tracker API — runs, findings, issues, and analytics" replaces "… Platform API — validation tracking, analytics, and issue management". The string is what npm shows above the README and what a harness reads first; "validation tracking" is the retired category (messaging foundation §4.10/§5). Tool descriptions themselves are unchanged in this entry — that census (§9.2 4a) is still open.
 
 ### Fixed
