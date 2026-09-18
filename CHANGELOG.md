@@ -7,12 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.20.1] - 2026-09-17
+
 ### Changed
 
+- Pin `@uluops/ops-sdk` to 6.5.2 from npm, preserving optional nullable
+  `modelRaw` in saved and retrieved agent snapshots.
 - **`@uluops/ops-sdk` 6.5.0 → 6.5.1.** Behaviour the server inherits: concurrent org-scoped tool calls share one token refresh instead of each re-logging-in (the per-call `withOrg` views used to shadow sdk-core's dedup gate), rate-limit state recorded on org-scoped calls is visible on the client, and `save_run` with an empty `analysis_summary` array no longer throws a false `AnalysisEchoMismatchError` after a successful write. No server code changes.
 - **npm `description`** — "MCP server for the UluOps tracker API — runs, findings, issues, and analytics" replaces "… Platform API — validation tracking, analytics, and issue management". The string is what npm shows above the README and what a harness reads first; "validation tracking" is the retired category (messaging foundation §4.10/§5). Tool descriptions themselves are unchanged in this entry — that census (§9.2 4a) is still open.
 
 ### Fixed
+
+- Preserve `harness`, `cached_input_tokens`, `reasoning_output_tokens`,
+  `thinking_tokens` and `tool_tokens` through save/validate/update schemas and
+  SDK forwarding. The published package had silently stripped these metrics.
 
 - **`package.json` `repository`/`homepage`/`bugs` now point at the public repo, `github.com/Uluops/-uluops-ops-mcp`** — it pointed at {'type': 'git', 'url': 'git+https://github.com/Uluops/-uluops-ops-mcp.git'}, which npm renders as the package's GitHub link (2026-09-16, found while adding npm + GitHub links to every SDK page on docs.uluops.ai).
 - **README byline** `Operating Intelligence as Infrastructure` → `The operations layer for agentic work` (f28aa75, 2026-09-16; messaging foundation §4.1).
@@ -1236,7 +1244,8 @@ and aligns the package with the broader UluOps supply-chain policy.
 - Security limits increased for large validation payloads
 - `id` field handling standardized in status update tools
 
-[Unreleased]: https://github.com/Uluops/-uluops-ops-mcp/compare/v0.20.0...HEAD
+[Unreleased]: https://github.com/Uluops/-uluops-ops-mcp/compare/v0.20.1...HEAD
+[0.20.1]: https://github.com/Uluops/-uluops-ops-mcp/compare/v0.20.0...v0.20.1
 [0.4.7]: https://github.com/Uluops/-uluops-ops-mcp/compare/v0.4.6...v0.4.7
 [0.4.6]: https://github.com/Uluops/-uluops-ops-mcp/compare/v0.4.5...v0.4.6
 [0.4.5]: https://github.com/Uluops/-uluops-ops-mcp/compare/v0.4.4...v0.4.5

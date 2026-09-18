@@ -47,6 +47,20 @@ npm install -g @uluops/ops-mcp
 
 This exposes the `uluops-ops-mcp` binary on your PATH.
 
+After upgrading, restart the tracker MCP connection in your host so it loads the
+new server and tool schemas.
+
+### Agent metrics transport
+
+`save_run`, `validate_run` and `update_run` preserve each agent's `harness` and
+the optional `cached_input_tokens`, `reasoning_output_tokens`, `thinking_tokens`
+and `tool_tokens` counters. For save/validate, counters belong in the agent's
+`tokens` object; for update, they are flat agent fields. Supply only observed
+components: missing measurements should not be invented as zero.
+
+SDK 6.5.2 also preserves the API's optional, nullable `modelRaw` alongside the
+normalized `model` in saved and retrieved agent snapshots.
+
 ## Configuration
 
 Set environment variables in your MCP host configuration (see "Usage with Claude Code" below) or in a `.env` file when developing locally.

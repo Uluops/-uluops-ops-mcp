@@ -26,9 +26,14 @@ const AgentUpdateSchema = z.object({
   output_tokens: z.number().int().nonnegative().optional(),
   cache_creation_tokens: z.number().int().nonnegative().optional(),
   cache_read_tokens: z.number().int().nonnegative().optional(),
+  cached_input_tokens: z.number().int().nonnegative().optional(),
+  reasoning_output_tokens: z.number().int().nonnegative().optional(),
+  thinking_tokens: z.number().int().nonnegative().optional(),
+  tool_tokens: z.number().int().nonnegative().optional(),
   total_effective_tokens: z.number().int().nonnegative().optional(),
   duration_ms: z.number().int().nonnegative().optional(),
   model: z.string().optional(),
+  harness: z.string().max(32).optional().describe('Execution harness (e.g., claude-code, codex)'),
   agent_id: z
     .string()
     .max(50)
