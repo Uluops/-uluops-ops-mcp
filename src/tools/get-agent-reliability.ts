@@ -21,7 +21,7 @@ export function registerGetAgentReliabilityTool(
 ): void {
   server.tool(
     'get_agent_reliability',
-    'Analyze agent effectiveness. Returns false positive rates, resolution rates, and reliability scores.',
+    'Analyze agent effectiveness. Returns per agent: falsePositiveRate (false-positive share only), declinedRate (wontfix share — a judgment not to act, never scored), resolutionRate, avgTimeToResolveDays and reliabilityScore.',
     GetAgentReliabilityInputSchema.shape,
     createToolHandler(GetAgentReliabilityInputSchema, (n, scope) =>
       opsClient.analytics.getAgentReliability(n, scope),

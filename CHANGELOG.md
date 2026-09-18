@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.20.2] - 2026-09-18
+
+### Fixed
+
+- **`get_agent_reliability` rows carry `declinedRate` again.** `@uluops/ops-sdk` 6.5.2 → 6.6.0:
+  the SDK's reliability schema stripped the `wontfix` share that ops-api has emitted since
+  `262bc93` (2026-09-17), so this tool returned rows without it — verified on the live
+  tracker on 2026-09-17. Read `falsePositiveRate` as false-positive ONLY since that date;
+  `wontfix` sits in neither numerator (tracker `aa3ab1ed`). The tool description names all
+  five fields. `get_analytics regression_analysis` already passed
+  `regressionHazardPer1000IssueDays` through (untyped path) — no change there.
+
 ## [0.20.1] - 2026-09-17
 
 ### Changed

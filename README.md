@@ -361,7 +361,7 @@ The per-tool `maxArgsSize` (2 MB for `save_run`) and the 500 KB message envelope
 | `bulk_update_status` | Bulk update multiple issue statuses in one transaction |
 | `update_run` | Update run metadata post-hoc (tokens, scores, timestamps); per-agent analysis writes — replace (default) or merge via `record_write_mode`; analysis-bearing responses carry the `analysisWrite` echo (camelCase response key) |
 | `preview_update_run` | Read-only preview of an analysis-bearing update under the requested mode: per agent, what the write would supersede, create, and (replace only) retire |
-| `get_agent_reliability` | Analyze agent effectiveness and reliability scores |
+| `get_agent_reliability` | Analyze agent effectiveness: false-positive, declined (wontfix) and resolution rates plus reliability score |
 | `get_agent_lifecycle` | Lifecycle metrics for an agent across runs |
 
 ### Project Tools (P2)
