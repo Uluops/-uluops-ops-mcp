@@ -5,11 +5,15 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Changed
+
+- **F01 — Historical correlation descriptions.** Explain that run details and discovery use saved occurrence-time classifications and expose legacy history as `unknown`. Current issue state does not determine an earlier occurrence's classification.
+
 ## [0.20.3] - 2026-09-18
 
 - Use ops-sdk 6.6.1; describe matrix threshold populations (F22), retaining the analytics reliability changes.
-
-## [Unreleased]
 
 ## [0.20.2] - 2026-09-18
 
