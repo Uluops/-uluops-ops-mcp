@@ -31,7 +31,7 @@ export function registerGetDiscoveryTool(
 ): void {
   server.tool(
     'get_discovery',
-    'Get discovery timeline showing new vs recurring issues over time. Helps track whether runs are finding new problems or re-detecting existing ones (fingerprint recurrence).',
+    'Get discovery timeline from immutable occurrence classifications. Recurring includes regressions; additive regression, observed and unknown counters distinguish captured facts from legacy uncertainty.',
     GetDiscoveryInputSchema.shape,
     createToolHandler(GetDiscoveryInputSchema, (n, scope) => opsClient.analytics.getDiscovery(n, scope), { toolName: 'get_discovery' })
   );
