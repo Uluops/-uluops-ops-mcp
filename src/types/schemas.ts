@@ -174,6 +174,10 @@ export const TokenUsageSchema = z
   .object({
     input_tokens: z.number().int().nonnegative().describe('Input tokens consumed'),
     output_tokens: z.number().int().nonnegative().describe('Output tokens generated'),
+    cached_input_tokens: z.number().int().nonnegative().optional().describe('Cached input tokens included in input (Codex)'),
+    reasoning_output_tokens: z.number().int().nonnegative().optional().describe('Reasoning tokens included in output'),
+    thinking_tokens: z.number().int().nonnegative().optional().describe('Thinking tokens included in output'),
+    tool_tokens: z.number().int().nonnegative().optional().describe('Tool-call tokens included in output'),
     cache_creation: z.number().int().nonnegative().optional().describe('Cache creation tokens'),
     cache_creation_tokens: z
       .number()
@@ -211,6 +215,7 @@ export const AgentResultSchema = z
     definition_version: z.string().max(50).optional().describe('Definition version for version-aware analytics'),
     summary: z.string().optional().describe('Brief human-readable summary of agent result'),
     model: z.string().optional().describe('Model used (e.g., sonnet, opus)'),
+    harness: z.string().max(32).optional().describe('Execution harness (e.g., claude-code, codex)'),
     tokens: TokenUsageSchema.optional().describe('Token usage metrics'),
     duration_ms: z
       .number()

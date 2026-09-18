@@ -14,6 +14,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- Preserve `harness`, `cached_input_tokens`, `reasoning_output_tokens`,
+  `thinking_tokens` and `tool_tokens` through save/validate/update schemas and
+  SDK forwarding. The published package had silently stripped these metrics.
+
 - **`package.json` `repository`/`homepage`/`bugs` now point at the public repo, `github.com/Uluops/-uluops-ops-mcp`** — it pointed at {'type': 'git', 'url': 'git+https://github.com/Uluops/-uluops-ops-mcp.git'}, which npm renders as the package's GitHub link (2026-09-16, found while adding npm + GitHub links to every SDK page on docs.uluops.ai).
 - **README byline** `Operating Intelligence as Infrastructure` → `The operations layer for agentic work` (f28aa75, 2026-09-16; messaging foundation §4.1).
 - **The 4a tool-description census is now closed for this package (consumer-validate run #8):** the nine consumer-visible strings that still said "validation" as the category — `create_issue`, `create_project`, `diff_runs`, `get_discovery`, `get_project_summary`, `save_run` (tool and `summary` field) and the shared `recommendations[]` / `summary` / `all_gates_passed` `.describe()` text — now use the promoted vocabulary (run, finding, fingerprint recurrence, gates). What a harness reads in `tools/list` changes; what every tool does is unchanged. `keywords` likewise: `validation` → `findings`, `issues`, `regression`, `tracker`; `description` names the project log and org management.
