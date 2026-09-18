@@ -415,7 +415,7 @@ snake_case as on every tool here. This release also moves the server's `.uluops.
 | `get_burndown` | Get taxonomy burndown with time series and trend analysis per failure domain |
 | `get_velocity` | Get velocity metrics per failure mode with sparkline data and trend reliability |
 | `get_discovery` | Get discovery timeline showing new vs recurring issues over time |
-| `get_agent_matrix` | Get agent-taxonomy coverage matrix with blind spot detection. Coverage analysis is scoped to the canonical taxonomy; non-canonical codes are returned separately as `shadowModes` |
+| `get_agent_matrix` | Get agent-taxonomy coverage matrix with blind spot detection. `minIssues` filters rows by total qualifying issues per agent (default 5). `effectiveMinIssues` and `eligibility` explain the applied threshold and excluded rows. Single-point/overlap analysis uses canonical modes before threshold filtering; non-canonical codes are returned separately as `shadowModes` |
 
 ### Analysis Tools (P2)
 | Tool | Description |

@@ -25,7 +25,7 @@ export const GetAgentMatrixInputSchema = z.object({
     .min(1)
     .max(1000)
     .optional()
-    .describe('Minimum issues for agent inclusion (default 5)'),
+    .describe('Minimum total qualifying issues per agent across domains (default 5). Single-point and overlap analysis use canonical modes before this threshold; eligibility metadata explains excluded matrix rows.'),
 });
 
 export function registerGetAgentMatrixTool(
