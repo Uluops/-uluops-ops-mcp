@@ -12,6 +12,10 @@
 
 MCP (Model Context Protocol) server for the UluOps tracker API — runs, findings, issues, analytics, the project log (`get_project_log`, `get_log_stat`) and org management (`rehome_project`, `get_org_audit_feed`). Provides **55 tools** and **3 resources** (2 functional, 1 template placeholder) that let Claude Code, Claude Desktop, Codex, Cursor and other MCP hosts read and write the tracker.
 
+## Analysis type attribution (Unreleased)
+
+`save_run`, `update_run` and their preview schemas accept `agent_type` on analysis records and summaries. Use `agent_name` on each typed row in a multi-agent run. Registered agents are checked against their exact saved execution version; an explicit conflicting type is rejected. Unregistered agents may declare their type. Analysis reads retain the captured type, source and definition ID/version. `get_project_analysis` and `query_analysis_records` accept `agent_type: "unknown"` for unresolved or historical inferred attribution. The F02 API and SDK must ship together in the coordinated release.
+
 ## Table of Contents
 
 - [Design Philosophy](#design-philosophy)

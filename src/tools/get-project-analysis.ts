@@ -12,7 +12,7 @@ import { createToolHandler } from '../utils/tool-handler.js';
 export const GetProjectAnalysisInputSchema = z.object({
   project: z.string().min(1).describe('Project name or UUID'),
   agent_name: z.string().max(100).optional().describe('Filter by agent (e.g., nietzsche-analyst)'),
-  agent_type: z.enum(['validator', 'analyst', 'explorer', 'forecaster', 'executor', 'generator']).optional().describe('Filter by agent type'),
+  agent_type: z.enum(['validator', 'analyst', 'explorer', 'forecaster', 'executor', 'generator', 'unknown']).optional().describe('Filter by captured agent type; unknown includes unresolved and historical inferred attribution'),
   decision: z.string().max(50).optional().describe('Filter by decision (e.g., VITAL, FLOWING)'),
   limit: z.number().int().min(1).max(100).optional().describe('Max results (default 50)'),
   offset: z.number().int().min(0).optional().describe('Pagination offset'),

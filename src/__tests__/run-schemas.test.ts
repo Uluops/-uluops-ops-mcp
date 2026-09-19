@@ -120,3 +120,19 @@ describe('agent_name attribution on analysis records', () => {
     expect(AnalysisRecordBaseSchema.safeParse({ ...record, agent_name: 'a'.repeat(101) }).success).toBe(false);
   });
 });
+
+// The full contracts must retain agent_type before createToolHandler normalizes keys.
+describe('F02 explicit analysis types', () => {
+  it.each([
+    ['save_run', SaveRunInputSchema, { project: 'p', workflow_type: 'w', agents: [{ name: 'a', decision: 'PASS' }] }],
+    ['validate_run', ValidateRunInputSchema, { project: 'p', workflow_type: 'w', agents: [{ name: 'a', decision: 'PASS' }], recommendations: [] }],
+    ['update_run', UpdateRunInputSchema, { project: 'p', run_number: 1 }],
+  ])('%s retains distinct record and summary types', (_name, schema, envelope) => {
+    const analysis_records = [{ agent_name: 'map', agent_type: 'explorer', record_type: 'custom_topology', record_id: 'map', title: 'Map', data: {} }];
+    const analysis_summary = [{ agent_name: 'check', agent_type: 'validator', decision: 'PASS' }];
+    expect(schema.parse({ ...envelope, analysis_records, analysis_summary })).toMatchObject({ analysis_records, analysis_summary });
+  });
+  it('rejects unsupported declarations', () => {
+    expect(AnalysisRecordBaseSchema.safeParse({ agent_type: 'guess', record_type: 'map', record_id: 'map', title: 'Map', data: {} }).success).toBe(false);
+  });
+});

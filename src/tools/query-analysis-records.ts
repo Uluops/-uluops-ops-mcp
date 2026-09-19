@@ -13,7 +13,7 @@ export const QueryAnalysisRecordsInputSchema = z.object({
   record_type: z.string().max(50).optional().describe('Filter by record type (convention, tension, decay_vector, power_map, stagnation, four_cause, commitment, etc.)'),
   classification: z.string().max(50).optional().describe('Filter by classification (LIVING, CALCIFIED, CONSTITUTIVE, IMMINENT, ACTIVE, DEGRADED, etc.)'),
   agent_name: z.string().max(100).optional().describe('Filter by agent name (e.g., nietzsche-analyst)'),
-  agent_type: z.enum(['validator', 'analyst', 'explorer', 'forecaster', 'executor', 'generator']).optional().describe('Filter by agent type'),
+  agent_type: z.enum(['validator', 'analyst', 'explorer', 'forecaster', 'executor', 'generator', 'unknown']).optional().describe('Filter by captured agent type; unknown includes unresolved and historical inferred attribution'),
   severity: z.enum(['critical', 'high', 'medium', 'low', 'info']).optional().describe('Filter by severity'),
   limit: z.number().int().min(1).max(100).optional().describe('Max results (default 50)'),
   offset: z.number().int().min(0).optional().describe('Pagination offset'),

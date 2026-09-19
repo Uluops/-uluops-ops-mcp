@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **F02 — Explicit analysis types.** Save, validate, update and preview contracts retain `agent_type` on records and summaries, including single-summary `agent_name`. Analysis query filters accept `unknown`. The API checks declarations against the exact linked registry version and retains provenance.
+
 ### Changed
 
 - **F01 — Historical correlation descriptions.** Explain that run details and discovery use saved occurrence-time classifications and expose legacy history as `unknown`. Current issue state does not determine an earlier occurrence's classification.
