@@ -49,7 +49,7 @@ describe('get_project_log', () => {
     expect(getLog).toHaveBeenCalledWith(
       'billing',
       { since: '2026-09-01T00:00:00Z', until: '2026-09-15T00:00:00Z', limit: 25, cursor: 'c1', kind: ['run', 'regression'], workflowType: 'ship', agent: 'code-validator', includeArchived: true },
-      { org: 'acme' },
+      { org: 'acme', withResponseContext: true },
     );
     // CONTROL: the snake_case names never reach the SDK.
     const sent = getLog.mock.calls[0]?.[1] as Record<string, unknown>;
@@ -109,7 +109,7 @@ describe('get_log_stat', () => {
   it('with `project`: the project rollup, windowed, in the org scope', async () => {
     const r = await handler({ org: 'acme', project: 'billing', since: '2026-01-01T00:00:00Z' });
     expect(r.isError).toBeUndefined();
-    expect(getLogStat).toHaveBeenCalledWith('billing', { since: '2026-01-01T00:00:00Z' }, { org: 'acme' });
+    expect(getLogStat).toHaveBeenCalledWith('billing', { since: '2026-01-01T00:00:00Z' }, { org: 'acme', withResponseContext: true });
     expect(orgGetLogStat).not.toHaveBeenCalled();
     expect(payload(r)['projectId']).toBe('p');
   });
@@ -117,7 +117,7 @@ describe('get_log_stat', () => {
   it('without `project`: the ORG rollup of the org the call resolves to (slug on the path, no scope)', async () => {
     const r = await handler({ org: 'acme', until: '2026-09-15T00:00:00Z' });
     expect(r.isError).toBeUndefined();
-    expect(orgGetLogStat).toHaveBeenCalledWith('acme', { until: '2026-09-15T00:00:00Z' });
+    expect(orgGetLogStat).toHaveBeenCalledWith('acme', { until: '2026-09-15T00:00:00Z' }, { org: 'acme', withResponseContext: true });
     expect(getLogStat).not.toHaveBeenCalled();
     expect(list).not.toHaveBeenCalled();
     expect(payload(r)['computedAt']).toBe('2026-09-15T21:44:44.938Z');
@@ -127,7 +127,7 @@ describe('get_log_stat', () => {
     const r = await handler({});
     expect(r.isError).toBeUndefined();
     expect(list).toHaveBeenCalledTimes(1);
-    expect(orgGetLogStat).toHaveBeenCalledWith('alexself2', {});
+    expect(orgGetLogStat).toHaveBeenCalledWith('alexself2', {}, { withResponseContext: true });
   });
 
   it('without `project`, personal, and no personal org listed: a loud 400 naming what to pass', async () => {

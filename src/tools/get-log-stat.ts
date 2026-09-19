@@ -56,19 +56,19 @@ export function registerGetLogStatTool(
       if (project !== undefined) {
         return opsClient.projects.getLogStat(project as string, window, scope);
       }
-      let slug = scope?.org;
+      let slug = scope.org;
       if (slug === undefined) {
         // Personal: the API needs a slug on the path. Look it up, never guess.
         const personal = (await opsClient.orgs.list()).find((o) => o.isPersonal);
         if (personal === undefined) {
           throw new InputValidationError(
-            'get_log_stat without `project` needs an org: pass `org: "<slug>"` or `project`. The call resolved to your personal org and this key lists no personal org to name.',
+            'get_log_stat without `project` needs an org: pass `org: "<slug>"` or `project`. No org slug was requested and this key lists no personal org for the legacy lookup; effective context is unavailable.',
             [{ code: 'custom', path: ['org'], message: 'required — the org whose rollup to read, or pass project' }],
           );
         }
         slug = personal.slug;
       }
-      return opsClient.orgs.getLogStat(slug, window);
+      return opsClient.orgs.getLogStat(slug, window, scope);
     }, { toolName: 'get_log_stat' })
   );
 }

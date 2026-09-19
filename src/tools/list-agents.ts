@@ -7,7 +7,7 @@
 import { z } from 'zod';
 import type { OpsClient } from '@uluops/ops-sdk';
 import type { McpServerToolRegistration } from '../types/index.js';
-import { createToolHandler } from '../utils/tool-handler.js';
+import { createToolHandler, mapContextData } from '../utils/tool-handler.js';
 
 // No input required for this tool
 export const ListAgentsInputSchema = z.object({});
@@ -31,12 +31,14 @@ export function registerListAgentsTool(
       // flag in the server) and is gone. getAgentPerformance returns
       // AgentPerformance[]; guard shape defensively before projecting.
       const perf = await opsClient.analytics.getAgentPerformance(undefined, scope);
-      const agents = (Array.isArray(perf) ? perf : [])
-        .filter((v: unknown): v is { name: string } =>
-          typeof v === 'object' && v !== null && typeof (v as { name?: unknown }).name === 'string'
-        )
-        .map((v) => ({ name: v.name, enabled: true }));
-      return { data: agents, total: agents.length };
+      return mapContextData(perf, data => {
+        const agents = (Array.isArray(data) ? data : [])
+          .filter((v: unknown): v is { name: string } =>
+            typeof v === 'object' && v !== null && typeof (v as { name?: unknown }).name === 'string'
+          )
+          .map((v) => ({ name: v.name, enabled: true }));
+        return { data: agents, total: agents.length };
+      });
     }, { toolName: 'list_agents' })
   );
 }

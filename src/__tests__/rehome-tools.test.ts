@@ -38,13 +38,13 @@ describe('rehome_project', () => {
   it('maps target_org → targetOrg, omits reason when absent, and forwards `org` as the SOURCE scope', async () => {
     const r = await handler({ project: 'billing', target_org: 'ulu-labs', org: 'acme' });
     expect(r.isError).toBeUndefined();
-    expect(rehome).toHaveBeenCalledWith('billing', { targetOrg: 'ulu-labs' }, { org: 'acme' });
+    expect(rehome).toHaveBeenCalledWith('billing', { targetOrg: 'ulu-labs' }, { org: 'acme', withResponseContext: true });
     expect(payload(r)).toMatchObject({ rehome: { to_org: { slug: 'ulu-labs' } } });
   });
 
-  it('carries reason when given; no `org` → undefined scope (personal source), and org never leaks into the body', async () => {
+  it('carries reason when given; no `org` → context requested without org override, and org never leaks into the body', async () => {
     await handler({ project: 'billing', target_org: 'ulu-labs', reason: 'team took it' });
-    expect(rehome).toHaveBeenCalledWith('billing', { targetOrg: 'ulu-labs', reason: 'team took it' }, undefined);
+    expect(rehome).toHaveBeenCalledWith('billing', { targetOrg: 'ulu-labs', reason: 'team took it' }, { withResponseContext: true });
     const input = rehome.mock.calls[0]?.[1] as Record<string, unknown>;
     expect(Object.keys(input)).not.toContain('org');
   });
@@ -101,7 +101,7 @@ describe('get_org_audit_feed', () => {
   it('reads the feed of the org named by `org`, passes cursor/limit, and returns summaries + next_cursor', async () => {
     const r = await handler({ org: 'acme', cursor: 'c0', limit: 25 });
     expect(r.isError).toBeUndefined();
-    expect(getVisibleAuditLog).toHaveBeenCalledWith('acme', { cursor: 'c0', limit: 25 });
+    expect(getVisibleAuditLog).toHaveBeenCalledWith('acme', { cursor: 'c0', limit: 25 }, { org: 'acme', withResponseContext: true });
     const p = payload(r);
     expect(p['org']).toBe('acme');
     expect(p['next_cursor']).toBe('2026-09-15T10:00:00.000Z|e1');
@@ -192,8 +192,8 @@ describe('pre-publish review fold (anxiety-reader / code-auditor / dx-validator,
     const { handler } = grab(registerRehomeProjectTool, { projects: { rehome } });
     const r = await handler({ project: 'billing', target_org: 'ulu-labs', org: 'acme' });
     const echo = r.content[1]?.text ?? '';
-    expect(echo).toMatch(/Org: acme \(source: explicit\)/);
-    expect(echo).toMatch(/target org: ulu-labs/);
+    expect(JSON.parse(echo)).toMatchObject({ requestedContext: { orgSlug: 'acme', source: 'explicit' }, effectiveContext: null });
+    expect(JSON.parse(echo)).toHaveProperty('targetOrg', 'ulu-labs');
   });
 
   it('F8: the feed relays neither the reason in the summary nor in details', async () => {
@@ -204,7 +204,7 @@ describe('pre-publish review fold (anxiety-reader / code-auditor / dx-validator,
       }] }, count: 1, hasMore: false, nextCursor: null,
     });
     const { handler } = grab(registerGetOrgAuditFeedTool, { orgs: { getVisibleAuditLog } });
-    const r = await handler({ org: 'acme' });
+    const r = await handler({ org: 'acme', withResponseContext: true });
     expect(r.content[0]?.text).not.toMatch(/IGNORE PREVIOUS/);
     const entries = payload(r)['entries'] as Array<{ details: Record<string, unknown>; summary: string }>;
     expect(entries[0]?.details['reason']).toBeUndefined();
@@ -263,7 +263,7 @@ describe('pre-publish review fold (anxiety-reader / code-auditor / dx-validator,
     expect(String(p['suggestion'])).toMatch(/Do NOT retry the write blind/);
     // read tool: applied false
     const feed = vi.fn().mockRejectedValue(zodLike);
-    const pr = payload(await (grab(registerGetOrgAuditFeedTool, { orgs: { getVisibleAuditLog: feed } }).handler)({ org: 'acme' }));
+    const pr = payload(await (grab(registerGetOrgAuditFeedTool, { orgs: { getVisibleAuditLog: feed } }).handler)({ org: 'acme', withResponseContext: true }));
     expect(pr['applied']).toBe(false);
   });
 

@@ -30,7 +30,7 @@
 import { z } from 'zod';
 import { InputValidationError, readRehomeAuditDetails, type OpsClient, type OrgAuditEntry } from '@uluops/ops-sdk';
 import type { McpServerToolRegistration } from '../types/index.js';
-import { createToolHandler } from '../utils/tool-handler.js';
+import { createToolHandler, mapContextData } from '../utils/tool-handler.js';
 
 export const GetOrgAuditFeedInputSchema = z.object({
   cursor: z.string().min(1).max(200).optional()
@@ -67,28 +67,28 @@ export function registerGetOrgAuditFeedTool(
   server.tool(
     'get_org_audit_feed',
     'Read an org\'s member-visible audit feed: the events its writers marked org-visible — today, projects that left this org for someone\'s personal org (who, when, where to — the operator\'s free-text reason is not relayed). ' +
-    'Any member may read it. `org` names the org whose feed you want and is required in effect (a personal org has no feed to name). ' +
+    'Any member may read it. `org` names the org whose feed you want and is required in effect (this route needs a named org slug). ' +
     'Returns raw entries plus a one-line `summary` per re-home entry; page with `next_cursor`.',
     GetOrgAuditFeedInputSchema.shape,
     createToolHandler(GetOrgAuditFeedInputSchema, async (n, scope) => {
-      const slug = scope?.org;
+      const slug = scope.org;
       if (slug === undefined) {
         throw new InputValidationError(
-          'get_org_audit_feed needs an org: pass `org: "<slug>"` (the org whose feed to read). It resolved to your personal org, which has no feed to name.',
+          'get_org_audit_feed needs an org: pass `org: "<slug>"` (the org whose feed to read). This route requires a named org slug; omission does not establish the effective org.',
           [{ code: 'custom', path: ['org'], message: 'required — the org whose audit feed to read' }],
         );
       }
       const feed = await opsClient.orgs.getVisibleAuditLog(slug, {
         ...(n['cursor'] !== undefined ? { cursor: n['cursor'] as string } : {}),
         ...(n['limit'] !== undefined ? { limit: n['limit'] as number } : {}),
-      });
-      return {
+      }, scope);
+      return mapContextData(feed, data => ({
         org: slug,
-        entries: feed.data.entries.map((entry) => ({ ...redactFeedEntry(entry), summary: summarizeFeedEntry(entry) })),
-        count: feed.count,
-        has_more: feed.hasMore,
-        next_cursor: feed.nextCursor,
-      };
+        entries: data.data.entries.map((entry) => ({ ...redactFeedEntry(entry), summary: summarizeFeedEntry(entry) })),
+        count: data.count,
+        has_more: data.hasMore,
+        next_cursor: data.nextCursor,
+      }));
     },
     { toolName: 'get_org_audit_feed' })
   );

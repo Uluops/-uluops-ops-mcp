@@ -8,7 +8,7 @@
 import { z } from 'zod';
 import type { OpsClient } from '@uluops/ops-sdk';
 import type { McpServerToolRegistration } from '../types/index.js';
-import { createToolHandler } from '../utils/tool-handler.js';
+import { createToolHandler, mapContextData } from '../utils/tool-handler.js';
 import { RecommendationSchema } from '../types/schemas.js';
 import {
   AnalysisRecordBaseSchema,
@@ -87,7 +87,7 @@ export function registerUpdateRunTool(
       const result = typeof runId === 'string'
         ? await opsClient.runs.updateByIdWithEcho(runId, n, { _skipClientValidation: true, ...scope })
         : await opsClient.runs.updateWithEcho(n, { _skipClientValidation: true, ...scope });
-      return result.analysisWrite ? { ...result.run, analysisWrite: result.analysisWrite } : result.run;
+      return mapContextData(result, data => data.analysisWrite ? { ...data.run, analysisWrite: data.analysisWrite } : data.run);
     }, { toolName: 'update_run' })
   );
 }
