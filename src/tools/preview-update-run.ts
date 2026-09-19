@@ -20,6 +20,7 @@
  * can actually fire.
  */
 
+import { runSummaryErrorMap, RUN_MAP_CONTRACT } from './run-input-contract.js';
 import { z } from 'zod';
 import type { OpsClient } from '@uluops/ops-sdk';
 import { ValidationError } from '@uluops/ops-sdk';
@@ -56,7 +57,7 @@ export const PreviewUpdateRunInputSchema = z.object({
   analysis_summary: z.union([
     AnalysisSummarySchema,
     z.array(AnalysisSummarySchema).max(20),
-  ]).optional().describe('Analysis summary/summaries the update would write. Per named agent, the preview reports wouldSupersedeSummaries and wouldCreateSummaries (camelCase in the response).'),
+  ], { errorMap: runSummaryErrorMap }).optional().describe('Analysis summary/summaries the update would write. Per named agent, the preview reports wouldSupersedeSummaries and wouldCreateSummaries (camelCase in the response).'),
   record_write_mode: z.enum(['replace', 'merge']).optional().describe('Preview under this mode (default replace) — MUST match the mode the write will use: previewing replace while the write merges reports retirements that will not happen (and vice versa). Under merge, wouldSupersedeRecords counts matched keys and wouldRetireRecordIds is always empty (merge cannot retire).'),
   // Declared so the transport does not strip them — the handler rejects them
   // by name (see module docblock).
@@ -82,7 +83,7 @@ export function registerPreviewUpdateRunTool(
 ): void {
   server.tool(
     'preview_update_run',
-    'Read-only preview of an analysis-bearing update_run under the requested record_write_mode (default replace): reports, per agent named in the payload, what the write would supersede, create, and — under replace — retire by omission (wouldRetireRecordIds in the camelCase response; always empty under merge, which cannot retire). Nothing is written. Accepts analysis concerns only; any other update field is rejected by name. Identify run by either run_id OR (project + run_number).',
+    'Read-only preview of an analysis-bearing update_run under the requested record_write_mode (default replace): reports, per agent named in the payload, what the write would supersede, create, and — under replace — retire by omission (wouldRetireRecordIds in the camelCase response; always empty under merge, which cannot retire). Nothing is written. Accepts analysis concerns only; any other update field is rejected by name. Identify run by either run_id OR (project + run_number).' + RUN_MAP_CONTRACT,
     PreviewUpdateRunInputSchema.shape,
     createToolHandler(PreviewUpdateRunInputSchema, (n, scope) => {
       const offending = FORBIDDEN_PREVIEW_FIELDS.filter(

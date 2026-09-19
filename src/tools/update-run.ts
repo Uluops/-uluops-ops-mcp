@@ -5,6 +5,7 @@
  * Supports identification by run_id OR (project + run_number).
  */
 
+import { runSummaryErrorMap, RUN_MAP_CONTRACT } from './run-input-contract.js';
 import { z } from 'zod';
 import type { OpsClient } from '@uluops/ops-sdk';
 import type { McpServerToolRegistration } from '../types/index.js';
@@ -64,7 +65,7 @@ export const UpdateRunInputSchema = z.object({
   analysis_summary: z.union([
     AnalysisSummarySchema,
     z.array(AnalysisSummarySchema).max(20),
-  ]).optional().describe('Analysis summary — single object or per-agent array. PER-AGENT REPLACE, and summaries have no mode: each named agent\'s live summary rows are superseded by its entries here; agents not named are untouched. Leaves analysis_records untouched. agent_name matching is case- and accent-insensitive.'),
+  ], { errorMap: runSummaryErrorMap }).optional().describe('Analysis summary — single object or per-agent array. PER-AGENT REPLACE, and summaries have no mode: each named agent\'s live summary rows are superseded by its entries here; agents not named are untouched. Leaves analysis_records untouched. agent_name matching is case- and accent-insensitive.'),
   record_write_mode: z.enum(['replace', 'merge']).optional().describe('Records-only write mode (API 1b; default replace). replace: each named agent\'s FULL record set is superseded by the payload\'s — omission retires. merge: upsert on (agent_name, record_id) — matched records are superseded (prior duplicates collapse to one, visible in analysis_write.supersededRecords), unmatched keys are pure appends, and NOTHING is retired; merge cannot remove anything, and there is no delete endpoint. Summaries are unaffected (always per-agent replace). Sending this without analysis_records is an error. NOTE: past the 100-records-per-call cap, replace can no longer restate a merged agent\'s full set.'),
 });
 
@@ -76,7 +77,7 @@ export function registerUpdateRunTool(
 ): void {
   server.tool(
     'update_run',
-    'Update run metadata post-hoc (tokens, scores, timestamps). Also supports adding recommendations/issues, and PER-AGENT analysis writes after initial save — replace (default) or merge, via record_write_mode; writes supersede only the agents named in the payload and cannot remove another agent\'s rows (there is no delete endpoint). Analysis-bearing responses include the analysisWrite echo (a camelCase response key: superseded/created counts — supersededRecords 0 on an enrichment that expected to replace means the named agents had no live rows). Preview with preview_update_run. Identify run by either run_id OR (project + run_number).',
+    'Update run metadata post-hoc (tokens, scores, timestamps). Also supports adding recommendations/issues, and PER-AGENT analysis writes after initial save — replace (default) or merge, via record_write_mode; writes supersede only the agents named in the payload and cannot remove another agent\'s rows (there is no delete endpoint). Analysis-bearing responses include the analysisWrite echo (a camelCase response key: superseded/created counts — supersededRecords 0 on an enrichment that expected to replace means the named agents had no live rows). Preview with preview_update_run. Identify run by either run_id OR (project + run_number).' + RUN_MAP_CONTRACT,
     UpdateRunInputSchema.shape,
     createToolHandler(UpdateRunInputSchema, async (n, scope) => {
       // With-echo variants (F17): the §3.9 echo's counts are the success

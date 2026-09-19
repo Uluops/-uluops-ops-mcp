@@ -4,6 +4,7 @@
  * Preview what save_run would do without modifying the database.
  */
 
+import { runSummaryErrorMap, RUN_MAP_CONTRACT, RUN_TOKEN_CONTRACT } from './run-input-contract.js';
 import { z } from 'zod';
 import type { OpsClient } from '@uluops/ops-sdk';
 import {
@@ -40,7 +41,7 @@ export const ValidateRunInputSchema = z.object({
     z.array(AnalysisSummarySchema.extend({
       agent_name: z.string().max(100).optional().describe('Agent name for per-agent attribution'),
     })).max(20),
-  ]).optional().describe('Analysis summary to preview — single object or per-agent array'),
+  ], { errorMap: runSummaryErrorMap }).optional().describe('Analysis summary to preview — single object or per-agent array'),
 });
 
 export type ValidateRunInput = z.infer<typeof ValidateRunInputSchema>;
@@ -54,7 +55,7 @@ export function registerValidateRunTool(
 ): void {
   server.tool(
     'validate_run',
-    'Preview what save_run would do without modifying the database. Returns would_create, would_update, would_regress, would_create_analysis_records, would_create_analysis_summaries, and validation_errors. Accepts the same shape as save_run including optional analysis_records and analysis_summary so the dry-run faithfully reflects the full set of side effects.',
+    'Preview what save_run would do without modifying the database. Returns would_create, would_update, would_regress, would_create_analysis_records, would_create_analysis_summaries, and validation_errors. Accepts the same shape as save_run including optional analysis_records and analysis_summary so the dry-run faithfully reflects the full set of side effects.' + RUN_MAP_CONTRACT + RUN_TOKEN_CONTRACT,
     ValidateRunInputSchema.shape,
     createToolHandler(ValidateRunInputSchema, (n, scope) => opsClient.runs.validate(n, scope), { toolName: 'validate_run' })
   );

@@ -1,4 +1,11 @@
-import { describe, it, expect } from 'vitest';
+import { z } from 'zod';
+import type { OpsClient } from '@uluops/ops-sdk';
+import { registerSaveRunTool } from '../tools/save-run.js';
+import { registerValidateRunTool } from '../tools/validate-run.js';
+import { registerUpdateRunTool } from '../tools/update-run.js';
+import { registerPreviewUpdateRunTool } from '../tools/preview-update-run.js';
+
+import { describe, it, expect, vi } from 'vitest';
 import { ANALYSIS_RECORD_ID_MAX_LENGTH } from '@uluops/ops-sdk';
 import { AnalysisRecordBaseSchema } from '../types/run-schemas.js';
 import { SaveRunInputSchema } from '../tools/save-run.js';
@@ -134,5 +141,74 @@ describe('F02 explicit analysis types', () => {
   });
   it('rejects unsupported declarations', () => {
     expect(AnalysisRecordBaseSchema.safeParse({ agent_type: 'guess', record_type: 'map', record_id: 'map', title: 'Map', data: {} }).success).toBe(false);
+  });
+});
+
+describe.each([
+  ['save_run', registerSaveRunTool, true],
+  ['validate_run', registerValidateRunTool, true],
+  ['update_run', registerUpdateRunTool, false],
+  ['preview_update_run', registerPreviewUpdateRunTool, false],
+] as const)('%s authoring contract', (name, register, hasTokens) => {
+  function contract(): { description: string; schema: z.ZodObject<z.ZodRawShape> } {
+    const tool = vi.fn();
+    register({ tool }, {} as OpsClient);
+    const [registeredName, description, shape] = tool.mock.calls[0] as [string, string, z.ZodRawShape];
+    expect(registeredName).toBe(name);
+    return { description, schema: z.object(shape) };
+  }
+
+  it('publishes a complete map example that survives the registered schema', () => {
+    const { description, schema } = contract();
+    const summary = JSON.parse(description.split('Example summary: ')[1]?.split('. On multi-agent')[0] ?? '');
+    const input = {
+      project: 'contract-fixture', run_number: 1, workflow_type: 'exploration',
+      agents: [{ name: 'explorer', decision: 'TRACED' }], analysis_summary: summary,
+    };
+    expect(schema.parse(input).analysis_summary).toEqual(summary);
+    expect(schema.parse({ ...input, analysis_summary: [summary] }).analysis_summary).toEqual([summary]);
+    expect(description).toContain('metadata.explorer_name');
+    expect(description).toContain('metadata.framework');
+    expect(description).toContain('Every section requires label and type');
+  });
+
+  it('still rejects incomplete metadata instead of weakening the schema', () => {
+    const { schema } = contract();
+    expect(schema.safeParse({
+      project: 'contract-fixture', workflow_type: 'exploration', agents: [],
+      analysis_summary: { decision: 'TRACED', exploration_maps: [{ metadata: {}, sections: [] }] },
+    }).success).toBe(false);
+  });
+
+  it.each([false, true])('keeps metadata paths in the top-level issue message (array: %s)', array => {
+    const { schema } = contract();
+    const summary = { decision: 'TRACED', exploration_maps: [{ metadata: {}, sections: [] }] };
+    const result = schema.safeParse({
+      project: 'contract-fixture', workflow_type: 'exploration', agents: [],
+      analysis_summary: array ? [summary] : summary,
+    });
+    expect(result.success).toBe(false);
+    if (result.success) throw new Error('Invalid metadata unexpectedly accepted');
+    const message = result.error.issues.map(issue => issue.message).join('; ');
+    const path = `analysis_summary.${array ? '0.' : ''}exploration_maps.0.metadata`;
+    expect(message).toContain(`${path}.explorer_name:`);
+    expect(message).toContain(`${path}.framework:`);
+    expect(message).not.toContain('Expected array');
+  });
+
+  it('documents nested tokens only on tools that accept that shape', () => {
+    const { description, schema } = contract();
+    if (!hasTokens) {
+      expect(description).not.toContain('agents[].tokens');
+      return;
+    }
+    const tokens = JSON.parse(description.split('Example: "tokens":')[1]?.split('. Omit tokens')[0] ?? '');
+    const input = {
+      project: 'contract-fixture', workflow_type: 'exploration',
+      agents: [{ name: 'explorer', decision: 'TRACED', tokens }],
+    };
+    expect(schema.parse(input).agents).toEqual(input.agents);
+    expect(schema.safeParse({ ...input, agents: [{ ...input.agents[0], tokens: { input_tokens: 120 } }] }).success).toBe(false);
+    expect(schema.safeParse({ ...input, agents: [{ ...input.agents[0], tokens: { input_tokens: -1, output_tokens: 0 } }] }).success).toBe(false);
   });
 });

@@ -4,6 +4,7 @@
  * Save validation pipeline output with automatic correlation.
  */
 
+import { runSummaryErrorMap, RUN_MAP_CONTRACT, RUN_TOKEN_CONTRACT } from './run-input-contract.js';
 import { z } from 'zod';
 import type { OpsClient } from '@uluops/ops-sdk';
 import {
@@ -46,7 +47,7 @@ export const SaveRunInputSchema = z.object({
     z.array(AnalysisSummarySchema.extend({
       agent_name: z.string().max(100).optional().describe('Agent name for per-agent attribution'),
     })).max(20),
-  ]).optional().describe('Analysis summary — single object or per-agent array (v1.8.0). For pipelines, pass an array with one entry per agent.'),
+  ], { errorMap: runSummaryErrorMap }).optional().describe('Analysis summary — single object or per-agent array (v1.8.0). For pipelines, pass an array with one entry per agent.'),
 });
 
 export type SaveRunInput = z.infer<typeof SaveRunInputSchema>;
@@ -60,7 +61,7 @@ export function registerSaveRunTool(
 ): void {
   server.tool(
     'save_run',
-    'Save a run — the findings a definition (agent, workflow or pipeline) produced against a project. Auto-increments run number per project+workflow. Detects regressions and persistent issues.',
+    'Save a run — the findings a definition (agent, workflow or pipeline) produced against a project. Auto-increments run number per project+workflow. Detects regressions and persistent issues.' + RUN_MAP_CONTRACT + RUN_TOKEN_CONTRACT,
     SaveRunInputSchema.shape,
     createToolHandler(
       SaveRunInputSchema,
