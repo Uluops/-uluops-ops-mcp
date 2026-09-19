@@ -123,7 +123,7 @@ export function createToolHandler<TInput>(
   // an internal utility (not re-exported from src/index.ts), so this `any`
   // does not leak to the public npm surface. (no-explicit-any is disabled for
   // this file via the eslint.config.js file-pattern override.)
-  sdkCall: (normalized: any, scope: OrgScopedOptions | undefined) => Promise<unknown>,
+  sdkCall: (normalized: any, scope: OrgScopedOptions<true>) => Promise<unknown>,
   options?: {
     /** Tool name for error context. Included in error responses to help MCP clients diagnose failures. */
     toolName?: string;
@@ -148,6 +148,11 @@ export function createToolHandler<TInput>(
   const toolName = options?.toolName;
 
   return async (args: unknown): Promise<McpToolResponse> => {
+    let record: OrgCallRecord = { tool: toolName ?? 'unknown', org: 'personal', orgSource: 'personal' };
+    const addContext = (response: McpToolResponse, context: unknown = null): McpToolResponse => {
+      response.content.push({ type: 'text', text: formatOrgEcho(record, context) });
+      return response;
+    };
     try {
       // Org routing (spec §3.3 / D13): lift `org` out of the RAW args before Zod
       // sees them — a tool's schema does not declare it, Zod strips unknown keys,
@@ -165,15 +170,15 @@ export function createToolHandler<TInput>(
         cwd: process.cwd(),
         env: process.env,
       });
-      // `undefined` (not `{}`) when personal: nothing on the wire, and the SDK
-      // call receives exactly what a caller with no org would have passed.
-      const scope: OrgScopedOptions | undefined = resolved.org !== undefined ? { org: resolved.org } : undefined;
+      // Omission sends no org header; the response identifies the effective org.
+      const scope: OrgScopedOptions<true> = { withResponseContext: true, ...(resolved.org !== undefined ? { org: resolved.org } : {}) };
       const orgRecord: OrgCallRecord = {
         tool: toolName ?? 'unknown',
         org: resolved.org ?? 'personal',
         orgSource: resolved.source,
         ...(resolved.path !== undefined ? { orgFile: resolved.path } : {}),
       };
+      record = orgRecord;
       // D15: refuse BEFORE the SDK call when the org is outside the allowlist.
       // Terminal and not applied — and the suggestion does not say "retry
       // without org", because for an allowlist refusal the right move is to
@@ -181,7 +186,7 @@ export function createToolHandler<TInput>(
       if (!isOrgAllowed(resolved.org)) {
         const allowed = getOrgAllowlist() ?? [];
         emitOrgCall({ ...orgRecord, refused: 'not-allowed' });
-        return {
+        return addContext({
           content: [{ type: 'text', text: JSON.stringify({
             error: `Org \`${String(resolved.org)}\` is not in this server's allowlist (ULUOPS_ORG_ALLOW: ${allowed.join(', ') || '(empty)'}). Nothing was applied.`,
             ...(toolName !== undefined ? { tool: toolName } : {}),
@@ -198,7 +203,7 @@ export function createToolHandler<TInput>(
               'adds it to ULUOPS_ORG_ALLOW in the server registration if it belongs there.',
           }) }],
           isError: true,
-        };
+        });
       }
       emitOrgCall(orgRecord);
 
@@ -207,7 +212,7 @@ export function createToolHandler<TInput>(
       if (options?.preProcess) {
         const preResult = options.preProcess(input);
         if (isShortCircuit(preResult)) {
-          return preResult;
+          return addContext(preResult);
         }
         input = preResult;
       }
@@ -219,7 +224,7 @@ export function createToolHandler<TInput>(
         if (!isOrgAllowed(targetOrg)) {
           const allowed = getOrgAllowlist() ?? [];
           emitOrgCall({ ...orgRecord, refused: 'target-not-allowed' });
-          return {
+          return addContext({
             content: [{ type: 'text', text: JSON.stringify({
               error: `Target org \`${targetOrg}\` is not in this server's allowlist (ULUOPS_ORG_ALLOW: ${allowed.join(', ') || '(empty)'}). Nothing was applied.`,
               ...(toolName !== undefined ? { tool: toolName } : {}),
@@ -237,16 +242,15 @@ export function createToolHandler<TInput>(
                 'adds it to ULUOPS_ORG_ALLOW in the server registration if it belongs there.',
             }) }],
             isError: true,
-          };
+          });
         }
       }
       const result = await sdkCall(normalized, scope);
-      const response = createSuccessResponse(result);
-      // Echo where it landed as a SECOND content block: the first block stays
-      // the SDK payload byte-for-byte (consumers parse it), and the model sees
-      // the destination beside every result, reads included (D12 — a read
-      // against the wrong org is silently wrong data).
-      response.content.push({ type: 'text', text: formatOrgEcho(orgRecord) });
+      const envelope = isResponseContextEnvelope(result) ? result : { data: result, context: null };
+      const response = createSuccessResponse(envelope.data);
+      // Preserve the payload in the first block; report requested and server
+      // context separately, including when the server supplied no metadata.
+      addContext(response, envelope.context);
       // D16: the untrusted-content notice, last, on every success.
       response.content.push({ type: 'text', text: UNTRUSTED_CONTENT_NOTICE });
       return response;
@@ -260,7 +264,7 @@ export function createToolHandler<TInput>(
       );
 
       if (error instanceof z.ZodError) {
-        return mapZodErrorToMcp(error, toolName);
+        return addContext(mapZodErrorToMcp(error, toolName));
       }
       // A ZodError that is NOT ours: ops-sdk bundles zod 4 and parses every
       // response with it, so an SDK response-schema failure is a ZodError this
@@ -269,9 +273,28 @@ export function createToolHandler<TInput>(
       // landed (code-auditor, 2026-09-15, reproduced). Name-match it and say
       // what it is: the server answered, the SDK could not read the answer.
       if (error instanceof Error && error.name === 'ZodError') {
-        return mapSdkResponseShapeErrorToMcp(error, toolName);
+        return addContext(mapSdkResponseShapeErrorToMcp(error, toolName), 'responseContext' in error ? error.responseContext : null);
       }
-      return mapSdkErrorToMcp(error, toolName);
+      return addContext(mapSdkErrorToMcp(error, toolName), error instanceof Error && 'responseContext' in error ? error.responseContext : null);
     }
   };
+}
+
+
+/** The SDK's opt-in envelope; legacy adapters can still return plain data. */
+function isResponseContextEnvelope(value: unknown): value is { data: unknown; context: unknown } {
+  return typeof value === 'object' && value !== null && 'data' in value && 'context' in value;
+}
+
+/** Preserve context while a tool projects its existing first-block payload. */
+export function mapContextData<T, R>(value: { data: T; context: unknown } | T, project: (data: T) => R): { data: R; context: unknown } {
+  const envelope = isResponseContextEnvelope(value) ? value : { data: value, context: null };
+  try {
+    return { data: project(envelope.data), context: envelope.context };
+  } catch (error) {
+    if (error instanceof Error && !('responseContext' in error)) {
+      try { Object.defineProperty(error, 'responseContext', { value: envelope.context, configurable: true }); } catch { /* Preserve frozen errors. */ }
+    }
+    throw error;
+  }
 }

@@ -5,7 +5,7 @@
  */
 
 /**
- * Where one tool call landed, and why. Emitted once per call (success or
+ * The requested scope for one tool call; it does not establish where it landed. Emitted once per call (success or
  * failure, as soon as the org is resolved) and echoed as the second content
  * block of every successful response.
  *
@@ -60,10 +60,15 @@ export function setOrgCallSink(sink: OrgCallSink | undefined): void {
   orgCallSink = sink ?? defaultOrgCallSink;
 }
 
-/** The echo line appended to every successful response — same shape the CLI prints after `run save`. */
-export function formatOrgEcho(r: OrgCallRecord): string {
-  const base = `Org: ${r.org} (source: ${r.orgSource}${r.orgFile !== undefined ? `, file ${r.orgFile}` : ''})`;
-  return r.targetOrg !== undefined ? `${base} → target org: ${r.targetOrg}` : base;
+/** Requested and effective org context, separate from the unchanged data payload. */
+export function formatOrgEcho(r: OrgCallRecord, effectiveContext: unknown = null): string {
+  const source = r.orgSource === 'env' ? 'environment' : r.orgSource === 'personal' ? (r.orgFile !== undefined ? 'workspace' : 'omitted') : r.orgSource;
+  return JSON.stringify({
+    requestedContext: { orgSlug: r.org === 'personal' ? null : r.org, source },
+    effectiveContext,
+    ...(r.targetOrg !== undefined ? { targetOrg: r.targetOrg } : {}),
+    ...(effectiveContext === null ? { note: 'Effective org context unavailable; requested defaults do not establish the destination.' } : {}),
+  });
 }
 
 // ---------------------------------------------------------------------------

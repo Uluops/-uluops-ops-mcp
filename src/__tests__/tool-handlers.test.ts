@@ -99,7 +99,7 @@ describe('Tool Handlers', () => {
           priority: 'all',
           includeResolved: false,
           limit: 50,
-        }, undefined
+        }, { withResponseContext: true }
       );
       expect(result).toEqual({
         content: [
@@ -111,7 +111,7 @@ describe('Tool Handlers', () => {
               2
             ),
           },
-          { type: 'text', text: 'Org: personal (source: personal)' },
+          { type: 'text', text: expect.stringContaining('"requestedContext":{"orgSlug":null,"source":"omitted"}') },
           { type: 'text', text: UNTRUSTED_CONTENT_NOTICE },
         ],
       });
@@ -145,7 +145,7 @@ describe('Tool Handlers', () => {
           failureDomain: 'SEM',
           severity: 'high',
           limit: 25,
-        }, undefined
+        }, { withResponseContext: true }
       );
     });
 
@@ -170,7 +170,7 @@ describe('Tool Handlers', () => {
 
       expect(mockOpsClient.projects.listIssues).toHaveBeenCalledWith(
         'test-project',
-        expect.objectContaining({ limit: 25, minTimesSeen: 3 }), undefined,
+        expect.objectContaining({ limit: 25, minTimesSeen: 3 }), { withResponseContext: true },
       );
     });
 
@@ -245,7 +245,7 @@ describe('Tool Handlers', () => {
 
       expect(mockOpsClient.projects.bulkUpdateIssueStatus).toHaveBeenCalledWith(
         'test-project',
-        [{ id: TEST_UUID_1, status: 'completed' }], undefined
+        [{ id: TEST_UUID_1, status: 'completed' }], { withResponseContext: true }
       );
       expect(result).not.toHaveProperty('isError');
     });
@@ -260,7 +260,7 @@ describe('Tool Handlers', () => {
 
       expect(mockOpsClient.projects.bulkUpdateIssueStatus).toHaveBeenCalledWith(
         'test-project',
-        [{ fingerprint: 'abc123hash', status: 'deferred', reason: 'Out of scope' }], undefined
+        [{ fingerprint: 'abc123hash', status: 'deferred', reason: 'Out of scope' }], { withResponseContext: true }
       );
     });
 
@@ -275,7 +275,7 @@ describe('Tool Handlers', () => {
       // normalizeKeys converts file_path to filePath in nested objects
       expect(mockOpsClient.projects.bulkUpdateIssueStatus).toHaveBeenCalledWith(
         'test-project',
-        [{ filePath: 'src/api.ts', title: 'Fix error handling', status: 'wontfix' }], undefined
+        [{ filePath: 'src/api.ts', title: 'Fix error handling', status: 'wontfix' }], { withResponseContext: true }
       );
     });
 
@@ -360,7 +360,7 @@ describe('Tool Handlers', () => {
       await handler({ id: TEST_UUID_1 });
 
       // Only the ID is passed to the SDK method
-      expect(mockOpsClient.issues.getDetails).toHaveBeenCalledWith(TEST_UUID_1, undefined);
+      expect(mockOpsClient.issues.getDetails).toHaveBeenCalledWith(TEST_UUID_1, { withResponseContext: true });
     });
 
     it('should tolerate stray include_* keys without error', async () => {
@@ -375,7 +375,7 @@ describe('Tool Handlers', () => {
       // These options were removed from the schema (the /details endpoint has no
       // toggles); the non-strict Zod object strips them and the SDK is still
       // called with just the ID.
-      expect(mockOpsClient.issues.getDetails).toHaveBeenCalledWith(TEST_UUID_1, undefined);
+      expect(mockOpsClient.issues.getDetails).toHaveBeenCalledWith(TEST_UUID_1, { withResponseContext: true });
       expect(result).not.toHaveProperty('isError');
     });
 
@@ -627,7 +627,7 @@ describe('Tool Handlers', () => {
           project: 'test-project',
           confirm: true,
           confirmationPhrase: 'test-project',
-        }), undefined
+        }), { withResponseContext: true }
       );
       expect(result).not.toHaveProperty('isError');
     });
@@ -705,7 +705,7 @@ describe('Tool Handlers', () => {
 
       await handler({ project: 'test-project' });
 
-      expect(mockOpsClient.projects.getSummary).toHaveBeenCalledWith('test-project', undefined);
+      expect(mockOpsClient.projects.getSummary).toHaveBeenCalledWith('test-project', { withResponseContext: true });
     });
 
     it('should pass workflow_type filter', async () => {
@@ -714,7 +714,7 @@ describe('Tool Handlers', () => {
       await handler({ project: 'test', workflow_type: 'ship' });
 
       // Current implementation only passes project to SDK
-      expect(mockOpsClient.projects.getSummary).toHaveBeenCalledWith('test', undefined);
+      expect(mockOpsClient.projects.getSummary).toHaveBeenCalledWith('test', { withResponseContext: true });
     });
 
     it('should reject empty project', async () => {
@@ -751,7 +751,7 @@ describe('Tool Handlers', () => {
 
       expect(mockOpsClient.runs.getDetails).toHaveBeenCalledWith(
         'test-project',
-        undefined, undefined
+        undefined, { withResponseContext: true }
       );
     });
 
@@ -761,7 +761,7 @@ describe('Tool Handlers', () => {
       await handler({ project: 'test', run_number: 3, workflow_type: 'ship' });
 
       // normalizeKeys converts run_number → runNumber
-      expect(mockOpsClient.runs.getDetails).toHaveBeenCalledWith('test', 3, undefined);
+      expect(mockOpsClient.runs.getDetails).toHaveBeenCalledWith('test', 3, { withResponseContext: true });
     });
 
     it('should handle API errors', async () => {
@@ -802,7 +802,7 @@ describe('Tool Handlers', () => {
         project: 'test',
         baseRun: 1,
         compareRun: 2,
-      }, undefined);
+      }, { withResponseContext: true });
     });
 
     it('should reject missing run numbers', async () => {
@@ -838,7 +838,7 @@ describe('Tool Handlers', () => {
       expect(mockOpsClient.runs.archive).toHaveBeenCalledWith({
         project: 'test',
         beforeRunNumber: 10,
-      }, undefined);
+      }, { withResponseContext: true });
     });
 
     it('should archive with keep_last', async () => {
@@ -850,7 +850,7 @@ describe('Tool Handlers', () => {
         project: 'test',
         keepLast: 5,
         reason: 'Cleanup',
-      }, undefined);
+      }, { withResponseContext: true });
     });
   });
 
@@ -892,7 +892,7 @@ describe('Tool Handlers', () => {
       // metric value stays as-is (normalizeKeys only converts keys, not values)
       expect(mockOpsClient.analytics.getByMetric).toHaveBeenCalledWith(
         'agent_performance',
-        { metric: 'agent_performance', days: 30, limit: 20 }, undefined
+        { metric: 'agent_performance', days: 30, limit: 20 }, { withResponseContext: true }
       );
     });
 
@@ -903,7 +903,7 @@ describe('Tool Handlers', () => {
 
       expect(mockOpsClient.analytics.getByMetric).toHaveBeenCalledWith(
         'file_hotspots',
-        { metric: 'file_hotspots', project: 'test', days: 7, limit: 10 }, undefined
+        { metric: 'file_hotspots', project: 'test', days: 7, limit: 10 }, { withResponseContext: true }
       );
     });
 
@@ -942,7 +942,7 @@ describe('Tool Handlers', () => {
         status: 'all',
         priority: 'all',
         limit: 20,
-      }, undefined);
+      }, { withResponseContext: true });
     });
 
     it('should pass filter options', async () => {
@@ -962,7 +962,7 @@ describe('Tool Handlers', () => {
         status: 'open',
         priority: 'critical',
         limit: 50,
-      }, undefined);
+      }, { withResponseContext: true });
     });
 
     it('should reject empty query', async () => {
@@ -1112,7 +1112,7 @@ describe('Tool Handlers', () => {
       const result = await handler({ issue_id: TEST_UUID_1 });
 
       // Only issueId is passed to SDK (normalizeKeys converts issue_id → issueId)
-      expect(mockOpsClient.issues.getHistory).toHaveBeenCalledWith(TEST_UUID_1, undefined);
+      expect(mockOpsClient.issues.getHistory).toHaveBeenCalledWith(TEST_UUID_1, { withResponseContext: true });
 
       // Parse the serialized envelope and assert all four fields are present.
       // If the SDK regresses to the pre-F10 `{ history, notes }` shape, the
@@ -1187,7 +1187,7 @@ describe('Tool Handlers', () => {
 
       const result = await handler({ issue_id: TEST_UUID_1, include_diffs: false });
 
-      expect(mockOpsClient.issues.getHistory).toHaveBeenCalledWith(TEST_UUID_1, undefined);
+      expect(mockOpsClient.issues.getHistory).toHaveBeenCalledWith(TEST_UUID_1, { withResponseContext: true });
       expect(result).not.toHaveProperty('isError');
     });
 
@@ -1224,7 +1224,7 @@ describe('Tool Handlers', () => {
       // normalizeKeys: issue_id → issueId, note_type → noteType
       expect(mockOpsClient.issues.addNote).toHaveBeenCalledWith(
         TEST_UUID_1,
-        { content: 'This is a note', noteType: 'context' }, undefined
+        { content: 'This is a note', noteType: 'context' }, { withResponseContext: true }
       );
     });
 
@@ -1240,7 +1240,7 @@ describe('Tool Handlers', () => {
 
       expect(mockOpsClient.issues.addNote).toHaveBeenCalledWith(
         TEST_UUID_1,
-        { content: 'Resolution steps', noteType: 'resolution', createdBy: 'user@example.com' }, undefined
+        { content: 'Resolution steps', noteType: 'resolution', createdBy: 'user@example.com' }, { withResponseContext: true }
       );
     });
 
@@ -1279,7 +1279,7 @@ describe('Tool Handlers', () => {
 
       expect(mockOpsClient.issues.update).toHaveBeenCalledWith(
         TEST_UUID_1,
-        { title: 'Updated title' }, undefined
+        { title: 'Updated title' }, { withResponseContext: true }
       );
     });
 
@@ -1299,7 +1299,7 @@ describe('Tool Handlers', () => {
       // normalizeKeys: failure_code → failureCode, file_path → filePath
       expect(mockOpsClient.issues.update).toHaveBeenCalledWith(
         TEST_UUID_1,
-        { severity: 'critical', failureCode: 'SEM-ERR/H', filePath: 'src/api.ts' }, undefined
+        { severity: 'critical', failureCode: 'SEM-ERR/H', filePath: 'src/api.ts' }, { withResponseContext: true }
       );
     });
 
@@ -1338,7 +1338,7 @@ describe('Tool Handlers', () => {
         dryRun: false,
         deleteSource: true,
         confirmCrossOrg: false,
-      }, undefined);
+      }, { withResponseContext: true });
     });
 
     it('should pass dry_run and delete_source through', async () => {
@@ -1350,7 +1350,7 @@ describe('Tool Handlers', () => {
         dryRun: true,
         deleteSource: false,
         confirmCrossOrg: false,
-      }, undefined);
+      }, { withResponseContext: true });
     });
 
     it('should reject missing target without calling the SDK', async () => {
@@ -1406,7 +1406,7 @@ describe('Tool Handlers', () => {
           targetIssueId: TEST_UUID_1,
           sourceIssueIds: [TEST_UUID_2],
           strategy: 'keep_target',
-        }, undefined
+        }, { withResponseContext: true }
       );
     });
 
@@ -1426,7 +1426,7 @@ describe('Tool Handlers', () => {
           targetIssueId: TEST_UUID_1,
           sourceIssueIds: [TEST_UUID_2],
           strategy: 'keep_highest_priority',
-        }, undefined
+        }, { withResponseContext: true }
       );
     });
 
@@ -1474,7 +1474,7 @@ describe('Tool Handlers', () => {
       expect(mockOpsClient.issues.bulkUpdateStatus).toHaveBeenCalledWith([
         { issueId: TEST_UUID_1, status: 'completed' },
         { issueId: TEST_UUID_2, status: 'completed', reason: 'Fixed in PR' },
-      ], undefined);
+      ], { withResponseContext: true });
     });
 
     it('should reject empty updates', async () => {
@@ -1559,7 +1559,7 @@ describe('Tool Handlers', () => {
           averageScore: 92.5,
           recordWriteMode: 'merge',
         }),
-        { _skipClientValidation: true }
+        { _skipClientValidation: true, withResponseContext: true }
       );
     });
 
@@ -1646,7 +1646,7 @@ describe('Tool Handlers', () => {
 
       expect(mockOpsClient.runs.previewUpdate).toHaveBeenCalledWith(
         expect.objectContaining({ project: 'test', runNumber: 5 }),
-        { _skipClientValidation: true }
+        { _skipClientValidation: true, withResponseContext: true }
       );
     });
 
@@ -1688,7 +1688,7 @@ describe('Tool Handlers', () => {
 
       expect(mockOpsClient.runs.previewUpdate).toHaveBeenCalledWith(
         expect.objectContaining({ recordWriteMode: 'merge' }),
-        { _skipClientValidation: true }
+        { _skipClientValidation: true, withResponseContext: true }
       );
     });
   });
@@ -1717,7 +1717,7 @@ describe('Tool Handlers', () => {
 
       expect(mockOpsClient.analytics.getAgentReliability).toHaveBeenCalledWith({
         days: 90,
-      }, undefined);
+      }, { withResponseContext: true });
     });
 
     it('should pass filter options', async () => {
@@ -1733,7 +1733,7 @@ describe('Tool Handlers', () => {
         agent: 'code-validator',
         project: 'test-project',
         days: 30,
-      }, undefined);
+      }, { withResponseContext: true });
     });
   });
 
@@ -1770,7 +1770,7 @@ describe('Tool Handlers', () => {
         project: 'test-project',
         title: 'Test Issue',
         priority: 'suggested',
-      }, undefined);
+      }, { withResponseContext: true });
       expect(result).not.toHaveProperty('isError');
     });
 
@@ -1809,7 +1809,7 @@ describe('Tool Handlers', () => {
         failureDomain: 'SEM',
         failureMode: 'VAL',
         agent: 'user-submitted',
-      }, undefined);
+      }, { withResponseContext: true });
     });
 
     it('should reject missing project', async () => {

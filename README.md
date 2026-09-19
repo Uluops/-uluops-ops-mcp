@@ -88,11 +88,15 @@ Every tool takes an optional `org` (slug) → `X-Org-Slug` on that request. Omit
 resolves a default **per call**: the nearest `.uluops.json` above the process's launch directory
 (`{ "org": "ulu-labs" }` at the root of a work checkout; `{ "org": "personal" }` in a personal repo
 nested under it stops the walk — the walk never rises above your home directory and a file owned by
-another user is refused), else `ULUOPS_ORG_SLUG`, else your personal org. The API never infers an
-org from a project name — with none of these set, a `save_run` files the run in your personal org
-even when a work org has a project by that name. Every successful result ends with a second text
-block saying where it landed — `Org: ulu-labs (source: explicit)` — and the server logs the same
-record per call (`tool call org`). The file may carry only `org`, `project` and `$schema` (the `@uluops/ops-sdk` ≥ 6.5.0
+another user is refused), else `ULUOPS_ORG_SLUG`, else no org override. Bound keys resolve to
+their bound org; unbound credentials may use a personal default. The API never infers an org
+from a project name. The first result block keeps the data payload; a second JSON block reports
+`requestedContext: { orgSlug, source }` separately from `effectiveContext: { version: 1,
+orgSlug, source }`. Requested sources are `explicit`, `workspace`, `environment`, or `omitted`;
+effective sources are `bound-key`, `request`, or `personal-default`. Old/malformed server
+metadata yields `effectiveContext: null` with an unavailable note, while successful data stays
+usable. Error results retain same-response context when available, without asserting that a
+write committed. Logs describe the requested scope, not proof of the destination. The file may carry only `org`, `project` and `$schema` (the `@uluops/ops-sdk` ≥ 6.5.0
 allowlist); anything else is refused. The startup log line names the resolved default and its source.
 
 **The `org` value must come from the user.** Tool results carry text written by other tracker users
@@ -107,7 +111,7 @@ any request, so the server can neither read from nor move a project *into* an or
 excluded.
 
 Five refusals are terminal and say so in the tool result: `INSUFFICIENT_ORG_ROLE` (your role in
-that org is below `publisher` — do **not** retry without `org`, that files the work personally),
+that org is below `publisher` — do **not** retry without `org`, which changes the requested scope),
 `ORG_ACCESS_DENIED` (not a member, or a bound key), `ORG_NOT_FOUND` and `ORG_SUSPENDED` (the named
 org does not resolve / is suspended — same rule, do not drop `org`), and `PROJECT_REHOMED` (the
 project moved orgs; the result names the org to pass). `ORG_NOT_ALLOWED` is the server-side sixth.
@@ -115,9 +119,9 @@ project moved orgs; the result names the org to pass). `ORG_NOT_ALLOWED` is the 
 **Moving a project between orgs** is `rehome_project` — the member path of the spec's §4.1. Two
 arguments name two orgs and both the description and the `org` field's own schema text say which
 is which: `org` is where the project is *now* (the API looks it up there — omit it for a work-org
-project and it looks in the workspace default or your personal org, moves a same-named project if
+project and it looks in the resolved default org, moves a same-named project if
 one lives there, and otherwise 404s; never a search), `target_org` is where it goes. Every result's
-echo line names both: `Org: acme (source: explicit) → target org: ulu-labs`, and the per-call log
+context block includes `requestedContext`, `effectiveContext`, and `targetOrg: "ulu-labs"`, and the per-call log
 record carries `targetOrg`. A `same_org` 400 means "already there" and the result says so
 (`terminal`, `applied: false`, with the API's `orgSlug`) — but note it is the idempotence signal
 of the *admin* path only: the member path looks the project up in the **source**, so a re-run after

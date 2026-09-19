@@ -11,7 +11,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { z } from 'zod';
 import { resolveWorkspaceOrg } from '@uluops/ops-sdk';
-import { createToolHandler } from '../utils/tool-handler.js';
+import { createToolHandler, mapContextData } from '../utils/tool-handler.js';
 import { setOrgCallSink, setOrgAllowlist, formatOrgEcho, UNTRUSTED_CONTENT_NOTICE, type OrgCallRecord } from '../utils/org-call-log.js';
 import { parseOrgAllow } from '../config/index.js';
 import { withOrgArgument, ORG_ARG_DESCRIPTION, ORG_ARG_DESCRIPTION_READ } from '../utils/org-scope.js';
@@ -49,23 +49,23 @@ describe('createToolHandler — org seam', () => {
     const [body, scope] = callOf(sdk);
     expect(body).toEqual({ project: 'p', runNumber: 3 });
     expect(body).not.toHaveProperty('org');
-    expect(scope).toEqual({ org: 'acme' });
+    expect(scope).toEqual({ org: 'acme', withResponseContext: true });
   });
 
-  it('no org: the resolver answers personal → scope is undefined (nothing on the wire), body unchanged', async () => {
+  it('no org: request context without an org override, body unchanged', async () => {
     const sdk = vi.fn().mockResolvedValue({});
     const handler = createToolHandler(schema, sdk);
     await handler({ project: 'p' });
     const [body, scope] = callOf(sdk);
     expect(body).toEqual({ project: 'p' });
-    expect(scope).toBeUndefined();
+    expect(scope).toEqual({ withResponseContext: true });
   });
 
   it('a workspace answer flows the same way as an explicit one', async () => {
     resolver.mockReturnValueOnce({ org: 'ulu-labs', source: 'workspace', path: '/w/.uluops.json' });
     const sdk = vi.fn().mockResolvedValue({});
     await createToolHandler(schema, sdk)({ project: 'p' });
-    expect(callOf(sdk)[1]).toEqual({ org: 'ulu-labs' });
+    expect(callOf(sdk)[1]).toEqual({ org: 'ulu-labs', withResponseContext: true });
   });
 
   it('an invalid org is a 400 (InputValidationError) and the SDK call is never made', async () => {
@@ -87,7 +87,7 @@ describe('createToolHandler — org seam', () => {
     expect(sdk).not.toHaveBeenCalled();
   });
 
-  describe('echo + log (run #187 F8/F2): every call says where it landed', () => {
+  describe('echo + log (run #187 F8/F2): requested context stays distinct from effective context', () => {
     let records: OrgCallRecord[];
     beforeEach(() => { records = []; setOrgCallSink((r) => records.push(r)); });
     afterEach(() => { setOrgCallSink(() => {}); });
@@ -97,28 +97,28 @@ describe('createToolHandler — org seam', () => {
       const r = await createToolHandler(schema, sdk, { toolName: 'save_run' })({ project: 'p', org: 'acme' });
       expect(r.content).toHaveLength(3);
       expect(payloadOf(r)).toEqual({ data: 1 });
-      expect(r.content[1]?.text).toBe('Org: acme (source: explicit)');
+      expect(JSON.parse(r.content[1]?.text ?? '{}')).toMatchObject({ requestedContext: { orgSlug: 'acme', source: 'explicit' }, effectiveContext: null });
       expect(r.content[2]?.text).toBe(UNTRUSTED_CONTENT_NOTICE); // D16, always last
       expect(records).toEqual([{ tool: 'save_run', org: 'acme', orgSource: 'explicit' }]);
     });
 
-    it('personal: the echo says `personal`, never an empty org', async () => {
+    it('omission does not establish a personal destination', async () => {
       const r = await createToolHandler(schema, vi.fn().mockResolvedValue({}), { toolName: 'get_run' })({ project: 'p' });
-      expect(r.content[1]?.text).toBe('Org: personal (source: personal)');
+      expect(JSON.parse(r.content[1]?.text ?? '{}')).toMatchObject({ requestedContext: { orgSlug: null, source: 'omitted' }, effectiveContext: null, note: expect.stringContaining('unavailable') });
       expect(records[0]).toEqual({ tool: 'get_run', org: 'personal', orgSource: 'personal' });
     });
 
-    it('workspace: the answering file is named in both the echo and the record', async () => {
+    it('workspace: requested slug is echoed and the answering file is logged', async () => {
       resolver.mockReturnValueOnce({ org: 'ulu-labs', source: 'workspace', path: '/w/.uluops.json' });
       const r = await createToolHandler(schema, vi.fn().mockResolvedValue({}), { toolName: 't' })({ project: 'p' });
-      expect(r.content[1]?.text).toBe('Org: ulu-labs (source: workspace, file /w/.uluops.json)');
+      expect(JSON.parse(r.content[1]?.text ?? '{}')).toMatchObject({ requestedContext: { orgSlug: 'ulu-labs', source: 'workspace' }, effectiveContext: null });
       expect(records[0]).toEqual({ tool: 't', org: 'ulu-labs', orgSource: 'workspace', orgFile: '/w/.uluops.json' });
     });
 
-    it('a failed call is still logged (the record is emitted before the SDK call) but has no echo block', async () => {
+    it('a failed call is still logged (the record is emitted before the SDK call) and has unavailable effective context', async () => {
       const r = await createToolHandler(schema, vi.fn().mockRejectedValue(new Error('boom')), { toolName: 't' })({ project: 'p', org: 'acme' });
       expect(r.isError).toBe(true);
-      expect(r.content).toHaveLength(1);
+      expect(r.content).toHaveLength(2);
       expect(records).toEqual([{ tool: 't', org: 'acme', orgSource: 'explicit' }]);
     });
 
@@ -128,9 +128,53 @@ describe('createToolHandler — org seam', () => {
       expect(records).toEqual([]);
     });
 
-    it('formatOrgEcho is the CLI shape', () => {
-      expect(formatOrgEcho({ tool: 'x', org: 'a', orgSource: 'env' })).toBe('Org: a (source: env)');
+    it('formatOrgEcho maps environment provenance', () => {
+      expect(JSON.parse(formatOrgEcho({ tool: 'x', org: 'a', orgSource: 'env' }))).toMatchObject({ requestedContext: { orgSlug: 'a', source: 'environment' }, effectiveContext: null });
     });
+  });
+
+  it('reports an omitted request and the bound-key effective org independently', async () => {
+    const context = { version: 1, orgSlug: 'bound-team', source: 'bound-key' };
+    const r = await createToolHandler(schema, vi.fn().mockResolvedValue({ data: { saved: true }, context }))({ project: 'p' });
+    expect(payloadOf(r)).toEqual({ saved: true });
+    expect(JSON.parse(r.content[1]?.text ?? '{}')).toEqual({ requestedContext: { orgSlug: null, source: 'omitted' }, effectiveContext: context });
+  });
+
+  it('preserves workspace and explicit provenance for no-header personal sentinels', async () => {
+    for (const [resolved, source] of [
+      [{ org: undefined, source: 'explicit' as const }, 'explicit'],
+      [{ org: undefined, source: 'personal' as const, path: '/w/.uluops.json' }, 'workspace'],
+    ] as const) {
+      resolver.mockReturnValueOnce(resolved);
+      const r = await createToolHandler(schema, vi.fn().mockResolvedValue({ data: {}, context: null }))({ project: 'p' });
+      expect(JSON.parse(r.content[1]?.text ?? '{}').requestedContext).toEqual({ orgSlug: null, source });
+    }
+  });
+
+  it('keeps context paired through concurrent calls and successful projections', async () => {
+    const handler = createToolHandler(schema, async (_n, scope) => {
+      await new Promise(resolve => setTimeout(resolve, scope.org === 'a' ? 20 : 1));
+      return mapContextData({ data: { name: scope.org }, context: { version: 1, orgSlug: scope.org, source: 'request' } }, data => ({ renamed: data.name }));
+    });
+    const results = await Promise.all(['a', 'b'].map(org => handler({ project: 'p', org })));
+    for (const [i, org] of ['a', 'b'].entries()) {
+      const result = results[i];
+      if (!result) throw new Error('missing result');
+      expect(payloadOf(result)).toEqual({ renamed: org });
+      expect(JSON.parse(result.content[1]?.text ?? '{}')).toMatchObject({ requestedContext: { orgSlug: org }, effectiveContext: { orgSlug: org } });
+    }
+  });
+
+  it('retains server context on SDK and projection failures', async () => {
+    const context = { version: 1, orgSlug: 'bound-team', source: 'bound-key' };
+    for (const sdk of [
+      (): Promise<never> => Promise.reject(Object.assign(new Error('SDK parse failed'), { name: 'ZodError', issues: [], responseContext: context })),
+      (): Promise<unknown> => Promise.resolve().then(() => mapContextData({ data: {}, context }, () => { throw new Error('projection failed'); })),
+    ]) {
+      const r = await createToolHandler(schema, sdk)({ project: 'p' });
+      expect(r.isError).toBe(true);
+      expect(JSON.parse(r.content[1]?.text ?? '{}').effectiveContext).toEqual(context);
+    }
   });
 
   describe('D15 — ULUOPS_ORG_ALLOW bounds which orgs a call may name', () => {

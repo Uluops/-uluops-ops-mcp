@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### F13
+
+- Report requestedContext separately from effectiveContext in a second content block. Bound-key results use server metadata; absent metadata is unavailable, never inferred personal. Preserve context through projections and errors.
+
 ### F20
 
 - Expose idempotency_contract with legacy-v1 default and capability-negotiated report-v2. Preserve terminal, not-applied contract and payload refusals.
