@@ -32,7 +32,8 @@ export const SaveRunInputSchema = z.object({
     .default([])
     .describe('Array of issues/recommendations'),
   summary: ValidationSummarySchema.optional().describe('Summary statistics for the run'),
-  raw_markdown: z.string().optional().describe('Raw markdown report content'),
+  raw_markdown: z.string().nullish().describe('Raw markdown report content'),
+  idempotency_contract: z.enum(['legacy-v1', 'report-v2']).optional().describe('Omission keeps legacy-v1, which excludes report text from comparison. report-v2 compares exact report bytes and requires server capability support. Reusing a key with another contract or payload conflicts; use a new key only for an intentional new submission.'),
   idempotency_key: z.string().max(100).optional().describe('Key for duplicate prevention. When omitted, a content-derived key is used (sha256 of the payload), so a byte-identical retry returns the original run with deduplicated:true instead of creating a second one. Pass explicit distinct keys to deliberately save identical payloads twice.'),
   definition_type: z.string().max(20).optional().describe('Definition type (agent, command, workflow, pipeline)'),
   definition_name: z.string().max(100).optional().describe('Definition name'),

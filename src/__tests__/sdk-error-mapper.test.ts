@@ -5,7 +5,7 @@
  * The mapper now preserves error context while only redacting actual credential values.
  */
 
-import { OpsApiError,  ForbiddenError,  NotFoundError,  describe, it, expect } from 'vitest';
+import { describe, it, expect } from 'vitest';
 import { mapSdkErrorToMcp, mapZodErrorToMcp } from '../client/sdk-error-mapper.js';
 import {
   NotFoundError,
@@ -605,5 +605,15 @@ describe('SDK Error Mapper', () => {
       expect(p.terminal).toBeUndefined();
       expect(p.suggestion as string).toContain('verify the id(s)');
     });
+  });
+});
+
+
+describe('F20 idempotency refusals', () => {
+  it.each(['UNSUPPORTED_CONTRACT', 'IDEMPOTENCY_CONTRACT_MISMATCH', 'IDEMPOTENCY_PAYLOAD_MISMATCH'])('preserves %s and prevents blind resubmission', code => {
+    const error = Object.assign(new Error('Submission refused'), { code });
+    const payload = getErrorPayload(mapSdkErrorToMcp(error, 'save_run'));
+    expect(payload).toMatchObject({ code, terminal: true, applied: false, applicationState: 'not_applied' });
+    expect(payload.suggestion).not.toContain('drop');
   });
 });

@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### F20
+
+- Expose idempotency_contract with legacy-v1 default and capability-negotiated report-v2. Preserve terminal, not-applied contract and payload refusals.
+
 ### Added
 
 - **F02 — Explicit analysis types.** Save, validate, update and preview contracts retain `agent_type` on records and summaries, including single-summary `agent_name`. Analysis query filters accept `unknown`. The API checks declarations against the exact linked registry version and retains provenance.

@@ -438,6 +438,18 @@ describe('Tool Handlers', () => {
       expect(result).not.toHaveProperty('isError');
     });
 
+    it('forwards the selected idempotency contract and nullable report, preserving omission', async () => {
+      mockOpsClient.runs.save.mockResolvedValue({});
+      const input = { project: 'test-project', workflow_type: 'ship', agents: [{ name: 'explorer', decision: 'TRACED' }] };
+      await handler({ ...input, idempotency_contract: 'report-v2', raw_markdown: null });
+      expect(mockOpsClient.runs.save.mock.calls[0][0]).toMatchObject({ idempotencyContract: 'report-v2', rawMarkdown: null });
+      await handler(input);
+      expect(mockOpsClient.runs.save.mock.calls[1][0]).not.toHaveProperty('idempotencyContract');
+      const invalid = await handler({ ...input, idempotency_contract: 'future' });
+      expect(invalid).toHaveProperty('isError', true);
+      expect(mockOpsClient.runs.save).toHaveBeenCalledTimes(2);
+    });
+
     it('should inject an ISO timestamp when the caller omits one', async () => {
       mockOpsClient.runs.save.mockResolvedValue({
         run_id: TEST_UUID_1,

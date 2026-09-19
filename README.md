@@ -476,3 +476,20 @@ npm run build
 ## License
 
 MIT
+
+
+### Exact report replay checks (F20)
+
+New submissions can explicitly select report comparison:
+
+```json
+{"project":"example","workflow_type":"explore","idempotency_key":"submission-1","idempotency_contract":"report-v2","agents":[{"name":"explorer","decision":"TRACED"}],"recommendations":[],"raw_markdown":"Report bytes"}
+```
+
+The SDK checks server capability support before writing. Omission retains `legacy-v1`,
+which excludes report text; response `idempotency.excludedFields` makes that explicit.
+V2 compares exact bytes, including newlines; omitted/null reports are equivalent.
+The same key cannot change contracts or accepted payload. Refusals are `not_applied`;
+read the original run before choosing a new key for an intentional new submission.
+The accepted hash remains unchanged by later token enrichment. Supply an explicit
+key for harness retries (the tool still defaults the timestamp on each call).

@@ -223,6 +223,15 @@ export function mapSdkErrorToMcp(error: unknown, toolName?: string): McpToolResp
     ...(suggestion != null ? { suggestion } : {}),
   };
 
+  if (causeCode === 'UNSUPPORTED_CONTRACT' || causeCode === 'IDEMPOTENCY_CONTRACT_MISMATCH' || causeCode === 'IDEMPOTENCY_PAYLOAD_MISMATCH') {
+    return buildErrorResponse(sanitizeErrorMessage((error as Error).message), {
+      ...context, terminal: true, applied: false, applicationState: 'not_applied',
+      suggestion: causeCode === 'UNSUPPORTED_CONTRACT'
+        ? 'The server must advertise this contract before submission. Check compatible API/SDK versions; no write was attempted.'
+        : 'Read the original run and verify the intended submission. Keep its key and contract for retries; use a new key only for an intentional new submission.',
+    });
+  }
+
   // ORG_NOT_FOUND (404) / ORG_SUSPENDED (403) — the org named by `org` does
   // not resolve, or is suspended. TERMINAL, like INSUFFICIENT_ORG_ROLE and
   // ORG_ACCESS_DENIED below: until 2.1.1 these fell to the generic 404/403
