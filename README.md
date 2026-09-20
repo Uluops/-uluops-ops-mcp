@@ -35,7 +35,7 @@ MCP (Model Context Protocol) server for the UluOps tracker API — runs, finding
 
 ## Installation
 
-Requires **Node.js 18** or later.
+Requires **Node.js 20.3** or later.
 
 **Option A — npx (no install):**
 
@@ -477,12 +477,7 @@ npm run lint
 npm run build
 ```
 
-## License
-
-MIT
-
-
-### Exact report replay checks (F20)
+### Exact report replay checks
 
 New submissions can explicitly select report comparison:
 
@@ -497,3 +492,13 @@ The same key cannot change contracts or accepted payload. Refusals are `not_appl
 read the original run before choosing a new key for an intentional new submission.
 The accepted hash remains unchanged by later token enrichment. Supply an explicit
 key for harness retries (the tool still defaults the timestamp on each call).
+
+### Analysis types and saved history
+
+Pass `agent_type` on analysis records and summaries when known. The API checks declarations against the exact linked registry version and retains type provenance; query filters also accept `unknown`. Saved occurrence classifications describe the finding at that run, even after its current issue status changes. Legacy history without those facts remains `unknown`.
+
+These contracts require Tracker API 2.1.1 or newer. The agent matrix distinguishes the complete per-agent population from pairs eligible for the requested `minIssues` threshold.
+
+## License
+
+MIT

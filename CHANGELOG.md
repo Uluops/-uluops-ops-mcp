@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.21.0] - 2026-09-20
+
+### Changed
+
+- Pin ops-sdk 6.7.0 and mcp-secure-server 0.0.22-security; update the MCP protocol SDK to 1.30.0. Require Node.js 20.3 or newer to match the SDK.
+- Include input examples and actionable nested analysis-summary validation paths in protocol diagnostics.
+
 ### F13
 
 - Report requestedContext separately from effectiveContext in a second content block. Bound-key results use server metadata; absent metadata is unavailable, never inferred personal. Preserve context through projections and errors.
