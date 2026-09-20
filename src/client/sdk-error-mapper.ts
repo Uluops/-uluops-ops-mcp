@@ -32,12 +32,25 @@ const CREDENTIAL_PATTERNS: RegExp[] = [
   /(?:api[_-]?key|apiKey)\s*[:=]\s*\S+/i,
   /bearer\s+[a-zA-Z0-9_\-.]+/i,
   /authorization:\s*\S+/i,
-  /ulr_[a-zA-Z0-9]{20,}/,
+  // Must be at least as wide as the shape config/index.ts ACCEPTS
+  // (`^ulr_[A-Za-z0-9_-]{16,}$`). Until 0.21.1 this read `[a-zA-Z0-9]{20,}`:
+  // a key containing `-` or `_`, or with a 16–19 char tail, passed boot
+  // validation and then walked straight past redaction (circumvention-
+  // forecaster run #9 A12 / explorer run #11 T7, falsified run #12).
+  /ulr_[A-Za-z0-9_-]{16,}/,
   // Token/secret assignments with actual values
   /(?:token|secret)\s*[:=]\s*\S+/i,
   // Stack traces (internal implementation details)
   /at\s+\S+\s+\(\S+:\d+:\d+\)/,
 ];
+
+// `.test()` on a /g regex is stateful (lastIndex), so detection uses the
+// non-global patterns above and replacement uses this derived global set.
+// Before 0.21.1 replacement used the non-global patterns directly, so only
+// the FIRST credential in a message was redacted and a second one survived.
+const CREDENTIAL_PATTERNS_GLOBAL: RegExp[] = CREDENTIAL_PATTERNS.map(
+  (p) => new RegExp(p.source, p.flags.includes('g') ? p.flags : p.flags + 'g'),
+);
 
 /**
  * Check if a message contains actual credential values
@@ -47,12 +60,18 @@ function containsCredentials(message: string): boolean {
 }
 
 /**
- * Redact credential values from a message while preserving the rest.
- * Returns the original message with only credential values replaced.
+ * Redact every credential value from a message while preserving the rest.
+ *
+ * Exported so that the two channels that used to bypass it can share it:
+ * the `[mcp-tool-error]` stderr line in tool-handler.ts (written BEFORE the
+ * mapper ran — explorer run #11 P16) and `schema_issues` on
+ * SDK_RESPONSE_SHAPE_MISMATCH below (P17), plus the resource-path error at
+ * resources/projects.ts which carried its own narrower copy of the regex.
  */
-function redactCredentials(message: string): string {
+export function redactCredentials(message: string): string {
   let redacted = message;
-  for (const pattern of CREDENTIAL_PATTERNS) {
+  for (const pattern of CREDENTIAL_PATTERNS_GLOBAL) {
+    pattern.lastIndex = 0;
     redacted = redacted.replace(pattern, '[REDACTED]');
   }
   return redacted;
@@ -723,7 +742,9 @@ export function mapSdkResponseShapeErrorToMcp(error: Error, toolName?: string): 
         ? 'Do NOT retry the write blind. Read the current state first (for rehome_project: get_project with `org: "<target_org>"`; a hit means the move landed). ' +
           'Then report the SDK/server version mismatch to the operator — this is a client/server schema drift, not something to work around.'
         : 'Report the SDK/server schema drift to the operator; retrying the read will fail the same way.',
-      schema_issues: error.message.slice(0, 2000),
+      // P17 (explorer run #11): this slice bypassed sanitizeErrorMessage. Zod 4
+      // response-shape messages can quote response VALUES; redact before exposing.
+      schema_issues: redactCredentials(error.message).slice(0, 2000),
     },
   );
 }

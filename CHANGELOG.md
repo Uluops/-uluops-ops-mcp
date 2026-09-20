@@ -7,6 +7,83 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.21.1] - 2026-09-23
+
+*Authored 2026-09-19 as 0.20.2 on `fix/circumvention-hardening` and left unmerged; a separate
+0.20.2 (ops-sdk 6.6.0 bump) and then 0.21.0 shipped from `main` meanwhile. Rebased onto 0.21.0
+and released under the next free number — content unchanged.*
+
+Hardening from the first three-way circumvention read of this package — `circumvention-forecaster`
+2.3.3, `circumvention-explorer` 1.0.0 (maiden) and `security-explorer` 1.0.3 in parallel on 0.20.0
+(tracker `-uluops-ops-mcp` runs #9–#11), then `falsification-spec-writer` over all three (run #12).
+Every item below is a static-decidable code-fact the falsification pass confirmed; the four
+findings that need a design decision (model-supplied confirmation and org provenance — A1, A9,
+A10; the unset-allowlist default — A4/A5) are NOT in this release and are being written up as a spec.
+
+### Fixed
+
+- **Credential redaction now covers every key shape the boot validator accepts, every
+  occurrence, and every channel** (A12 / explorer T7, P16, P17). Four defects in one class:
+  the key regex was `/ulr_[a-zA-Z0-9]{20,}/` while `config/index.ts` accepts
+  `^ulr_[A-Za-z0-9_-]{16,}$`, so a key with `-`/`_` or a 16–19 char tail passed validation and
+  walked past redaction; replacement used the non-global regex, so only the FIRST credential
+  in a message was redacted; the `[mcp-tool-error]` stderr line was written BEFORE the mapper
+  ran and carried the raw message; `schema_issues` on `SDK_RESPONSE_SHAPE_MISMATCH` sliced
+  `error.message` around the sanitizer; and `resources/projects.ts` carried its own narrower
+  copy of the regex. `redactCredentials` is now exported and used by all three channels.
+  The forecaster rated this THEORETICAL for "no echo path" — the explorer's census found the
+  two channels; what remains unproven is a SOURCE (no package or SDK message embeds the key
+  value; only an API error body could). Fixed regardless. `credential-redaction-channels.test.ts`:
+  7 of its 12 assertions fail on the 0.20.1 source.
+- **`delete_run.confirm` is `z.literal(true)`** (A2 / explorer P23). It was `z.boolean()` and
+  the handler forwarded only `run_id` — the SDK synthesizes `X-Confirm-Delete` from the id, so
+  `confirm: false` and `confirm: true` produced byte-identical requests and the description
+  "Requires confirm=true" was false. Now false or missing is refused by the schema before any
+  SDK call, the shape the SDK itself uses for `soft_delete_project`. The falsification pass
+  re-rated this HIGH→MEDIUM: both halves of every confirm on this surface are model-supplied
+  (A1), so the decorative flag added no attacker capability — the defect was a false promise.
+
+### Changed
+
+- **`maxEgressBytes` is `16 * maxArgsSize` on all 55 ToolSpecs** (A7). mcp-secure-server
+  0.0.20-security checks `maxArgsSize` only inside `if (tool.argsShape)` — dead code for this
+  registry, which declares no `argsShape` — and evaluates `maxEgressBytes` at request time as
+  `argsBytes * 16`. So the only args cap that binds is `maxEgressBytes / 16`. 28 read tools had
+  egress set above 16× (headroom 12.5–64 KB against declared 2–50 KB: `query_issues` 50 KB →
+  64 KB, `get_project_log` 4 KB → 64 KB, `get_org_audit_feed` 2 KB → 32 KB). No attacker goal was
+  reachable in the headroom (falsified: everything stays under the Layer 1/2 500 KB caps and
+  per-field Zod bounds) — the declared number was simply a fiction. `tool-registry.test.ts`
+  now asserts equality with a control; the old `>=` test stays as the under-cut guard.
+  **A `maxEgressBytes` value never bounded a response** — `log-tools.test.ts` asserted one
+  ("sized for a 500-event page") and has been corrected to the fact.
+- **`bulk_update_status.project` is optional and documented as informational** (A2 sibling).
+  The schema required it; the handler never read it; the SDK's `bulkUpdateStatus(updates, scope)`
+  has no project parameter — issues are matched by UUID across the whole org. Requiring it
+  advertised a scope the call did not enforce. Callers that send it keep working.
+- **Resource reads carry the D16 notice and emit a provenance record** (A8 / explorer P2, P31 /
+  security-explorer Q1 — the one finding all three agents reached). Resources are registered on
+  the raw server outside `withOrgArgument`/`createToolHandler`, so `resources/read` produced no
+  `tool call org` line and relayed tracker-user-authored content with none of the untrusted-
+  content notice the tool path appends. `createResourceResponse` now appends the notice as a
+  second `contents[]` entry (`text/plain`; the JSON payload stays byte-for-byte at `[0]`) and
+  emits `{tool: "resources/read <uri>", org: "personal", orgSource: "personal"}` — the org every
+  resource read lands on by construction, since the OpsClient is built without one. Inbound
+  Layers 1–4 always applied to resources; this closes the seam they were outside of. Consumers
+  that asserted `contents.length === 1` on success will see 2.
+- `eslint.config.js`: `projectService` default-project cap 20 → 32. The cap counts
+  `src/__tests__/*.test.ts`; adding the 21st file made two UNRELATED test files fail to parse
+  ("Too many files (>20) have matched the default project").
+
+### Not changed — recorded so the next reader does not re-derive it
+
+- Layer 5 (response-side validation) under the `basic` preset is **inert**: `presets.js:76`
+  sets `contextual: null`, `pipeline-factory.js:69` coerces `null ?? {}`, `ContextualValidationLayer({})`
+  installs zero validators and `validateResponse` short-circuits. Every read-path chain has
+  exactly one control between tracker content and the model — the D16 notice. That is a spec
+  question (a real response filter, or host-side approval for destructive tools), not a patch.
+- `soft_delete_project confirm:false` IS refused — by the SDK's `DeleteProjectInputSchema`
+  (`confirm: z.literal(true)`), one hop before the API. The phrase-vs-name match is still
+  forwarded; the API decides.
 ## [0.21.0] - 2026-09-20
 
 ### Changed

@@ -14,7 +14,11 @@ export default tseslint.config(
             'src/__tests__/fixtures/*.ts',
           ],
           defaultProject: 'tsconfig.test.json',
-          maximumDefaultProjectFileMatchCount_THIS_WILL_SLOW_DOWN_LINTING: 20,
+          // 20 → 32 at 0.20.2: the cap counts src/__tests__/*.test.ts (21 files now) plus
+          // fixtures; at 20 the 21st file made two UNRELATED test files fail to parse
+          // ("Too many files (>20) have matched the default project"), which reads as
+          // a lint error in files nobody touched. Raise it deliberately when adding tests.
+          maximumDefaultProjectFileMatchCount_THIS_WILL_SLOW_DOWN_LINTING: 32,
         },
         tsconfigRootDir: import.meta.dirname,
       },

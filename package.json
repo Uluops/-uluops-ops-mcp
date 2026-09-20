@@ -1,6 +1,6 @@
 {
   "name": "@uluops/ops-mcp",
-  "version": "0.21.0",
+  "version": "0.21.1",
   "description": "MCP server for the UluOps tracker API — runs, findings, issues, analytics, the project log and org management",
   "type": "module",
   "main": "dist/index.js",

@@ -20,7 +20,15 @@ const BulkStatusUpdateSchema = z
   );
 
 export const BulkUpdateStatusInputSchema = z.object({
-  project: z.string().min(1),
+  // Informational only. The handler never read this field and the SDK's
+  // bulkUpdateStatus(updates, scope) has no project parameter — issues are
+  // addressed by UUID and may span every project in the org. Until 0.21.1 the
+  // schema REQUIRED it, which advertised a scope the call did not enforce
+  // (circumvention-forecaster run #9 A2 sibling, falsified run #12). Kept
+  // optional so callers that send it keep working; do not read it as a bound.
+  project: z.string().min(1).optional().describe(
+    'Informational label for the caller\'s own bookkeeping. NOT a scope: updates are matched by issue UUID across the whole org, whatever this says.',
+  ),
   updates: z.array(BulkStatusUpdateSchema).min(1).max(100),
 });
 
@@ -32,7 +40,7 @@ export function registerBulkUpdateStatusTool(
 ): void {
   server.tool(
     'bulk_update_status',
-    'Bulk update multiple issue statuses in a single transaction. Records status history for each change.',
+    'Bulk update multiple issue statuses in a single transaction, addressed by issue UUID across the org (the `project` field is informational, not a scope). Records status history for each change.',
     BulkUpdateStatusInputSchema.shape,
     createToolHandler(BulkUpdateStatusInputSchema, (n, scope) =>
       opsClient.issues.bulkUpdateStatus(n['updates'], scope),

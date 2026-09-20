@@ -7,7 +7,7 @@
 
 import { z } from 'zod';
 import { resolveWorkspaceOrg, type OrgScopedOptions } from '@uluops/ops-sdk';
-import { mapSdkErrorToMcp, mapSdkResponseShapeErrorToMcp, mapZodErrorToMcp } from '../client/sdk-error-mapper.js';
+import { mapSdkErrorToMcp, mapSdkResponseShapeErrorToMcp, mapZodErrorToMcp, redactCredentials } from '../client/sdk-error-mapper.js';
 import { ORG_ARG_NAME } from './org-scope.js';
 import { normalizeKeys } from './normalize-keys.js';
 import { createSuccessResponse, type McpToolResponse } from '../types/index.js';
@@ -255,8 +255,12 @@ export function createToolHandler<TInput>(
       response.content.push({ type: 'text', text: UNTRUSTED_CONTENT_NOTICE });
       return response;
     } catch (error) {
-      // Log errors to stderr for debugging (MCP transport uses stdout)
-      const errorMsg = error instanceof Error ? error.message : String(error);
+      // Log errors to stderr for debugging (MCP transport uses stdout).
+      // Redacted: this line is written BEFORE the mapper runs, so until 0.21.1
+      // it carried the raw message — the one channel with no redaction at all
+      // (explorer run #11 P16). Stderr is the host's log, not the model's
+      // context, but a host that captures it persists whatever was here.
+      const errorMsg = redactCredentials(error instanceof Error ? error.message : String(error));
       const errorType = error instanceof z.ZodError ? 'validation' :
         error instanceof Error ? error.constructor.name : 'unknown';
       process.stderr.write(

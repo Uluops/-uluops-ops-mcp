@@ -132,6 +132,31 @@ describe('toolRegistry', () => {
       expect(shadowed({ maxArgsSize: 2 * 1024 * 1024, maxEgressBytes: 1024 * 1024 })).toBe(true);
     });
 
+    // The >= check above stops egress from UNDER-cutting maxArgsSize. It says
+    // nothing about egress OVER-shooting it — and above 16 * maxArgsSize the
+    // declared args cap is not the effective one either: the request-time cap
+    // is maxEgressBytes / 16, which for 28 read tools sat at 12.5–64 KB against
+    // declared 2–50 KB (circumvention-forecaster run #9 A7, falsified run #12:
+    // no attacker goal in the headroom, but the declared number was a fiction).
+    // maxArgsSize itself is dead code in 0.0.20-security — it is checked only
+    // inside `if (tool.argsShape)` (semantic-policies.js:115,143) and no spec
+    // here declares argsShape. So the ONLY way the declared cap binds is
+    // egress === 16 * args. Equality, not inequality.
+    const declaredCapIsEffective = (t: { maxArgsSize: number; maxEgressBytes: number }): boolean =>
+      t.maxEgressBytes === EGRESS_ESTIMATE_MULTIPLIER * t.maxArgsSize;
+
+    it.each(toolRegistry)(
+      '$name: maxEgressBytes === 16 * maxArgsSize, so the declared args cap is the effective one',
+      (tool) => {
+        expect(declaredCapIsEffective(tool)).toBe(true);
+      }
+    );
+
+    it('control: the equality check fails on the pre-fix query_issues shape', () => {
+      // 50 KB args / 1 MB egress — effective cap was 64 KB, not the declared 50.
+      expect(declaredCapIsEffective({ maxArgsSize: 50 * 1024, maxEgressBytes: 1024 * 1024 })).toBe(false);
+    });
+
     it('delete_project should have low quotas for safety', () => {
       const tool = toolRegistry.find((t) => t.name === 'delete_project');
       expect(tool?.quotaPerMinute).toBeLessThanOrEqual(10);

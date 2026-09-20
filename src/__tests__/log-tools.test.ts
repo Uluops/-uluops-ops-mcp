@@ -82,10 +82,18 @@ describe('get_project_log', () => {
     expect(description).toMatch(/Never collapsed/);
   });
 
-  it('has a read ToolSpec sized for a 500-event page', () => {
+  it('has a read ToolSpec whose declared args cap is the effective one', () => {
     const spec = toolRegistry.find((s) => s.name === 'get_project_log');
     expect(spec?.sideEffects).toBe('read');
-    expect(spec?.maxEgressBytes).toBeGreaterThanOrEqual(500 * 1300);
+    // This used to assert maxEgressBytes >= 500 * 1300 — "sized for a 500-event
+    // page". That was a response budget on a field that never bounds a response:
+    // mcp-secure-server 0.0.20-security evaluates maxEgressBytes at REQUEST time
+    // as argsBytes * 16 and never sees a response (tool-registry.ts save_run
+    // docblock; tool-registry.test.ts equality invariant). The 650 KB here made
+    // the effective ARGS cap 40 KB against a declared 4 KB, and bounded the page
+    // size not at all. Response size for this tool is bounded by `limit` (500)
+    // on the API side, not by any ToolSpec field.
+    expect(spec?.maxEgressBytes).toBe(16 * (spec?.maxArgsSize ?? 0));
   });
 });
 
