@@ -53,7 +53,7 @@ export const toolRegistry: ToolSpec[] = [
     name: 'query_issues',
     sideEffects: 'read',
     maxArgsSize: 50 * KB,
-    maxEgressBytes: 1 * MB,
+    maxEgressBytes: 16 * 50 * KB, // = 16 * maxArgsSize: Layer 4 evaluates this at request time as argsBytes*16, so any other value makes egress/16, not maxArgsSize, the effective cap (see save_run)
     quotaPerMinute: 240,
     quotaPerHour: 5000,
   },
@@ -70,7 +70,7 @@ export const toolRegistry: ToolSpec[] = [
     name: 'get_project_summary',
     sideEffects: 'read',
     maxArgsSize: 10 * KB,
-    maxEgressBytes: 500 * KB,
+    maxEgressBytes: 16 * 10 * KB, // = 16 * maxArgsSize: Layer 4 evaluates this at request time as argsBytes*16, so any other value makes egress/16, not maxArgsSize, the effective cap (see save_run)
     quotaPerMinute: 240,
     quotaPerHour: 5000,
   },
@@ -91,7 +91,7 @@ export const toolRegistry: ToolSpec[] = [
     name: 'get_issue_details',
     sideEffects: 'read',
     maxArgsSize: 10 * KB,
-    maxEgressBytes: 200 * KB,
+    maxEgressBytes: 16 * 10 * KB, // = 16 * maxArgsSize: Layer 4 evaluates this at request time as argsBytes*16, so any other value makes egress/16, not maxArgsSize, the effective cap (see save_run)
     quotaPerMinute: 240,
     quotaPerHour: 5000,
   },
@@ -99,7 +99,7 @@ export const toolRegistry: ToolSpec[] = [
     name: 'get_run_details',
     sideEffects: 'read',
     maxArgsSize: 10 * KB,
-    maxEgressBytes: 1 * MB,
+    maxEgressBytes: 16 * 10 * KB, // = 16 * maxArgsSize: Layer 4 evaluates this at request time as argsBytes*16, so any other value makes egress/16, not maxArgsSize, the effective cap (see save_run)
     quotaPerMinute: 240,
     quotaPerHour: 5000,
   },
@@ -107,7 +107,7 @@ export const toolRegistry: ToolSpec[] = [
     name: 'diff_runs',
     sideEffects: 'read',
     maxArgsSize: 10 * KB,
-    maxEgressBytes: 500 * KB,
+    maxEgressBytes: 16 * 10 * KB, // = 16 * maxArgsSize: Layer 4 evaluates this at request time as argsBytes*16, so any other value makes egress/16, not maxArgsSize, the effective cap (see save_run)
     quotaPerMinute: 120,
     quotaPerHour: 2000,
   },
@@ -124,7 +124,7 @@ export const toolRegistry: ToolSpec[] = [
     name: 'get_analytics',
     sideEffects: 'read',
     maxArgsSize: 10 * KB,
-    maxEgressBytes: 500 * KB,
+    maxEgressBytes: 16 * 10 * KB, // = 16 * maxArgsSize: Layer 4 evaluates this at request time as argsBytes*16, so any other value makes egress/16, not maxArgsSize, the effective cap (see save_run)
     quotaPerMinute: 120,
     quotaPerHour: 1000,
   },
@@ -132,7 +132,7 @@ export const toolRegistry: ToolSpec[] = [
     name: 'search_issues',
     sideEffects: 'read',
     maxArgsSize: 20 * KB,
-    maxEgressBytes: 1 * MB,
+    maxEgressBytes: 16 * 20 * KB, // = 16 * maxArgsSize: Layer 4 evaluates this at request time as argsBytes*16, so any other value makes egress/16, not maxArgsSize, the effective cap (see save_run)
     quotaPerMinute: 120,
     quotaPerHour: 2000,
   },
@@ -140,7 +140,7 @@ export const toolRegistry: ToolSpec[] = [
     name: 'list_agents',
     sideEffects: 'read',
     maxArgsSize: 10 * KB,
-    maxEgressBytes: 200 * KB,
+    maxEgressBytes: 16 * 10 * KB, // = 16 * maxArgsSize: Layer 4 evaluates this at request time as argsBytes*16, so any other value makes egress/16, not maxArgsSize, the effective cap (see save_run)
     quotaPerMinute: 240,
     quotaPerHour: 5000,
   },
@@ -148,7 +148,7 @@ export const toolRegistry: ToolSpec[] = [
     name: 'get_agent_lifecycle',
     sideEffects: 'read',
     maxArgsSize: 10 * KB,
-    maxEgressBytes: 500 * KB,
+    maxEgressBytes: 16 * 10 * KB, // = 16 * maxArgsSize: Layer 4 evaluates this at request time as argsBytes*16, so any other value makes egress/16, not maxArgsSize, the effective cap (see save_run)
     quotaPerMinute: 120,
     quotaPerHour: 2000,
   },
@@ -169,7 +169,7 @@ export const toolRegistry: ToolSpec[] = [
     // Note bodies are MySQL TEXT (up to 64KB each), so a busy issue's history can
     // exceed a 200KB envelope and trip silent truncation. 500KB matches the other
     // bulk read tools (get_analytics, get_agent_lifecycle).
-    maxEgressBytes: 500 * KB,
+    maxEgressBytes: 16 * 10 * KB, // = 16 * maxArgsSize: Layer 4 evaluates this at request time as argsBytes*16, so any other value makes egress/16, not maxArgsSize, the effective cap (see save_run)
     quotaPerMinute: 240,
     quotaPerHour: 5000,
   },
@@ -288,7 +288,7 @@ export const toolRegistry: ToolSpec[] = [
     name: 'get_agent_reliability',
     sideEffects: 'read',
     maxArgsSize: 10 * KB,
-    maxEgressBytes: 200 * KB,
+    maxEgressBytes: 16 * 10 * KB, // = 16 * maxArgsSize: Layer 4 evaluates this at request time as argsBytes*16, so any other value makes egress/16, not maxArgsSize, the effective cap (see save_run)
     quotaPerMinute: 120,
     quotaPerHour: 1000,
   },
@@ -309,7 +309,7 @@ export const toolRegistry: ToolSpec[] = [
     name: 'list_projects',
     sideEffects: 'read',
     maxArgsSize: 10 * KB,
-    maxEgressBytes: 500 * KB,
+    maxEgressBytes: 16 * 10 * KB, // = 16 * maxArgsSize: Layer 4 evaluates this at request time as argsBytes*16, so any other value makes egress/16, not maxArgsSize, the effective cap (see save_run)
     quotaPerMinute: 240,
     quotaPerHour: 5000,
   },
@@ -326,7 +326,7 @@ export const toolRegistry: ToolSpec[] = [
     name: 'get_project_trends',
     sideEffects: 'read',
     maxArgsSize: 10 * KB,
-    maxEgressBytes: 200 * KB,
+    maxEgressBytes: 16 * 10 * KB, // = 16 * maxArgsSize: Layer 4 evaluates this at request time as argsBytes*16, so any other value makes egress/16, not maxArgsSize, the effective cap (see save_run)
     quotaPerMinute: 120,
     quotaPerHour: 2000,
   },
@@ -388,12 +388,14 @@ export const toolRegistry: ToolSpec[] = [
     quotaPerHour: 20,
   },
   {
-    // The D19 member-visible audit feed — a paged read; egress sized for a
-    // 200-entry page of audit rows with details blobs.
+    // The D19 member-visible audit feed — a paged read. maxEgressBytes was
+    // 512 KB, "sized for a 200-entry page of audit rows" — but Layer 4 never
+    // measures a response; it read the value as a 32 KB ARGS cap, 16x the one
+    // declared here. Response size is unbounded by this spec either way.
     name: 'get_org_audit_feed',
     sideEffects: 'read',
     maxArgsSize: 2 * KB,
-    maxEgressBytes: 512 * KB,
+    maxEgressBytes: 16 * 2 * KB, // = 16 * maxArgsSize (see save_run)
     quotaPerMinute: 60,
     quotaPerHour: 600,
   },
@@ -406,7 +408,7 @@ export const toolRegistry: ToolSpec[] = [
     // counts is ~400 B, a `decision` with a long tracker reason (up to 1000
     // chars) ~1.3 KB. 500 × 1.3 KB ≈ 650 KB worst case; 1 MB keeps a full
     // reason-heavy page out of silent truncation.
-    maxEgressBytes: 1024 * KB,
+    maxEgressBytes: 16 * 4 * KB, // = 16 * maxArgsSize: Layer 4 evaluates this at request time as argsBytes*16, so any other value makes egress/16, not maxArgsSize, the effective cap (see save_run)
     quotaPerMinute: 120,
     quotaPerHour: 2000,
   },
@@ -417,7 +419,7 @@ export const toolRegistry: ToolSpec[] = [
     // A project rollup is ~1 KB plus one row per workflow type (unbounded by
     // design, ~40 B each; 46 types on the largest project today). The org
     // rollup adds up to 100 project rows (~120 B each). 128 KB is generous.
-    maxEgressBytes: 128 * KB,
+    maxEgressBytes: 16 * 2 * KB, // = 16 * maxArgsSize: Layer 4 evaluates this at request time as argsBytes*16, so any other value makes egress/16, not maxArgsSize, the effective cap (see save_run)
     quotaPerMinute: 120,
     quotaPerHour: 2000,
   },
@@ -429,7 +431,7 @@ export const toolRegistry: ToolSpec[] = [
     name: 'get_run',
     sideEffects: 'read',
     maxArgsSize: 10 * KB,
-    maxEgressBytes: 200 * KB,
+    maxEgressBytes: 16 * 10 * KB, // = 16 * maxArgsSize: Layer 4 evaluates this at request time as argsBytes*16, so any other value makes egress/16, not maxArgsSize, the effective cap (see save_run)
     quotaPerMinute: 240,
     quotaPerHour: 5000,
   },
@@ -437,7 +439,7 @@ export const toolRegistry: ToolSpec[] = [
     name: 'list_runs',
     sideEffects: 'read',
     maxArgsSize: 10 * KB,
-    maxEgressBytes: 500 * KB,
+    maxEgressBytes: 16 * 10 * KB, // = 16 * maxArgsSize: Layer 4 evaluates this at request time as argsBytes*16, so any other value makes egress/16, not maxArgsSize, the effective cap (see save_run)
     quotaPerMinute: 120,
     quotaPerHour: 2000,
   },
@@ -445,7 +447,7 @@ export const toolRegistry: ToolSpec[] = [
     name: 'get_latest_run',
     sideEffects: 'read',
     maxArgsSize: 10 * KB,
-    maxEgressBytes: 200 * KB,
+    maxEgressBytes: 16 * 10 * KB, // = 16 * maxArgsSize: Layer 4 evaluates this at request time as argsBytes*16, so any other value makes egress/16, not maxArgsSize, the effective cap (see save_run)
     quotaPerMinute: 240,
     quotaPerHour: 5000,
   },
@@ -524,7 +526,7 @@ export const toolRegistry: ToolSpec[] = [
     name: 'get_full_taxonomy_analytics',
     sideEffects: 'read',
     maxArgsSize: 10 * KB,
-    maxEgressBytes: 200 * KB,
+    maxEgressBytes: 16 * 10 * KB, // = 16 * maxArgsSize: Layer 4 evaluates this at request time as argsBytes*16, so any other value makes egress/16, not maxArgsSize, the effective cap (see save_run)
     quotaPerMinute: 120,
     quotaPerHour: 1000,
   },
@@ -533,7 +535,7 @@ export const toolRegistry: ToolSpec[] = [
     sideEffects: 'read',
     maxArgsSize: 10 * KB,
     // Burndown includes time series + detailed trend diagnostics
-    maxEgressBytes: 500 * KB,
+    maxEgressBytes: 16 * 10 * KB, // = 16 * maxArgsSize: Layer 4 evaluates this at request time as argsBytes*16, so any other value makes egress/16, not maxArgsSize, the effective cap (see save_run)
     quotaPerMinute: 120,
     quotaPerHour: 1000,
   },
@@ -542,7 +544,7 @@ export const toolRegistry: ToolSpec[] = [
     sideEffects: 'read',
     maxArgsSize: 10 * KB,
     // Velocity includes sparkline arrays for all failure modes
-    maxEgressBytes: 300 * KB,
+    maxEgressBytes: 16 * 10 * KB, // = 16 * maxArgsSize: Layer 4 evaluates this at request time as argsBytes*16, so any other value makes egress/16, not maxArgsSize, the effective cap (see save_run)
     quotaPerMinute: 120,
     quotaPerHour: 1000,
   },
@@ -551,7 +553,7 @@ export const toolRegistry: ToolSpec[] = [
     sideEffects: 'read',
     maxArgsSize: 10 * KB,
     // Discovery timeline with new/recurring issue counts per period
-    maxEgressBytes: 300 * KB,
+    maxEgressBytes: 16 * 10 * KB, // = 16 * maxArgsSize: Layer 4 evaluates this at request time as argsBytes*16, so any other value makes egress/16, not maxArgsSize, the effective cap (see save_run)
     quotaPerMinute: 120,
     quotaPerHour: 1000,
   },
@@ -560,7 +562,7 @@ export const toolRegistry: ToolSpec[] = [
     sideEffects: 'read',
     maxArgsSize: 10 * KB,
     // Agent-taxonomy coverage matrix with blind spot analysis
-    maxEgressBytes: 500 * KB,
+    maxEgressBytes: 16 * 10 * KB, // = 16 * maxArgsSize: Layer 4 evaluates this at request time as argsBytes*16, so any other value makes egress/16, not maxArgsSize, the effective cap (see save_run)
     quotaPerMinute: 120,
     quotaPerHour: 1000,
   },
@@ -569,7 +571,7 @@ export const toolRegistry: ToolSpec[] = [
     name: 'get_run_analysis',
     sideEffects: 'read',
     maxArgsSize: 10 * KB,
-    maxEgressBytes: 500 * KB,
+    maxEgressBytes: 16 * 10 * KB, // = 16 * maxArgsSize: Layer 4 evaluates this at request time as argsBytes*16, so any other value makes egress/16, not maxArgsSize, the effective cap (see save_run)
     quotaPerMinute: 240,
     quotaPerHour: 5000,
   },
@@ -577,7 +579,7 @@ export const toolRegistry: ToolSpec[] = [
     name: 'get_project_analysis',
     sideEffects: 'read',
     maxArgsSize: 10 * KB,
-    maxEgressBytes: 1 * MB,
+    maxEgressBytes: 16 * 10 * KB, // = 16 * maxArgsSize: Layer 4 evaluates this at request time as argsBytes*16, so any other value makes egress/16, not maxArgsSize, the effective cap (see save_run)
     quotaPerMinute: 120,
     quotaPerHour: 2000,
   },
@@ -585,7 +587,7 @@ export const toolRegistry: ToolSpec[] = [
     name: 'query_analysis_records',
     sideEffects: 'read',
     maxArgsSize: 10 * KB,
-    maxEgressBytes: 1 * MB,
+    maxEgressBytes: 16 * 10 * KB, // = 16 * maxArgsSize: Layer 4 evaluates this at request time as argsBytes*16, so any other value makes egress/16, not maxArgsSize, the effective cap (see save_run)
     quotaPerMinute: 120,
     quotaPerHour: 2000,
   },
@@ -593,7 +595,7 @@ export const toolRegistry: ToolSpec[] = [
     name: 'get_agent_runs_analysis',
     sideEffects: 'read',
     maxArgsSize: 10 * KB,
-    maxEgressBytes: 500 * KB,
+    maxEgressBytes: 16 * 10 * KB, // = 16 * maxArgsSize: Layer 4 evaluates this at request time as argsBytes*16, so any other value makes egress/16, not maxArgsSize, the effective cap (see save_run)
     quotaPerMinute: 120,
     quotaPerHour: 2000,
   },

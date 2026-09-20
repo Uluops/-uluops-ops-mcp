@@ -358,7 +358,7 @@ The per-tool `maxArgsSize` (2 MB for `save_run`) and the 500 KB message envelope
 | `add_issue_note` | Add context, resolution, or blocker notes to issues |
 | `edit_issue` | Edit issue metadata (title, file_path, severity, etc.) |
 | `merge_issues` | Merge duplicate issues into a target issue |
-| `bulk_update_status` | Bulk update multiple issue statuses in one transaction |
+| `bulk_update_status` | Bulk update multiple issue statuses in one transaction, by issue UUID across the org (`project` is informational, not a scope) |
 | `update_run` | Update run metadata post-hoc (tokens, scores, timestamps); per-agent analysis writes — replace (default) or merge via `record_write_mode`; analysis-bearing responses carry the `analysisWrite` echo (camelCase response key) |
 | `preview_update_run` | Read-only preview of an analysis-bearing update under the requested mode: per agent, what the write would supersede, create, and (replace only) retire |
 | `get_agent_reliability` | Analyze agent effectiveness and reliability scores |
@@ -396,7 +396,7 @@ snake_case as on every tool here. This release also moves the server's `.uluops.
 | `get_run` | Get a run by UUID |
 | `list_runs` | List runs for a project |
 | `get_latest_run` | Get the latest run for a project |
-| `delete_run` | Delete a run (requires confirmation) |
+| `delete_run` | Permanently delete a run (`confirm: true` required — false or missing is refused by the schema, nothing is sent) |
 
 ### Issue Tools (P2)
 | Tool | Description |
@@ -444,6 +444,12 @@ read_resource("validation://projects")
 // Get the failure taxonomy schema (domains, modes, severity codes)
 read_resource("validation://taxonomy")
 ```
+
+A successful read returns two `contents[]` entries: `[0]` is the JSON payload, `[1]` is the
+same untrusted-content notice every tool result ends with (`text/plain`). Resources carry no
+`org` argument and always read the **personal** org; each read is logged as
+`resources/read <uri> org=personal` beside the tool calls. (Both since 0.20.2 — before that the
+resource path was outside the org seam entirely: no notice, no record.)
 
 **Note:** For project-specific data, use the `get_project_summary` tool instead of resources. MCP resource templates with parameters are not fully supported by the SDK.
 

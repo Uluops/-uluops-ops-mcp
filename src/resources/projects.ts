@@ -7,6 +7,7 @@
 import type { OpsClient } from '@uluops/ops-sdk';
 import type { McpServerResourceRegistration } from '../types/index.js';
 import { createResourceResponse, createErrorResourceResponse } from './response-helpers.js';
+import { redactCredentials } from '../client/sdk-error-mapper.js';
 
 /**
  * Register projects resource and template
@@ -29,9 +30,10 @@ export function registerProjectsResource(
         return createResourceResponse('validation://projects', result);
       } catch (error) {
         const rawMessage = error instanceof Error ? error.message : 'Unknown error';
-        // Redact any credential values before exposing in resource response
-        const message = rawMessage.replace(/ulr_[a-zA-Z0-9]{20,}/g, '[REDACTED]')
-          .replace(/bearer\s+[a-zA-Z0-9_\-.]+/gi, '[REDACTED]');
+        // Redact any credential values before exposing in resource response.
+        // Shared with the tool path since 0.20.2 — this used to carry its own
+        // copy of the key regex, narrower than the accepted key shape.
+        const message = redactCredentials(rawMessage);
         return createErrorResourceResponse('validation://projects', message);
       }
     }

@@ -1471,6 +1471,26 @@ describe('Tool Handlers', () => {
       expect(result.isError).toBe(true);
       expect(mockOpsClient.issues.bulkUpdateStatus).not.toHaveBeenCalled();
     });
+
+    // circumvention-forecaster run #9 A2 (sibling), falsified run #12: `project`
+    // was REQUIRED by the schema and read by nothing — the SDK call has no
+    // project parameter. It is now optional and documented as informational.
+    it('accepts a call WITHOUT project — the field was never a scope', async () => {
+      mockOpsClient.issues.bulkUpdateStatus.mockResolvedValue({ updated: 1, skipped: 0 });
+      const result = (await handler({ updates: [{ issue_id: TEST_UUID_1, status: 'completed' }] })) as any;
+      expect(result.isError).toBeUndefined();
+      expect(mockOpsClient.issues.bulkUpdateStatus).toHaveBeenCalledWith(
+        [{ issueId: TEST_UUID_1, status: 'completed' }],
+        undefined,
+      );
+    });
+
+    it('control: a project value, when sent, does not reach the SDK call (there is nowhere for it to go)', async () => {
+      mockOpsClient.issues.bulkUpdateStatus.mockResolvedValue({ updated: 1, skipped: 0 });
+      await handler({ project: 'some-other-project', updates: [{ issue_id: TEST_UUID_1, status: 'completed' }] });
+      const [updates] = mockOpsClient.issues.bulkUpdateStatus.mock.calls[0];
+      expect(JSON.stringify(updates)).not.toContain('some-other-project');
+    });
   });
 
   describe('update_run', () => {

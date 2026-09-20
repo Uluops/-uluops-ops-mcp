@@ -5,6 +5,7 @@
  */
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { setOrgCallSink, UNTRUSTED_CONTENT_NOTICE, type OrgCallRecord } from '../utils/org-call-log.js';
 import type { OpsClient } from '@uluops/ops-sdk';
 import { registerProjectsResource } from '../resources/projects.js';
 import { registerTaxonomyResource } from '../resources/taxonomy.js';
@@ -76,13 +77,48 @@ describe('registerProjectsResource', () => {
 
       const result = await projectsHandler();
 
-      expect(result.contents).toHaveLength(1);
+      // contents[0] is the payload byte-for-byte; contents[1] is the D16 notice
+      // (0.20.2 — A8: the resource path used to carry neither notice nor record).
+      expect(result.contents).toHaveLength(2);
       expect(result.contents[0].uri).toBe('validation://projects');
       expect(result.contents[0].mimeType).toBe('application/json');
 
       const text = result.contents[0].text ?? '';
       const data = JSON.parse(text) as { projects: string[] };
       expect(data.projects).toEqual(['project-a', 'project-b']);
+    });
+
+    it('A8: success carries the same D16 untrusted-content notice the tool path appends', async () => {
+      mockApiClient.projects.list.mockResolvedValue({ projects: ['a'] });
+      const result = await projectsHandler();
+      expect(result.contents[1].mimeType).toBe('text/plain');
+      expect(result.contents[1].text).toBe(UNTRUSTED_CONTENT_NOTICE);
+    });
+
+    it('A8: a resource read emits a provenance record naming the personal org and the URI', async () => {
+      const records: OrgCallRecord[] = [];
+      setOrgCallSink((r) => records.push(r));
+      try {
+        mockApiClient.projects.list.mockResolvedValue({ projects: ['a'] });
+        await projectsHandler();
+      } finally {
+        setOrgCallSink(undefined);
+      }
+      expect(records).toHaveLength(1);
+      expect(records[0]).toMatchObject({ tool: 'resources/read validation://projects', org: 'personal', orgSource: 'personal' });
+    });
+
+    it('control: the error path carries no notice (nothing user-authored comes back) and emits no record', async () => {
+      const records: OrgCallRecord[] = [];
+      setOrgCallSink((r) => records.push(r));
+      try {
+        mockApiClient.projects.list.mockRejectedValue(new Error('down'));
+        const result = await projectsHandler();
+        expect(result.contents).toHaveLength(1);
+      } finally {
+        setOrgCallSink(undefined);
+      }
+      expect(records).toHaveLength(0);
     });
 
     it('should handle API errors gracefully', async () => {
@@ -108,7 +144,7 @@ describe('registerProjectsResource', () => {
     it('should return usage instructions for template resource', async () => {
       const result = await projectSummaryHandler();
 
-      expect(result.contents).toHaveLength(1);
+      expect(result.contents).toHaveLength(2);
       const text = result.contents[0].text ?? '';
       const data = JSON.parse(text) as {
         info: string;
@@ -182,7 +218,7 @@ describe('registerTaxonomyResource', () => {
   it('should return taxonomy data from SDK', async () => {
     const result = await taxonomyHandler();
 
-    expect(result.contents).toHaveLength(1);
+    expect(result.contents).toHaveLength(2);
     expect(result.contents[0].uri).toBe('validation://taxonomy');
     expect(result.contents[0].mimeType).toBe('application/json');
 
