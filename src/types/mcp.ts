@@ -2,15 +2,19 @@
  * MCP-specific types for tool responses
  */
 
-export interface McpTextContent {
+// `type`, not `interface`: the SDK's CallToolResult carries an index signature,
+// which TypeScript grants type aliases implicitly and interfaces never. Since
+// mcp-secure-server 0.0.24-security types server.tool() as McpServer's own, an
+// interface-typed handler result no longer type-checks against it.
+export type McpTextContent = {
   type: 'text';
   text: string;
-}
+};
 
-export interface McpToolResponse {
+export type McpToolResponse = {
   content: McpTextContent[];
   isError?: boolean;
-}
+};
 
 /**
  * Create a successful MCP tool response.

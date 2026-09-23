@@ -19,7 +19,8 @@ considered and left alone; readers scanning only for the standard headings lose 
 
 ### Changed
 
-- **`mcp-secure-server` 0.0.22-security → 0.0.23-security** (exact pin). Three behaviour changes
+- **`mcp-secure-server` 0.0.22-security → 0.0.24-security** (exact pin; 0.0.23 was the first target,
+  0.0.24 published before this release). Three runtime behaviour changes from 0.0.23
   reach this server through it, each checked over stdio against the built server:
   - **Byte caps now count UTF-8 bytes.** `maxMessageSize` (500 KB), `maxParamBytes`,
     `suspiciousMessageSize` and the per-tool `maxArgsSize` measured `JSON.stringify(...).length`
@@ -35,6 +36,17 @@ considered and left alone; readers scanning only for the standard headings lose 
     already equalled the declared one — no tool's limit moves.
   - **Non-object `arguments` are refused** at the security layer (`Tool "…" arguments must be
     an object`) instead of being coerced to `{}` and passing every size check.
+- **0.0.24's typed registration methods reach this code.** `SecureMcpServer.tool()` / `.resource()`
+  are now typed as the MCP SDK's own, so three local types had to fit the SDK's result shapes:
+  `McpToolResponse`, `McpTextContent`, `ResourceResponse` and `ResourceContent` are `type` aliases
+  instead of interfaces (the SDK's result types carry an index signature, which interfaces never
+  get), `ResourceContent` is text-only with `text` required (the SDK's contents are a
+  text-XOR-blob union; `blob` was declared and never used), and `McpServerResourceRegistration`'s
+  `resource` is typed as the SDK's own overload set. No runtime change. The SDK's `@deprecated` on
+  `tool()` / `resource()` now reaches the linter too; the four call sites carry a scoped
+  `no-deprecated` disable, and moving to `registerTool()` / `registerResource()` is tracked
+  separately. Refusals from 0.0.24 also end with the option to change (e.g. `… arguments must be an
+  object — send tool arguments as a JSON object`), in `error.data.reason`.
 - **`resources/templates/list` answers natively.** 0.0.23-security adds it to Layer 4's default
   method allowlist, so `validation://projects/{project}` is now listed there too. The template's
   `list` callback (0.21.1 workaround) stays: it keeps `resources/list` at 3 entries for clients

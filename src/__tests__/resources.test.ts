@@ -85,7 +85,7 @@ describe('registerProjectsResource', () => {
       expect(result.contents[0].uri).toBe('validation://projects');
       expect(result.contents[0].mimeType).toBe('application/json');
 
-      const text = result.contents[0].text ?? '';
+      const text = result.contents[0].text;
       const data = JSON.parse(text) as { projects: string[] };
       expect(data.projects).toEqual(['project-a', 'project-b']);
     });
@@ -129,7 +129,7 @@ describe('registerProjectsResource', () => {
       const result = await projectsHandler();
 
       expect(result.contents).toHaveLength(1);
-      const text = result.contents[0].text ?? '';
+      const text = result.contents[0].text;
       const data = JSON.parse(text) as { error: string };
       expect(data.error).toBe('Connection failed');
     });
@@ -161,7 +161,7 @@ describe('registerProjectsResource', () => {
 
     it('reading the listed placeholder itself yields a usable example, not the encoded braces', async () => {
       const result = await projectSummaryHandler(new URL('validation://projects/%7Bproject%7D'), { project: '%7Bproject%7D' });
-      const data = JSON.parse(result.contents[0].text ?? '') as { example: string };
+      const data = JSON.parse(result.contents[0].text) as { example: string };
       expect(data.example).toBe('get_project_summary({"project":"my-project"})');
     });
 
@@ -171,7 +171,7 @@ describe('registerProjectsResource', () => {
 
       expect(result.contents).toHaveLength(2);
       expect(result.contents[0].uri).toBe(uri.href);
-      const data = JSON.parse(result.contents[0].text ?? '') as {
+      const data = JSON.parse(result.contents[0].text) as {
         info: string;
         tool: string;
         example: string;
@@ -248,7 +248,7 @@ describe('registerTaxonomyResource', () => {
     expect(result.contents[0].uri).toBe('validation://taxonomy');
     expect(result.contents[0].mimeType).toBe('application/json');
 
-    const text = result.contents[0].text ?? '';
+    const text = result.contents[0].text;
     const taxonomy = JSON.parse(text) as Record<string, unknown>;
     expect(taxonomy).toHaveProperty('domains');
     expect(taxonomy).toHaveProperty('severities');
@@ -259,7 +259,7 @@ describe('registerTaxonomyResource', () => {
 
   it('should include all four failure domains with modes', async () => {
     const result = await taxonomyHandler();
-    const text = result.contents[0].text ?? '';
+    const text = result.contents[0].text;
     const taxonomy = JSON.parse(text) as { domains: Array<{ code: string; name: string; modes: unknown[] }> };
 
     expect(taxonomy.domains).toHaveLength(4);
@@ -271,7 +271,7 @@ describe('registerTaxonomyResource', () => {
 
   it('should include all severity levels', async () => {
     const result = await taxonomyHandler();
-    const text = result.contents[0].text ?? '';
+    const text = result.contents[0].text;
     const taxonomy = JSON.parse(text) as { severities: Array<{ code: string; name: string; weight: number }> };
 
     expect(taxonomy.severities).toHaveLength(5);
@@ -281,7 +281,7 @@ describe('registerTaxonomyResource', () => {
 
   it('should include failure code pattern', async () => {
     const result = await taxonomyHandler();
-    const text = result.contents[0].text ?? '';
+    const text = result.contents[0].text;
     const taxonomy = JSON.parse(text) as { failureCodePattern: { pattern: string; format: string; example: string } };
 
     expect(taxonomy.failureCodePattern.format).toBe('{DOMAIN}-{MODE}/{SEVERITY}');
