@@ -144,10 +144,10 @@ describe('channel: [mcp-tool-error] stderr line (P16)', () => {
 
 describe('channel: resource error response (validation://projects)', () => {
   it('uses the shared redaction — an accepted-shape key in projects.list() error is redacted', async () => {
-    const server = { resource: vi.fn() };
+    const server = { registerResource: vi.fn() };
     const list = vi.fn().mockRejectedValue(new Error(`Connection refused for ${KEY_18_ALNUM}`));
     registerProjectsResource(server, { projects: { list } } as unknown as OpsClient);
-    const handler = server.resource.mock.calls[0][3] as () => Promise<{ contents: Array<{ text?: string }> }>;
+    const handler = server.registerResource.mock.calls[0][3] as () => Promise<{ contents: Array<{ text?: string }> }>;
     const result = await handler();
     const data = JSON.parse(result.contents[0].text ?? '{}') as { error: string };
     expect(data.error).toContain('[REDACTED]');

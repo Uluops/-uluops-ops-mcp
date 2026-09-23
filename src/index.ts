@@ -284,8 +284,11 @@ async function main(): Promise<void> {
   const recordingServer: McpServerToolRegistration = {
     tool: (name: string, description: string, schema: ZodRawShape, handler: ToolHandler): void => {
       registeredToolNames.push(name);
-      // eslint-disable-next-line @typescript-eslint/no-deprecated -- MCP SDK 1.x deprecates tool()/resource() for registerTool()/registerResource(); still supported. Migration tracked separately (mcp-secure-server 0.0.24 surfaced the SDK's @deprecated through its now-typed methods).
-      server.tool(name, description, schema, handler);
+      // registerTool(), the SDK's current API (tool() is @deprecated). Same
+      // registration: description + raw Zod shape as inputSchema; SecureMcpServer
+      // wraps the handler for Layer 5 exactly as it does for tool(). The
+      // advertised tools/list is byte-identical to the tool() form (checked).
+      server.registerTool(name, { description, inputSchema: schema }, handler);
     },
   };
   registerAllTools(recordingServer, opsClient);

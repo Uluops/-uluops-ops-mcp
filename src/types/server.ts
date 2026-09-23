@@ -65,14 +65,13 @@ export interface McpServerToolRegistration {
  * Interface for MCP server resource registration
  *
  * Supports two overloads, each with a fixed URI or a `ResourceTemplate`:
- * - resource(name, uriOrTemplate, handler)
- * - resource(name, uriOrTemplate, metadata, handler)
+ * - registerResource(name, uriOrTemplate, metadata, handler)
  */
 export interface McpServerResourceRegistration {
-  // The SDK's own overload set (mcp-secure-server 0.0.24-security types
-  // SecureMcpServer.resource as McpServer['resource']). The single union-typed
-  // signature this replaced could not accept that overload set.
-  resource: SdkMcpServer['resource'];
+  // The SDK's own signature (mcp-secure-server 0.0.24-security types
+  // SecureMcpServer.registerResource as McpServer['registerResource']).
+  // registerResource, not resource(): the SDK marks resource() @deprecated.
+  registerResource: SdkMcpServer['registerResource'];
 }
 
 /**

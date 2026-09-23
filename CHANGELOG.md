@@ -15,6 +15,23 @@ considered and left alone; readers scanning only for the standard headings lose 
 
 ## [Unreleased]
 
+## [0.21.3] - 2026-09-23
+
+### Changed
+
+- **Registration moves to the MCP SDK's current API.** Tools register through `registerTool(name,
+  { description, inputSchema }, handler)` and the three resources through `registerResource()`,
+  replacing `tool()` / `resource()`, which the SDK marks `@deprecated` (the deprecation reached this
+  package's lint once `mcp-secure-server` 0.0.24 typed its methods as the SDK's own). The four scoped
+  `no-deprecated` disables 0.21.2 carried are gone. **No wire change:** the advertised `tools/list`,
+  `resources/list` and `resources/templates/list` responses are byte-identical before and after
+  (compared over stdio against the built server; a control that drops the description is detected).
+  `SecureMcpServer` wraps `registerTool()` handlers for Layer 5 exactly as it did `tool()` handlers.
+  The package's own internal `McpServerToolRegistration.tool()` seam — which the 55 tool modules call
+  — is unchanged; only the single forwarding call inside it moved. `McpServerResourceRegistration`
+  now declares `registerResource` (typed as the SDK's) instead of `resource`. Tracker
+  `c1611b52-52b3-42e7-8a00-073558e852f4`.
+
 ## [0.21.2] - 2026-09-23
 
 ### Changed
