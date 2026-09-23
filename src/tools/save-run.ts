@@ -26,8 +26,13 @@ export const SaveRunInputSchema = z.object({
   project: z.string().min(1).describe('Project name'),
   workflow_type: z.string().min(1).describe('Workflow type (e.g., post-implementation, ship)'),
   timestamp: z.string().optional().describe('ISO 8601 timestamp (defaults to now)'),
-  create_new_project: z.boolean().optional().describe('Create project if it does not exist'),
-  agents: z.array(AgentResultSchema).describe('Array of agent results'),
+  // .min(1): a run records at least one agent's result. The API refuses an
+  // empty array (ops-uluops-api SaveRunSchema, 2026-09-23); saying so here
+  // turns the round-trip 400 into an immediate, named refusal. Until then this
+  // schema and the API both omitted the bound while the SDK's client
+  // validator — which this tool skips — enforced it, so save_run persisted
+  // agent-less runs (and auto-created the named project).
+  agents: z.array(AgentResultSchema).min(1).describe('Array of agent results — at least one'),
   recommendations: z
     .array(RecommendationSchema)
     .default([])
@@ -61,7 +66,7 @@ export function registerSaveRunTool(
 ): void {
   server.tool(
     'save_run',
-    'Save a run — the findings a definition (agent, workflow or pipeline) produced against a project. Auto-increments run number per project+workflow. Detects regressions and persistent issues.' + RUN_MAP_CONTRACT + RUN_TOKEN_CONTRACT,
+    'Save a run — the findings a definition (agent, workflow or pipeline) produced against a project. Auto-increments run number per project+workflow. Detects regressions and persistent issues. A project that does not exist is CREATED under the name given — check the spelling with list_projects first; a typo becomes a new project.' + RUN_MAP_CONTRACT + RUN_TOKEN_CONTRACT,
     SaveRunInputSchema.shape,
     createToolHandler(
       SaveRunInputSchema,

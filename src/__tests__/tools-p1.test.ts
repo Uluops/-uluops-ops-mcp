@@ -216,7 +216,7 @@ describe('P1 tool schemas', () => {
       const result = ValidateRunInputSchema.safeParse({
         project: 'test-proj',
         workflow_type: 'ship',
-        agents: [],
+        agents: [{ name: 'test', score: 80, decision: 'PASS' }],
         recommendations: [{ agent: 'test', title: 'Test', priority: 'invalid' }],
       });
       expect(result.success).toBe(false);

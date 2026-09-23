@@ -28,7 +28,8 @@ export const ValidateRunInputSchema = z.object({
     .min(1)
     .max(100)
     .describe('Workflow type (e.g., post-implementation, ship)'),
-  agents: z.array(AgentResultSchema).describe('Array of agent results'),
+  // .min(1) as save_run — the preview refuses what the write refuses (T2).
+  agents: z.array(AgentResultSchema).min(1).describe('Array of agent results — at least one'),
   // .default([]) matches save_run EXACTLY (tool-sweep T2): a preview stricter
   // than the write it models rejects payloads the real call accepts, and
   // teaches callers to skip validation.

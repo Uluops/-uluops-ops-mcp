@@ -568,7 +568,7 @@ describe('Tool Handlers', () => {
       const result = (await handler({
         project: 'test-project',
         workflow_type: 'ship',
-        agents: [],
+        agents: [{ name: 'test', score: 80, decision: 'PASS' }],
         recommendations: [{ agent: 'test', title: 'Test', priority: 'invalid-priority' }],
       })) as any;
 
@@ -1053,16 +1053,23 @@ describe('Tool Handlers', () => {
       expect(mockOpsClient.runs.validate).toHaveBeenCalled();
     });
 
-    it('skips the SDK client-side validator, as save_run does — agents: [] is previewed, not refused (run #13)', async () => {
+    it('skips the SDK client-side validator, as save_run does (run #13)', async () => {
       // save_run passes _skipClientValidation; validate_run did not, so the
-      // SDK's agents.min(1) refused a payload save_run accepts (T2 parity).
+      // SDK's own validator ran on the preview only (T2 parity). The payload is
+      // valid here — the flag, not the payload, is under test.
       mockOpsClient.runs.validate.mockResolvedValue({ would_create: 0, validation_errors: [] });
-      const result = (await handler({ project: 'test', workflow_type: 'ship', agents: [] })) as { isError?: boolean };
+      const result = (await handler({ project: 'test', workflow_type: 'ship', agents: [{ name: 'test', score: 80, decision: 'PASS' }] })) as { isError?: boolean };
       expect(result.isError).toBeUndefined();
       expect(mockOpsClient.runs.validate).toHaveBeenCalledWith(
-        expect.objectContaining({ project: 'test', agents: [] }),
+        expect.objectContaining({ project: 'test' }),
         expect.objectContaining({ _skipClientValidation: true, withResponseContext: true }),
       );
+    });
+
+    it('refuses agents: [] before any SDK call — the preview refuses what save_run refuses', async () => {
+      const result = (await handler({ project: 'test', workflow_type: 'ship', agents: [] })) as { isError?: boolean };
+      expect(result.isError).toBe(true);
+      expect(mockOpsClient.runs.validate).not.toHaveBeenCalled();
     });
   });
 
