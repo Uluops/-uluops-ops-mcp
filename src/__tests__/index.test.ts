@@ -71,7 +71,7 @@ describe('Main Entry Point', () => {
     mockServerInstance = {
       connect: vi.fn().mockResolvedValue(undefined),
       tool: vi.fn(),
-      resource: vi.fn(),
+      registerResource: vi.fn(),
     };
 
     mockServerCreate = vi.fn().mockResolvedValue(mockServerInstance);

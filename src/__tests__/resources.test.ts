@@ -22,7 +22,7 @@ import type { OpsClient } from '@uluops/ops-sdk';
 
 describe('registerProjectsResource', () => {
   let mockServer: {
-    resource: ReturnType<typeof vi.fn>;
+    registerResource: ReturnType<typeof vi.fn>;
   };
   let mockApiClient: {
     projects: {
@@ -34,7 +34,7 @@ describe('registerProjectsResource', () => {
 
   beforeEach(() => {
     mockServer = {
-      resource: vi.fn(),
+      registerResource: vi.fn(),
     };
     mockApiClient = {
       projects: {
@@ -46,16 +46,16 @@ describe('registerProjectsResource', () => {
     registerProjectsResource(mockServer, mockApiClient as any);
 
     // Extract registered handlers
-    expect(mockServer.resource).toHaveBeenCalledTimes(2);
+    expect(mockServer.registerResource).toHaveBeenCalledTimes(2);
 
     // First call: projects resource
-    const projectsCall = mockServer.resource.mock.calls[0];
+    const projectsCall = mockServer.registerResource.mock.calls[0];
     expect(projectsCall[0]).toBe('projects');
     expect(projectsCall[1]).toBe('validation://projects');
     projectsHandler = projectsCall[3] as ResourceHandler;
 
     // Second call: project-summary resource
-    const summaryCall = mockServer.resource.mock.calls[1];
+    const summaryCall = mockServer.registerResource.mock.calls[1];
     expect(summaryCall[0]).toBe('project-summary');
     expect(summaryCall[1]).toBeInstanceOf(ResourceTemplate);
     projectSummaryHandler = summaryCall[3] as ResourceTemplateHandler;
@@ -63,7 +63,7 @@ describe('registerProjectsResource', () => {
 
   describe('projects resource: validation://projects', () => {
     it('should register with correct name, uri, and metadata', () => {
-      const [name, uri, metadata] = mockServer.resource.mock.calls[0];
+      const [name, uri, metadata] = mockServer.registerResource.mock.calls[0];
       expect(name).toBe('projects');
       expect(uri).toBe('validation://projects');
       expect(metadata).toEqual({
@@ -139,7 +139,7 @@ describe('registerProjectsResource', () => {
     it('registers a real ResourceTemplate, not the literal placeholder string (run #13)', () => {
       // A literal registration resolved only the placeholder itself; any real
       // project URI got a bare -32602 with none of the guidance.
-      const [name, template, metadata] = mockServer.resource.mock.calls[1];
+      const [name, template, metadata] = mockServer.registerResource.mock.calls[1];
       expect(name).toBe('project-summary');
       expect(typeof template).not.toBe('string');
       const t = template as ResourceTemplate;
@@ -151,7 +151,7 @@ describe('registerProjectsResource', () => {
     it('lists the placeholder via the template list callback — resources/templates/list is refused by mcp-secure-server', async () => {
       // With list: undefined the pattern disappeared from resources/list and the
       // only other listing method is blocked at the security layer.
-      const t = mockServer.resource.mock.calls[1][1] as ResourceTemplate;
+      const t = mockServer.registerResource.mock.calls[1][1] as ResourceTemplate;
       const list = t.listCallback;
       if (list === undefined) throw new Error('template has no list callback');
       const listed = await list({} as never);
@@ -188,7 +188,7 @@ describe('registerProjectsResource', () => {
 
 describe('registerTaxonomyResource', () => {
   let mockServer: {
-    resource: ReturnType<typeof vi.fn>;
+    registerResource: ReturnType<typeof vi.fn>;
   };
   let taxonomyHandler: () => Promise<ResourceResponse>;
 
@@ -217,22 +217,22 @@ describe('registerTaxonomyResource', () => {
 
   beforeEach(() => {
     mockServer = {
-      resource: vi.fn(),
+      registerResource: vi.fn(),
     };
 
     // Register resource and capture handler
     registerTaxonomyResource(mockServer, mockOpsClient);
 
     // Extract registered handler
-    expect(mockServer.resource).toHaveBeenCalledTimes(1);
-    const call = mockServer.resource.mock.calls[0];
+    expect(mockServer.registerResource).toHaveBeenCalledTimes(1);
+    const call = mockServer.registerResource.mock.calls[0];
     expect(call[0]).toBe('taxonomy');
     expect(call[1]).toBe('validation://taxonomy');
     taxonomyHandler = call[3] as ResourceHandler;
   });
 
   it('should register with correct name, uri, and metadata', () => {
-    const [name, uri, metadata] = mockServer.resource.mock.calls[0];
+    const [name, uri, metadata] = mockServer.registerResource.mock.calls[0];
     expect(name).toBe('taxonomy');
     expect(uri).toBe('validation://taxonomy');
     expect(metadata).toEqual({
@@ -294,7 +294,7 @@ describe('registerAllResources', () => {
   it('should register all 3 resources', () => {
     const registeredResources: string[] = [];
     const mockServer: McpServerResourceRegistration = {
-      resource: vi.fn((name: string) => {
+      registerResource: vi.fn((name: string) => {
         registeredResources.push(name);
       }),
     };
@@ -310,7 +310,7 @@ describe('registerAllResources', () => {
 
   it('should call both registration functions', () => {
     const mockServer: McpServerResourceRegistration = {
-      resource: vi.fn(),
+      registerResource: vi.fn(),
     };
     const mockApiClient = {} as unknown as OpsClient;
 
@@ -318,6 +318,6 @@ describe('registerAllResources', () => {
 
     // registerProjectsResource registers 2 resources (projects, project-summary)
     // registerTaxonomyResource registers 1 resource (taxonomy)
-    expect(mockServer.resource).toHaveBeenCalledTimes(3);
+    expect(mockServer.registerResource).toHaveBeenCalledTimes(3);
   });
 });

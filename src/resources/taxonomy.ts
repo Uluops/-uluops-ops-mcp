@@ -54,8 +54,7 @@ export function registerTaxonomyResource(
   server: McpServerResourceRegistration,
   opsClient: OpsClient,
 ): void {
-  // eslint-disable-next-line @typescript-eslint/no-deprecated -- MCP SDK 1.x deprecates tool()/resource() for registerTool()/registerResource(); still supported. Migration tracked separately (mcp-secure-server 0.0.24 surfaced the SDK's @deprecated through its now-typed methods).
-  server.resource(
+  server.registerResource(
     'taxonomy',
     'validation://taxonomy',
     {

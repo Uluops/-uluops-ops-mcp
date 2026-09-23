@@ -18,8 +18,7 @@ export function registerProjectsResource(
   opsClient: OpsClient
 ): void {
   // Static resource: list all projects
-  // eslint-disable-next-line @typescript-eslint/no-deprecated -- MCP SDK 1.x deprecates tool()/resource() for registerTool()/registerResource(); still supported. Migration tracked separately (mcp-secure-server 0.0.24 surfaced the SDK's @deprecated through its now-typed methods).
-  server.resource(
+  server.registerResource(
     'projects',
     'validation://projects',
     {
@@ -67,8 +66,7 @@ export function registerProjectsResource(
   // it was under the literal registration (3 entries). It lists no real
   // projects — that would be an unscoped API read on every resources/list.
   const description = 'Project summary pattern - use get_project_summary tool for actual data';
-  // eslint-disable-next-line @typescript-eslint/no-deprecated -- MCP SDK 1.x deprecates tool()/resource() for registerTool()/registerResource(); still supported. Migration tracked separately (mcp-secure-server 0.0.24 surfaced the SDK's @deprecated through its now-typed methods).
-  server.resource(
+  server.registerResource(
     'project-summary',
     new ResourceTemplate('validation://projects/{project}', {
       list: (): { resources: Array<{ uri: string; name: string; description: string; mimeType: string }> } => ({
