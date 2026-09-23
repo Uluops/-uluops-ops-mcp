@@ -23,6 +23,7 @@ export type {
   ResourceContent,
   ResourceResponse,
   ResourceHandler,
+  ResourceTemplateHandler,
   ResourceMetadata,
   McpServerToolRegistration,
   McpServerResourceRegistration,

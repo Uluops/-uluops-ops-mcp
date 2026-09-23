@@ -26,6 +26,7 @@ MCP (Model Context Protocol) server for the UluOps tracker API — runs, finding
 - [Rate Limiting Configuration](#rate-limiting-configuration)
 - [Available Tools](#available-tools)
 - [Available Resources](#available-resources)
+- [Security](#security)
 - [Development](#development)
 - [License](#license)
 
@@ -280,6 +281,12 @@ get_log_stat({ project: "my-project" })
 get_taxonomy({})
 get_burndown({ project: "my-project" })
 
+// Reading structured analysis back — summaries per run, records across runs
+get_project_analysis({ project: "my-project", agent_name: "nietzsche-analyst" })
+get_run_analysis({ run_id: "<run uuid from list_runs or save_run>" })   // by UUID, not run_number
+query_analysis_records({ record_type: "convention", classification: "CALCIFIED", limit: 20 })
+get_agent_runs_analysis({ agent_name: "nietzsche-analyst", project: "my-project" })
+
 // Org management — move a project to another org, then read the org's activity
 rehome_project({ project: "my-project", target_org: "ulu-labs", reason: "work project, wrong org" })
 get_org_audit_feed({ limit: 20 })
@@ -440,7 +447,7 @@ MCP resources provide read-only access to validation data via the `validation://
 | Resource | URI | Description |
 |----------|-----|-------------|
 | Projects | `validation://projects` | List all tracked projects |
-| Project Summary | `validation://projects/{project}` | Template placeholder (use `get_project_summary` tool) |
+| Project Summary | `validation://projects/{project}` | Routes to the `get_project_summary` tool — any project name resolves, returning a ready-made call for it (no project data) |
 | Taxonomy | `validation://taxonomy` | Failure taxonomy schema for classifying issues |
 
 ### Resource Usage
@@ -459,7 +466,29 @@ same untrusted-content notice every tool result ends with (`text/plain`). Resour
 `resources/read <uri> org=personal` beside the tool calls. (Both since 0.21.1 — before that the
 resource path was outside the org seam entirely: no notice, no record.)
 
-**Note:** For project-specific data, use the `get_project_summary` tool instead of resources. MCP resource templates with parameters are not fully supported by the SDK.
+**Note:** For project-specific data, use the `get_project_summary` tool. `validation://projects/<name>`
+resolves for any name but only returns the call to make — it deliberately serves no project data,
+because resources carry no `org` argument and would read outside the org allowlist the tools
+enforce. (Before 0.21.1 only the literal `{project}` placeholder resolved; a real name returned a
+bare `-32602 not found`.)
+
+## Security
+
+- **Credentials never leave in error text.** Every `ulr_…` key of the shape the server accepts
+  at boot (`^ulr_[A-Za-z0-9_-]{16,}$`), and bearer tokens / `Authorization` headers, are redacted
+  from **every** error channel — the tool result, resource reads, and the `[mcp-tool-error]`
+  stderr line — and every occurrence in a message, not just the first. (Complete since 0.21.1;
+  earlier versions matched a narrower key shape and redacted only the first match.)
+- **Destructive calls refuse before sending.** `delete_run` requires `confirm: true` as a literal —
+  `false` or a missing value is rejected by the schema and nothing reaches the API. Note that the
+  confirmation is supplied by the model making the call; it guards against mistakes, not against
+  a model that has been instructed to delete.
+- **Tracker content is untrusted.** Every successful tool result and resource read ends with a
+  notice that the data was written by tracker users. Project names, issue text and descriptions
+  are data, never instructions — and an `org` is never taken from them (see
+  [Which org a call lands in](#which-org-a-call-lands-in)).
+- **Org scope is explicit.** `ULUOPS_ORG_ALLOW` restricts which orgs a call may target, and every
+  call logs the org it landed in.
 
 ## Development
 

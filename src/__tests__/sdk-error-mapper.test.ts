@@ -253,6 +253,36 @@ describe('SDK Error Mapper', () => {
       expect((payload['suggestion'] as string)).toContain('input schema');
     });
 
+    it('InputValidationError does not repeat fields the SDK message already carries (run #13)', () => {
+      // The SDK's validators write the formatted issue into the message
+      // ("Invalid save run: agents: Too small: ..."); the mapper used to
+      // append every field again, printing each one twice.
+      const line = 'agents: Too small: expected array to have >=1 items';
+      const error = new Error(`Invalid save run: ${line}`);
+      error.name = 'InputValidationError';
+      Object.assign(error as unknown as Record<string, unknown>, {
+        errors: [{ path: ['agents'], message: 'Too small: expected array to have >=1 items' }],
+      });
+      const payload = getErrorPayload(mapSdkErrorToMcp(error, 'validate_run'));
+      const text = payload['error'] as string;
+      expect(text.split(line)).toHaveLength(2); // exactly one occurrence
+      expect(text).toBe(`Invalid save run: ${line}`);
+      expect(payload['field_errors']).toEqual([{ path: 'agents', message: 'Too small: expected array to have >=1 items' }]);
+    });
+
+    it('InputValidationError still appends a field the SDK message omits', () => {
+      const error = new Error('Invalid save run: agents: Too small');
+      error.name = 'InputValidationError';
+      Object.assign(error as unknown as Record<string, unknown>, {
+        errors: [
+          { path: ['agents'], message: 'Too small' },
+          { path: ['project'], message: 'Required' },
+        ],
+      });
+      const text = getErrorPayload(mapSdkErrorToMcp(error))['error'] as string;
+      expect(text).toBe('Invalid save run: agents: Too small: project: Required');
+    });
+
     it('should map ConflictError preserving message', () => {
       const error = new ConflictError('Resource already exists');
       const result = mapSdkErrorToMcp(error);

@@ -5,6 +5,7 @@
  */
 
 import type { ZodRawShape } from 'zod';
+import type { ResourceTemplate } from '@modelcontextprotocol/sdk/server/mcp.js';
 import type { McpToolResponse } from './mcp.js';
 
 /**
@@ -35,6 +36,15 @@ export interface ResourceResponse {
 export type ResourceHandler = () => Promise<ResourceResponse>;
 
 /**
+ * Handler for a resource registered with a `ResourceTemplate`. The SDK passes
+ * the requested URI and the variables it matched against the template.
+ */
+export type ResourceTemplateHandler = (
+  uri: URL,
+  variables: Record<string, string | string[]>
+) => Promise<ResourceResponse>;
+
+/**
  * Resource metadata for registration
  */
 export interface ResourceMetadata {
@@ -52,16 +62,16 @@ export interface McpServerToolRegistration {
 /**
  * Interface for MCP server resource registration
  *
- * Supports two overloads:
- * - resource(name, uri, handler)
- * - resource(name, uri, metadata, handler)
+ * Supports two overloads, each with a fixed URI or a `ResourceTemplate`:
+ * - resource(name, uriOrTemplate, handler)
+ * - resource(name, uriOrTemplate, metadata, handler)
  */
 export interface McpServerResourceRegistration {
   resource: (
     name: string,
-    uri: string,
-    metadataOrHandler: ResourceMetadata | ResourceHandler,
-    handler?: ResourceHandler
+    uri: string | ResourceTemplate,
+    metadataOrHandler: ResourceMetadata | ResourceHandler | ResourceTemplateHandler,
+    handler?: ResourceHandler | ResourceTemplateHandler
   ) => void;
 }
 

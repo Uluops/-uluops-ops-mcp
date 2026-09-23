@@ -1052,6 +1052,18 @@ describe('Tool Handlers', () => {
 
       expect(mockOpsClient.runs.validate).toHaveBeenCalled();
     });
+
+    it('skips the SDK client-side validator, as save_run does — agents: [] is previewed, not refused (run #13)', async () => {
+      // save_run passes _skipClientValidation; validate_run did not, so the
+      // SDK's agents.min(1) refused a payload save_run accepts (T2 parity).
+      mockOpsClient.runs.validate.mockResolvedValue({ would_create: 0, validation_errors: [] });
+      const result = (await handler({ project: 'test', workflow_type: 'ship', agents: [] })) as { isError?: boolean };
+      expect(result.isError).toBeUndefined();
+      expect(mockOpsClient.runs.validate).toHaveBeenCalledWith(
+        expect.objectContaining({ project: 'test', agents: [] }),
+        expect.objectContaining({ _skipClientValidation: true, withResponseContext: true }),
+      );
+    });
   });
 
   describe('get_issue_history', () => {

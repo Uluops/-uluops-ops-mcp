@@ -20,6 +20,7 @@
     "noUnusedLocals": true,
     "noUnusedParameters": true,
     "declaration": true,
+    "stripInternal": true,
     "declarationMap": true,
     "sourceMap": true,
     "esModuleInterop": true,

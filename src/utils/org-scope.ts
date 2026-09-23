@@ -70,6 +70,13 @@ const ORG_ARG_OVERRIDES: Record<string, string> = {
  * schema side. Both must exist: an argument the client cannot see is one it
  * cannot pass, and an argument the handler does not lift is one the API
  * silently strips.
+ *
+ * @param server - The registrar tools are registered on (SecureMcpServer in production)
+ * @returns A registrar with the same `tool()` signature that appends the `org`
+ *   argument to each schema and the org-grounding text to each description
+ * @example
+ * const orgAware = withOrgArgument(server);
+ * registerAllTools(orgAware, opsClient); // every tool now accepts `org`
  */
 export function withOrgArgument(server: McpServerToolRegistration): McpServerToolRegistration {
   return {

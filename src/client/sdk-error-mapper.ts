@@ -67,6 +67,12 @@ function containsCredentials(message: string): boolean {
  * mapper ran — explorer run #11 P16) and `schema_issues` on
  * SDK_RESPONSE_SHAPE_MISMATCH below (P17), plus the resource-path error at
  * resources/projects.ts which carried its own narrower copy of the regex.
+ *
+ * @param message - Any text bound for a client or a log line
+ * @returns The message with every match of every credential pattern replaced by `[REDACTED]`
+ * @example
+ * redactCredentials('401 for ulr_abcDEF0123456789xyz, retry with Bearer eyJhbGci.x.y')
+ * // → '401 for [REDACTED], retry with [REDACTED]'
  */
 export function redactCredentials(message: string): string {
   let redacted = message;
@@ -194,16 +200,6 @@ function getErrorTypeName(error: unknown): string {
 }
 
 /**
- * Map an SDK error to an MCP tool response.
- *
- * Preserves error context including:
- * - Original error messages (with credential redaction only)
- * - HTTP status codes when available
- * - Retry-after information for rate limits
- * - Field-level validation details
- */
-
-/**
  * T7: name the discovery tool instead of "a query or list tool". The API's
  * NotFoundError message names the resource ("Project not found", "Run not
  * found") — key the remedy on it so a 404 carries an executable next step.
@@ -224,6 +220,33 @@ function notFoundSuggestion(message: string): string {
   return ERROR_SUGGESTIONS['NotFoundError'] as string;
 }
 
+/**
+ * Map an SDK error to an MCP tool response.
+ *
+ * Preserves error context including:
+ * - Original error messages (with credential redaction only)
+ * - HTTP status codes when available
+ * - Retry-after information for rate limits
+ * - Field-level validation details
+ *
+ * The branch is chosen by error class first (NotFound, RateLimit, Validation,
+ * Forbidden, Conflict, ...), then by the API's cause `code` and `details.reason`
+ * within a class; an unrecognised Error keeps its (redacted) message.
+ *
+ * (This docblock sat above NOT_FOUND_DISCOVERY_TOOLS until 0.21.1, so the
+ * function itself carried no attached doc — consumer-validate run #13.)
+ *
+ * @param error - Anything thrown by an OpsClient call
+ * @param toolName - The MCP tool that made the call; echoed as `tool` in the payload
+ * @returns An `isError: true` tool response whose text is a JSON payload with
+ *   `error`, `error_type`, `status`, `suggestion`, and branch-specific fields
+ * @example
+ * try {
+ *   return await opsClient.runs.get(runId);
+ * } catch (err) {
+ *   return mapSdkErrorToMcp(err, 'get_run'); // 404 → suggestion names list_runs
+ * }
+ */
 export function mapSdkErrorToMcp(error: unknown, toolName?: string): McpToolResponse {
   const statusCode = getStatusCode(error);
   const errorType = getErrorTypeName(error);
@@ -692,9 +715,19 @@ export function mapSdkErrorToMcp(error: unknown, toolName?: string): McpToolResp
             message: typeof i['message'] === 'string' ? i['message'] : 'invalid',
           }))
       : undefined;
-    const formatted = fieldErrors?.map((e) => `${e.path}: ${e.message}`).join('; ');
+    // The SDK already writes the per-field text into its own message
+    // ("Invalid save run: agents: Too small: ..."), so appending every field
+    // unconditionally printed each one twice (consumer-validate run #13).
+    // Append only fields the message does not already carry — an SDK that
+    // formats a field differently (enum options, a path the message omits)
+    // still gets it surfaced; `field_errors` keeps the structured copy either way.
+    const message = sanitizeErrorMessage(error.message);
+    const formatted = fieldErrors
+      ?.map((e) => `${e.path}: ${e.message}`)
+      .filter((line) => !message.includes(line))
+      .join('; ');
     return buildErrorResponse(
-      sanitizeErrorMessage(error.message) + (formatted != null && formatted !== '' ? `: ${formatted}` : ''),
+      message + (formatted != null && formatted !== '' ? `: ${formatted}` : ''),
       {
         ...context,
         status: 400,
@@ -711,10 +744,6 @@ export function mapSdkErrorToMcp(error: unknown, toolName?: string): McpToolResp
 }
 
 /**
- * Map a Zod validation error to an MCP tool response.
- * Shows all validation errors with field paths and expected values.
- */
-/**
  * The SDK could not parse a response the server DID send (ops-sdk's zod-4
  * `.parse()` on a 2xx body). This is not an input error and not a server
  * refusal: for a write, the operation most likely APPLIED — the server
@@ -722,6 +751,11 @@ export function mapSdkErrorToMcp(error: unknown, toolName?: string): McpToolResp
  * `status: 200`, `applied: 'unknown'` for writes (the tool registry says which
  * tools write), and a remedy that starts with reading state, never with a
  * retry of the write.
+ *
+ * @param error - The SDK's response-parse error (its message is the Zod issue text)
+ * @param toolName - The MCP tool that made the call; decides read vs. write wording via the ToolSpec registry
+ * @returns An `isError: true` response with `status: 200`, `code: SDK_RESPONSE_SHAPE_MISMATCH`,
+ *   `applied: 'unknown'` for writes, and the redacted issue text in `schema_issues`
  */
 export function mapSdkResponseShapeErrorToMcp(error: Error, toolName?: string): McpToolResponse {
   const spec = toolName !== undefined ? toolRegistry.find((t) => t.name === toolName) : undefined;
@@ -749,6 +783,14 @@ export function mapSdkResponseShapeErrorToMcp(error: Error, toolName?: string): 
   );
 }
 
+/**
+ * Map a Zod validation error to an MCP tool response.
+ * Shows all validation errors with field paths and expected values.
+ *
+ * @param error - A ZodError from parsing tool input (anything else falls through to mapSdkErrorToMcp)
+ * @param toolName - The MCP tool whose input failed; echoed as `tool`
+ * @returns An `isError: true` response listing each failing field path and its message
+ */
 export function mapZodErrorToMcp(error: unknown, toolName?: string): McpToolResponse {
   let message = 'Invalid input parameters';
 

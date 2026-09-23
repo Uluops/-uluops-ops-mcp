@@ -10,10 +10,12 @@ import type { OpsClient } from '@uluops/ops-sdk';
 import { registerProjectsResource } from '../resources/projects.js';
 import { registerTaxonomyResource } from '../resources/taxonomy.js';
 import { registerAllResources } from '../resources/index.js';
+import { ResourceTemplate } from '@modelcontextprotocol/sdk/server/mcp.js';
 import type {
   ResourceResponse,
   ResourceMetadata,
   ResourceHandler,
+  ResourceTemplateHandler,
   McpServerResourceRegistration,
 } from '../types/index.js';
 import type { OpsClient } from '@uluops/ops-sdk';
@@ -28,7 +30,7 @@ describe('registerProjectsResource', () => {
     };
   };
   let projectsHandler: () => Promise<ResourceResponse>;
-  let projectSummaryHandler: () => Promise<ResourceResponse>;
+  let projectSummaryHandler: ResourceTemplateHandler;
 
   beforeEach(() => {
     mockServer = {
@@ -55,8 +57,8 @@ describe('registerProjectsResource', () => {
     // Second call: project-summary resource
     const summaryCall = mockServer.resource.mock.calls[1];
     expect(summaryCall[0]).toBe('project-summary');
-    expect(summaryCall[1]).toBe('validation://projects/{project}');
-    projectSummaryHandler = summaryCall[3] as ResourceHandler;
+    expect(summaryCall[1]).toBeInstanceOf(ResourceTemplate);
+    projectSummaryHandler = summaryCall[3] as ResourceTemplateHandler;
   });
 
   describe('projects resource: validation://projects', () => {
@@ -134,28 +136,52 @@ describe('registerProjectsResource', () => {
   });
 
   describe('project-summary resource: validation://projects/{project}', () => {
-    it('should register with correct name, uri, and metadata', () => {
-      const [name, uri, metadata] = mockServer.resource.mock.calls[1];
+    it('registers a real ResourceTemplate, not the literal placeholder string (run #13)', () => {
+      // A literal registration resolved only the placeholder itself; any real
+      // project URI got a bare -32602 with none of the guidance.
+      const [name, template, metadata] = mockServer.resource.mock.calls[1];
       expect(name).toBe('project-summary');
-      expect(uri).toBe('validation://projects/{project}');
+      expect(typeof template).not.toBe('string');
+      const t = template as ResourceTemplate;
+      expect(t.uriTemplate.toString()).toBe('validation://projects/{project}');
+      expect(t.uriTemplate.match('validation://projects/my-project')).toEqual({ project: 'my-project' });
       expect((metadata as ResourceMetadata).description).toContain('project');
     });
 
-    it('should return usage instructions for template resource', async () => {
-      const result = await projectSummaryHandler();
+    it('lists the placeholder via the template list callback — resources/templates/list is refused by mcp-secure-server', async () => {
+      // With list: undefined the pattern disappeared from resources/list and the
+      // only other listing method is blocked at the security layer.
+      const t = mockServer.resource.mock.calls[1][1] as ResourceTemplate;
+      const list = t.listCallback;
+      if (list === undefined) throw new Error('template has no list callback');
+      const listed = await list({} as never);
+      expect(listed.resources.map((r) => r.uri)).toEqual(['validation://projects/{project}']);
+      expect(mockApiClient.projects.list).not.toHaveBeenCalled();
+    });
+
+    it('reading the listed placeholder itself yields a usable example, not the encoded braces', async () => {
+      const result = await projectSummaryHandler(new URL('validation://projects/%7Bproject%7D'), { project: '%7Bproject%7D' });
+      const data = JSON.parse(result.contents[0].text ?? '') as { example: string };
+      expect(data.example).toBe('get_project_summary({"project":"my-project"})');
+    });
+
+    it('a substituted project URI returns guidance naming that project', async () => {
+      const uri = new URL('validation://projects/my-project');
+      const result = await projectSummaryHandler(uri, { project: 'my-project' });
 
       expect(result.contents).toHaveLength(2);
-      const text = result.contents[0].text ?? '';
-      const data = JSON.parse(text) as {
+      expect(result.contents[0].uri).toBe(uri.href);
+      const data = JSON.parse(result.contents[0].text ?? '') as {
         info: string;
         tool: string;
         example: string;
         note: string;
       };
-      expect(data.info).toContain('tool API');
       expect(data.tool).toBe('get_project_summary');
-      expect(data.example).toBeDefined();
-      expect(data.note).toContain('SDK limitation');
+      expect(data.example).toBe('get_project_summary({"project":"my-project"})');
+      expect(data.note).toContain('org');
+      // Routes only — never calls the API (no data path outside the org seam).
+      expect(mockApiClient.projects.list).not.toHaveBeenCalled();
     });
   });
 });

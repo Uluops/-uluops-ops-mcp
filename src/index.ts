@@ -40,7 +40,15 @@ const TOOL_POLICIES_PATH = require.resolve('../tool-policies.json');
  * the developer no route back to the file they forgot to edit. This check
  * surfaces the omission at boot, by name, in the registry's own terms.
  *
- * @internal Boot-time diagnostic. Exported so `tool-spec-parity.test.ts` can exercise it; not part of the MCP surface and not a supported import.
+ * @param registeredNames - Tool names recorded at registration
+ * @param specNames - Names in the ToolSpec registry (src/config/tool-registry.ts)
+ * @param logger - Receives one warning per mismatch
+ * @returns Names registered without a spec (`missingSpecs`) and specs with no handler (`orphanSpecs`)
+ * @example
+ * const { missingSpecs } = checkToolSpecParity(['save_run', 'new_tool'], ['save_run'], logger);
+ * // missingSpecs = ['new_tool'] — would be refused with -32602 on first call
+ *
+ * @internal Boot-time diagnostic. Exported so `tool-spec-parity.test.ts` can exercise it; not part of the MCP surface and not a supported import. Stripped from the published `.d.ts` (`stripInternal`).
  */
 export function checkToolSpecParity(
   registeredNames: readonly string[],
@@ -344,7 +352,10 @@ async function main(): Promise<void> {
   });
 }
 
-// Export main for testing
+/**
+ * @internal Exported for `index.test.ts` only; the package is run as the `uluops-ops-mcp`
+ * bin, not imported. Stripped from the published `.d.ts` (`stripInternal`).
+ */
 export { main };
 
 // Run main function (skip in test environment)

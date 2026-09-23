@@ -47,7 +47,11 @@ const defaultOrgCallSink: OrgCallSink = (r) => {
 
 let orgCallSink: OrgCallSink = defaultOrgCallSink;
 
-/** Emit one record to the installed sink. */
+/**
+ * Emit one record to the installed sink.
+ *
+ * @param record - The tool (or `resources/read <uri>`), the org it landed in, and how that org was chosen
+ */
 export function emitOrgCall(record: OrgCallRecord): void {
   orgCallSink(record);
 }
@@ -55,12 +59,21 @@ export function emitOrgCall(record: OrgCallRecord): void {
 /**
  * Route per-call org records to a structured logger (index.ts wires
  * `logger.info`). Pass `undefined` to restore the stderr default.
+ *
+ * @param sink - Receives every OrgCallRecord; `undefined` restores the `[mcp-tool-org]` stderr line
  */
 export function setOrgCallSink(sink: OrgCallSink | undefined): void {
   orgCallSink = sink ?? defaultOrgCallSink;
 }
 
-/** Requested and effective org context, separate from the unchanged data payload. */
+/**
+ * Requested and effective org context, separate from the unchanged data payload.
+ *
+ * @param r - The call's org record (what was requested, and from which source)
+ * @param effectiveContext - The API's echo of where the call actually landed; `null` when unavailable
+ * @returns A JSON string for the echo content block. When `effectiveContext` is
+ *   `null` it carries a note that the requested defaults do not establish the destination.
+ */
 export function formatOrgEcho(r: OrgCallRecord, effectiveContext: unknown = null): string {
   const source = r.orgSource === 'env' ? 'environment' : r.orgSource === 'personal' ? (r.orgFile !== undefined ? 'workspace' : 'omitted') : r.orgSource;
   return JSON.stringify({
@@ -82,15 +95,26 @@ export function formatOrgEcho(r: OrgCallRecord, effectiveContext: unknown = null
 
 let orgAllowlist: readonly string[] | undefined;
 
+/**
+ * Install the D15 allowlist (index.ts passes the parsed `ULUOPS_ORG_ALLOW`).
+ *
+ * @param list - Org slugs this server may target; `undefined` = unbounded
+ */
 export function setOrgAllowlist(list: readonly string[] | undefined): void {
   orgAllowlist = list;
 }
 
+/** @returns The installed allowlist, or `undefined` when unbounded */
 export function getOrgAllowlist(): readonly string[] | undefined {
   return orgAllowlist;
 }
 
-/** `undefined` org (personal) is always allowed; otherwise the list decides when set. */
+/**
+ * `undefined` org (personal) is always allowed; otherwise the list decides when set.
+ *
+ * @param org - The org a call targets; `undefined` means personal
+ * @returns `true` when no allowlist is installed or the org is on it
+ */
 export function isOrgAllowed(org: string | undefined): boolean {
   if (org === undefined || orgAllowlist === undefined) return true;
   return orgAllowlist.includes(org);

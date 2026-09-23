@@ -57,6 +57,16 @@ export function registerValidateRunTool(
     'validate_run',
     'Preview what save_run would do without modifying the database. Returns would_create, would_update, would_regress, would_create_analysis_records, would_create_analysis_summaries, and validation_errors. Accepts the same shape as save_run including optional analysis_records and analysis_summary so the dry-run faithfully reflects the full set of side effects.' + RUN_MAP_CONTRACT + RUN_TOKEN_CONTRACT,
     ValidateRunInputSchema.shape,
-    createToolHandler(ValidateRunInputSchema, (n, scope) => opsClient.runs.validate(n, scope), { toolName: 'validate_run' })
+    // `_skipClientValidation`, as save_run / update_run / preview_update_run
+    // pass: the tool schema above is the client-side contract and the server
+    // is authoritative. Without it the SDK's own validateSaveRunInput ran here
+    // only — it enforces agents.min(1), which save_run skips — so validate_run
+    // refused `agents: []` while the identical save_run was accepted, the T2
+    // parity break again for a second field (consumer-validate run #13).
+    createToolHandler(
+      ValidateRunInputSchema,
+      (n, scope) => opsClient.runs.validate(n, { _skipClientValidation: true, ...scope }),
+      { toolName: 'validate_run' }
+    )
   );
 }

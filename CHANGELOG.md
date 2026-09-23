@@ -5,6 +5,14 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+**House extension, deliberate:** alongside the standard `Added / Changed / Deprecated / Removed /
+Fixed / Security` sections, an entry may carry sections the standard has no slot for — a
+finding-code section (`### F13`) grouping one audit finding's changes across categories, and
+decision-strata sections (`### Why`, `### Not changed — recorded so the next reader does not
+re-derive it`, `### Internal`). They record why a release looks the way it does and what was
+considered and left alone; readers scanning only for the standard headings lose nothing.
+(Stated here after consumer-validate run #13 flagged the unlabelled deviation from the claim above.)
+
 ## [Unreleased]
 
 ## [0.21.1] - 2026-09-23
@@ -73,9 +81,56 @@ A10; the unset-allowlist default — A4/A5) are NOT in this release and are bein
 - `eslint.config.js`: `projectService` default-project cap 20 → 32. The cap counts
   `src/__tests__/*.test.ts`; adding the 21st file made two UNRELATED test files fail to parse
   ("Too many files (>20) have matched the default project").
+- **`main` and `checkToolSpecParity` are no longer in the published type declarations**
+  (public-interface-validator, `STR-EXC/L`). Both were exported from the package entry for this
+  package's own tests and documented as unsupported imports; `stripInternal` now drops every
+  `@internal` symbol from `dist/*.d.ts`. The JavaScript exports remain (the tests use them), so
+  nothing breaks at runtime; a TypeScript consumer that imported either sees a type error, which
+  is the intent.
+
+### Fixed — from consumer-validate run #13 (docs / public-interface / dx validators on this release)
+
+- **`validate_run` previews what `save_run` accepts again** (dx-validator, `SEM-INC/H`). `save_run`,
+  `update_run` and `preview_update_run` pass `_skipClientValidation` so the tool schema is the
+  client-side contract and the server decides; `validate_run` did not, so ops-sdk's own
+  `validateSaveRunInput` ran on the preview only and refused `agents: []` — which `save_run`
+  accepted and wrote (observed live). That is the T2 parity break (0.18.x: "`validate_run` accepts
+  exactly what `save_run` accepts") recurring on a second field, one hop down in the SDK instead
+  of in this package's schema.
+- **Client-side validation errors no longer print each field twice.** ops-sdk writes the formatted
+  issues into its own message (`Invalid save run: agents: Too small: ...`) and the T27 branch
+  appended every field again. It now appends only fields the message does not already carry;
+  `field_errors` is unchanged.
+- **`validation://projects/<name>` resolves** (dx-validator, `SEM-COM/M`). The resource was
+  registered as the literal string `validation://projects/{project}` on a premise the comment
+  stated as fact — "MCP SDK resource handlers don't receive the actual requested URI". That is
+  false for a `ResourceTemplate`, which receives the URI and matched variables; the literal
+  registration meant only the placeholder itself resolved and a real name got a bare `-32602 not
+  found`. It is now a real template returning the ready-made `get_project_summary` call for the
+  named project. **Deliberately still no project data**: resources carry no `org` argument and read
+  the personal org, so serving the summary here would be a second path to project data outside the
+  org allowlist. **Discovery joint:** `mcp-secure-server` 0.0.22-security refuses
+  `resources/templates/list` (`INVALID_MCP_METHOD`), so a template with no `list` callback vanished
+  from every listing a client can reach; the template's `list` callback now returns the placeholder
+  entry and `resources/list` is unchanged at 3 entries.
+
+### Docs
+
+- README: a **Security** section (redaction scope, the `delete_run` literal and what it does and
+  does not guard, the untrusted-content notice, org scope), Quick Start examples for the four
+  analysis-read tools (`get_run_analysis` takes a run **UUID**, not `run_number`), and the
+  resource table/note corrected for the template change.
+- JSDoc `@param` / `@returns` / `@throws` / `@example` on the exported helpers the docs-validator
+  listed (org scope, org call log, error mapper, config). Two docblocks in `sdk-error-mapper.ts`
+  were **orphaned** — `mapSdkErrorToMcp`'s sat above `NOT_FOUND_DISCOVERY_TOOLS` and
+  `mapZodErrorToMcp`'s above `mapSdkResponseShapeErrorToMcp` — so both functions had no attached
+  doc at all; moved onto their functions.
 
 ### Not changed — recorded so the next reader does not re-derive it
 
+- Per-tool README headings (docs-validator `PRA-EFF/L`): the 55 tools stay as rows in grouped
+  tables. Fifty-five `###` headings would triple the section's length to buy anchor links, and
+  every tool name is already an exact-match search hit.
 - Layer 5 (response-side validation) under the `basic` preset is **inert**: `presets.js:76`
   sets `contextual: null`, `pipeline-factory.js:69` coerces `null ?? {}`, `ContextualValidationLayer({})`
   installs zero validators and `validateResponse` short-circuits. Every read-path chain has

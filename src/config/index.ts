@@ -57,6 +57,10 @@ const ORG_SLUG_PATTERN = /^[a-zA-Z0-9][a-zA-Z0-9_-]{0,99}$/;
  * `personal` may be listed but is implied. Unset or empty → `undefined`
  * (unbounded). An invalid slug REFUSES TO START: an allowlist that silently
  * dropped a misspelt entry would silently widen the bound.
+ *
+ * @param raw - The raw `ULUOPS_ORG_ALLOW` value
+ * @returns The slugs, or `undefined` when unset or empty
+ * @throws Error listing every invalid slug
  */
 export function parseOrgAllow(raw: string | undefined): string[] | undefined {
   if (raw === undefined) return undefined;
@@ -126,7 +130,10 @@ export function loadConfig(): { config: UluopsTrackerConfig; warnings: string[] 
 /**
  * Build a short, redacted fingerprint for the API key so operators can
  * distinguish which key the server loaded across multiple deployments
- * without leaking the secret. Returns "ulr_…XXXX" using the last 4 chars.
+ * without leaking the secret.
+ *
+ * @param apiKey - The loaded key, if any
+ * @returns `"ulr_…XXXX"` from the last 4 chars, or `"unknown"` for a missing/short key
  */
 export function apiKeyFingerprint(apiKey: string | undefined): string {
   if (apiKey === undefined || apiKey.length < 4) return 'unknown';
@@ -139,6 +146,9 @@ export function apiKeyFingerprint(apiKey: string | undefined): string {
  * `baseUrl` is optional — when undefined, OpsClient falls back to
  * `@uluops/ops-sdk`'s `DEFAULT_BASE_URL` (prod by default, localhost
  * when `NODE_ENV=development`). When set, it must be a valid URL.
+ *
+ * @param config - The result of loadConfig()
+ * @throws Error naming the missing or malformed setting (never the key value)
  */
 export function validateConfig(config: UluopsTrackerConfig): void {
   if (config.api.baseUrl !== undefined) {
