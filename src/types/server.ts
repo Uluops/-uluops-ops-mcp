@@ -5,7 +5,7 @@
  */
 
 import type { ZodRawShape } from 'zod';
-import type { ResourceTemplate } from '@modelcontextprotocol/sdk/server/mcp.js';
+import type { McpServer as SdkMcpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import type { McpToolResponse } from './mcp.js';
 
 /**
@@ -16,19 +16,21 @@ export type ToolHandler = (args: unknown) => Promise<McpToolResponse>;
 /**
  * Resource content item in MCP resource response
  */
-export interface ResourceContent {
+// Text-only, `text` required: every resource this server exposes returns text,
+// and the SDK's ReadResourceResult contents are a text-XOR-blob union — an item
+// with both optional fits neither arm. (`blob` was declared here and never used.)
+export type ResourceContent = {
   uri: string;
   mimeType?: string;
-  text?: string;
-  blob?: string;
-}
+  text: string;
+};
 
 /**
  * Resource response format returned by resource handlers
  */
-export interface ResourceResponse {
+export type ResourceResponse = {
   contents: ResourceContent[];
-}
+};
 
 /**
  * Resource handler function signature
@@ -67,12 +69,10 @@ export interface McpServerToolRegistration {
  * - resource(name, uriOrTemplate, metadata, handler)
  */
 export interface McpServerResourceRegistration {
-  resource: (
-    name: string,
-    uri: string | ResourceTemplate,
-    metadataOrHandler: ResourceMetadata | ResourceHandler | ResourceTemplateHandler,
-    handler?: ResourceHandler | ResourceTemplateHandler
-  ) => void;
+  // The SDK's own overload set (mcp-secure-server 0.0.24-security types
+  // SecureMcpServer.resource as McpServer['resource']). The single union-typed
+  // signature this replaced could not accept that overload set.
+  resource: SdkMcpServer['resource'];
 }
 
 /**
