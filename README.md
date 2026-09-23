@@ -346,6 +346,12 @@ Claude Code issues tool calls in short, intense bursts (<2s) followed by "thinki
 
 The per-tool `maxArgsSize` (2 MB for `save_run`) and the 500 KB message envelope remain the effective gates. When a payload is rejected, the error names which cap fired — for a per-string rejection, it names the offending field path (e.g. `raw_markdown`) and notes that `maxStringLength` is a separate, lower cap than the tool's `maxArgsSize` — so the fix (shorten a field vs. split the call) is unambiguous.
 
+**Byte caps are UTF-8 bytes** (since 0.21.2, on `mcp-secure-server` 0.0.23-security):
+`maxMessageSize`, `maxParamBytes`, `suspiciousMessageSize` and `maxArgsSize` count encoded
+bytes, so non-ASCII text uses the envelope faster — an em dash or `→` is 3 bytes, most CJK
+characters 3. `maxStringLength` stays a character count. Earlier releases measured UTF-16 code
+units, which let a non-ASCII payload up to ~3x the stated size through.
+
 ## Available Tools
 
 ### Core Tools (P0)
