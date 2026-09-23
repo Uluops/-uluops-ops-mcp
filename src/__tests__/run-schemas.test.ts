@@ -175,7 +175,7 @@ describe.each([
   it('still rejects incomplete metadata instead of weakening the schema', () => {
     const { schema } = contract();
     expect(schema.safeParse({
-      project: 'contract-fixture', workflow_type: 'exploration', agents: [],
+      project: 'contract-fixture', workflow_type: 'exploration', agents: [{ name: 'test', score: 80, decision: 'PASS' }],
       analysis_summary: { decision: 'TRACED', exploration_maps: [{ metadata: {}, sections: [] }] },
     }).success).toBe(false);
   });
@@ -184,7 +184,7 @@ describe.each([
     const { schema } = contract();
     const summary = { decision: 'TRACED', exploration_maps: [{ metadata: {}, sections: [] }] };
     const result = schema.safeParse({
-      project: 'contract-fixture', workflow_type: 'exploration', agents: [],
+      project: 'contract-fixture', workflow_type: 'exploration', agents: [{ name: 'test', score: 80, decision: 'PASS' }],
       analysis_summary: array ? [summary] : summary,
     });
     expect(result.success).toBe(false);

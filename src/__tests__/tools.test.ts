@@ -74,7 +74,7 @@ describe('tool schemas', () => {
     it('should reject missing project', () => {
       const input = {
         workflow_type: 'ship',
-        agents: [],
+        agents: [{ name: 'test', score: 80, decision: 'PASS' }],
       };
 
       const result = SaveRunInputSchema.safeParse(input);
@@ -84,7 +84,7 @@ describe('tool schemas', () => {
     it('should reject missing workflow_type', () => {
       const input = {
         project: 'test-project',
-        agents: [],
+        agents: [{ name: 'test', score: 80, decision: 'PASS' }],
       };
 
       const result = SaveRunInputSchema.safeParse(input);
@@ -95,7 +95,7 @@ describe('tool schemas', () => {
       const input = {
         project: 'test-project',
         workflow_type: 'ship',
-        agents: [],
+        agents: [{ name: 'test', score: 80, decision: 'PASS' }],
         recommendations: [
           {
             agent: 'test',
@@ -113,7 +113,7 @@ describe('tool schemas', () => {
       const input = {
         project: 'test-project',
         workflow_type: 'ship',
-        agents: [],
+        agents: [{ name: 'test', score: 80, decision: 'PASS' }],
         recommendations: [
           {
             agent: 'test',
@@ -374,13 +374,27 @@ describe('tool schemas', () => {
     });
 
     describe('SaveRunInputSchema boundaries', () => {
-      it('should accept empty validators array', () => {
+      it('should reject an empty agents array — a run records at least one agent', () => {
         const result = SaveRunInputSchema.safeParse({
           project: 'test',
           workflow_type: 'ship',
           agents: [],
         });
+        expect(result.success).toBe(false);
+        expect(result.success ? [] : result.error.issues.map((i) => i.path.join('.'))).toEqual(['agents']);
+      });
+
+      it('should accept a single agent (control for the agents bound)', () => {
+        const result = SaveRunInputSchema.safeParse({ project: 'test', workflow_type: 'ship', agents: [{ name: 'test', score: 80, decision: 'PASS' }] });
         expect(result.success).toBe(true);
+      });
+
+      it('still accepts a legacy create_new_project and drops it — it never reached the API', () => {
+        const result = SaveRunInputSchema.safeParse({
+          project: 'test', workflow_type: 'ship', agents: [{ name: 'test', score: 80, decision: 'PASS' }], create_new_project: true,
+        });
+        expect(result.success).toBe(true);
+        expect(result.success && 'create_new_project' in result.data).toBe(false);
       });
 
       it('should accept score at minimum (0)', () => {
@@ -414,7 +428,7 @@ describe('tool schemas', () => {
         const result = SaveRunInputSchema.safeParse({
           project: 'test',
           workflow_type: 'ship',
-          agents: [],
+          agents: [{ name: 'test', score: 80, decision: 'PASS' }],
           recommendations: [
             { agent: 'test', title: 'Test', priority: 'suggested', line_number: 1 },
           ],
@@ -427,7 +441,7 @@ describe('tool schemas', () => {
         const result = SaveRunInputSchema.safeParse({
           project: 'test',
           workflow_type: 'ship',
-          agents: [],
+          agents: [{ name: 'test', score: 80, decision: 'PASS' }],
           recommendations: [
             { agent: 'test', title: 'Test', priority: 'suggested', line_number: 0 },
           ],
@@ -439,7 +453,7 @@ describe('tool schemas', () => {
         const result = SaveRunInputSchema.safeParse({
           project: 'test',
           workflow_type: 'ship',
-          agents: [],
+          agents: [{ name: 'test', score: 80, decision: 'PASS' }],
           recommendations: [
             { agent: 'test', title: 'Test', priority: 'suggested', line_number: -1 },
           ],
