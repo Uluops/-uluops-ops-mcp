@@ -15,34 +15,6 @@ considered and left alone; readers scanning only for the standard headings lose 
 
 ## [Unreleased]
 
-### Changed
-
-- **`save_run` and `validate_run` refuse an empty `agents` array** before any SDK call. The API
-  now refuses it too (ops-uluops-api `SaveRunSchema`, `agents.min(1)`); this schema says so first,
-  as a named field error instead of a round-trip 400. Until now this schema and the API both
-  omitted the bound while the SDK's client validator — which these tools skip via
-  `_skipClientValidation`, trusting the server — enforced it, so `save_run({agents: []})` persisted
-  a run with no agents, no score and no gate verdict, and auto-created the named project (observed
-  2026-09-23 via a validator's stray call; project `x`). `validate_run` carries the same bound so
-  the preview keeps refusing what the write refuses (T2).
-- **`save_run`'s description says a missing project is created.** Run submission auto-creates a
-  project that does not exist, by design in the API; the description now says so and points at
-  `list_projects`, because a typo in `project` becomes a new project.
-
-### Removed
-
-- **`save_run.create_new_project`.** Declared here since the tool's first schema, it never reached
-  the API: ops-sdk's `runs.save` builds its payload from an explicit field list that omits it, and
-  the API has no such parameter — projects are always created on demand. It implied a gate that did
-  not exist anywhere in the chain. Callers that still send it are unaffected: the schema is not
-  strict, so the key is dropped exactly as the SDK used to drop it.
-
-### Fixed
-
-- Test fixtures: eleven rejection tests (`should reject missing project`, `invalid priority`,
-  `negative line_number`, …) sent `agents: []`; with the new bound they would have passed on the
-  agents rule alone. They now send one agent, so each fails only on the field it names.
-
 ## [0.21.1] - 2026-09-23
 
 *Authored 2026-09-19 as 0.20.2 on `fix/circumvention-hardening` and left unmerged; a separate
@@ -141,6 +113,32 @@ A10; the unset-allowlist default — A4/A5) are NOT in this release and are bein
   `resources/templates/list` (`INVALID_MCP_METHOD`), so a template with no `list` callback vanished
   from every listing a client can reach; the template's `list` callback now returns the placeholder
   entry and `resources/list` is unchanged at 3 entries.
+
+### save_run refuses an empty `agents` array — paired with ops-uluops-api `c5dc745`
+
+The API now refuses `agents: []` on `POST /runs` and `/runs/validate` (`SaveRunSchema`
+`agents.min(1)`, merged 2026-09-23); these entries make the MCP say so first. Folded into
+0.21.1 before its publish rather than released as 0.21.2.
+
+- **`save_run` and `validate_run` refuse an empty `agents` array** before any SDK call. The API
+  now refuses it too (ops-uluops-api `SaveRunSchema`, `agents.min(1)`); this schema says so first,
+  as a named field error instead of a round-trip 400. Until now this schema and the API both
+  omitted the bound while the SDK's client validator — which these tools skip via
+  `_skipClientValidation`, trusting the server — enforced it, so `save_run({agents: []})` persisted
+  a run with no agents, no score and no gate verdict, and auto-created the named project (observed
+  2026-09-23 via a validator's stray call; project `x`). `validate_run` carries the same bound so
+  the preview keeps refusing what the write refuses (T2).
+- **`save_run`'s description says a missing project is created.** Run submission auto-creates a
+  project that does not exist, by design in the API; the description now says so and points at
+  `list_projects`, because a typo in `project` becomes a new project.
+- **Removed: `save_run.create_new_project`.** Declared here since the tool's first schema, it never reached
+  the API: ops-sdk's `runs.save` builds its payload from an explicit field list that omits it, and
+  the API has no such parameter — projects are always created on demand. It implied a gate that did
+  not exist anywhere in the chain. Callers that still send it are unaffected: the schema is not
+  strict, so the key is dropped exactly as the SDK used to drop it.
+- **Fixed, tests:** eleven rejection tests (`should reject missing project`, `invalid priority`,
+  `negative line_number`, …) sent `agents: []`; with the new bound they would have passed on the
+  agents rule alone. They now send one agent, so each fails only on the field it names.
 
 ### Docs
 
