@@ -1,6 +1,6 @@
 {
   "name": "@uluops/ops-mcp",
-  "version": "0.21.1",
+  "version": "0.21.2",
   "description": "MCP server for the UluOps tracker API — runs, findings, issues, analytics, the project log and org management",
   "type": "module",
   "main": "dist/index.js",
@@ -69,7 +69,7 @@
     "@modelcontextprotocol/sdk": "1.30.0",
     "@uluops/ops-sdk": "6.7.0",
     "@uluops/taxonomy": "1.1.0",
-    "mcp-secure-server": "0.0.22-security",
+    "mcp-secure-server": "0.0.23-security",
     "zod": "3.25.76"
   },
   "devDependencies": {

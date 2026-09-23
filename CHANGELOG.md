@@ -15,6 +15,31 @@ considered and left alone; readers scanning only for the standard headings lose 
 
 ## [Unreleased]
 
+## [0.21.2] - 2026-09-23
+
+### Changed
+
+- **`mcp-secure-server` 0.0.22-security → 0.0.23-security** (exact pin). Three behaviour changes
+  reach this server through it, each checked over stdio against the built server:
+  - **Byte caps now count UTF-8 bytes.** `maxMessageSize` (500 KB), `maxParamBytes`,
+    `suspiciousMessageSize` and the per-tool `maxArgsSize` measured `JSON.stringify(...).length`
+    — UTF-16 code units — and now measure encoded bytes, as documented. ASCII payloads are
+    unaffected (a 300 KB ASCII `validate_run` still passes). Non-ASCII payloads fill the
+    envelope up to 3x faster: five 60K-character em-dash descriptions (300K code units, ~900 KB
+    UTF-8) passed under 0.0.22 and are now refused with `Message too large: 900527 bytes (max:
+    512000) — whole-message 'maxMessageSize' envelope cap`. The caps are deliberately **not**
+    raised: 500 KB was always the stated unit, and the refusal names the cap that fired. Split
+    very large non-ASCII reports across calls.
+  - **`maxArgsSize` is enforced directly.** It was dead in 0.0.20–0.0.22 without an `argsShape`;
+    0.21.1 made `maxEgressBytes = 16 * maxArgsSize` on every ToolSpec so the effective cap
+    already equalled the declared one — no tool's limit moves.
+  - **Non-object `arguments` are refused** at the security layer (`Tool "…" arguments must be
+    an object`) instead of being coerced to `{}` and passing every size check.
+- **`resources/templates/list` answers natively.** 0.0.23-security adds it to Layer 4's default
+  method allowlist, so `validation://projects/{project}` is now listed there too. The template's
+  `list` callback (0.21.1 workaround) stays: it keeps `resources/list` at 3 entries for clients
+  that never call `resources/templates/list`.
+
 ## [0.21.1] - 2026-09-23
 
 *Authored 2026-09-19 as 0.20.2 on `fix/circumvention-hardening` and left unmerged; a separate
