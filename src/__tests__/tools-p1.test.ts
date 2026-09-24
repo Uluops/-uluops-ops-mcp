@@ -16,6 +16,7 @@ import { ValidateRunInputSchema } from '../tools/validate-run.js';
 import { GetIssueHistoryInputSchema } from '../tools/get-issue-history.js';
 import { AddIssueNoteInputSchema } from '../tools/add-issue-note.js';
 import { EditIssueInputSchema } from '../tools/edit-issue.js';
+import { CreateIssueInputSchema } from '../tools/create-issue.js';
 import { MergeIssuesInputSchema } from '../tools/merge-issues.js';
 import { BulkUpdateStatusInputSchema } from '../tools/bulk-update-status.js';
 import { UpdateRunInputSchema } from '../tools/update-run.js';
@@ -346,11 +347,38 @@ describe('P1 tool schemas', () => {
     });
 
     it('should accept valid failure_code formats', () => {
-      const validCodes = ['STR-INC/C', 'SEM-TYP/H', 'PRA-MAT/M', 'EPI-DOC/L', 'STR-FMT/I'];
+      const validCodes = ['STR-INC/C', 'SEM-TYP/H', 'PRA-MAT/M', 'PRA-DOC/L', 'STR-FMT/I'];
       for (const failure_code of validCodes) {
         const result = EditIssueInputSchema.safeParse({ issue_id: TEST_UUID_1, failure_code });
         expect(result.success).toBe(true);
       }
+    });
+  });
+
+  // Well-formed but non-canonical codes: modes are domain-bound (VAL is EPI,
+  // DOC is PRA, ERR is no mode). The format-only FAILURE_CODE_PATTERN let
+  // these through create_issue/edit_issue while save_run already refused
+  // them — the classification was then lost at ingest.
+  describe('failure_code closed-set membership (create_issue / edit_issue)', () => {
+    const NON_CANONICAL = ['SEM-VAL/H', 'EPI-DOC/L', 'SEM-ERR/H'];
+
+    it('create_issue rejects well-formed non-members', () => {
+      for (const failure_code of NON_CANONICAL) {
+        const result = CreateIssueInputSchema.safeParse({ project: 'p', title: 't', priority: 'high', failure_code });
+        expect(result.success, failure_code).toBe(false);
+      }
+    });
+
+    it('edit_issue rejects well-formed non-members', () => {
+      for (const failure_code of NON_CANONICAL) {
+        const result = EditIssueInputSchema.safeParse({ issue_id: TEST_UUID_1, failure_code });
+        expect(result.success, failure_code).toBe(false);
+      }
+    });
+
+    it('both still accept canonical codes (the check is not vacuous)', () => {
+      expect(CreateIssueInputSchema.safeParse({ project: 'p', title: 't', priority: 'high', failure_code: 'EPI-VAL/H' }).success).toBe(true);
+      expect(EditIssueInputSchema.safeParse({ issue_id: TEST_UUID_1, failure_code: 'EPI-VAL/H' }).success).toBe(true);
     });
   });
 

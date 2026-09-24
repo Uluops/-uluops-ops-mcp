@@ -15,6 +15,23 @@ considered and left alone; readers scanning only for the standard headings lose 
 
 ## [Unreleased]
 
+## [0.21.4] - 2026-09-24
+
+### Fixed
+
+- **`create_issue` and `edit_issue` now validate `failure_code` against the closed canonical set**
+  (`STRICT_FAILURE_CODE_PATTERN`, 28 modes × 5 severities), the check `save_run` has used since
+  f1e6c06. Both still used the format-only `FAILURE_CODE_PATTERN`, so a well-formed non-member —
+  `SEM-VAL/H` (VAL is an EPI mode), `EPI-DOC/L` (DOC is PRA), `SEM-ERR/H` (no such mode) — passed
+  the tool boundary and lost its classification at ingest. **Behaviour change, same signature:**
+  those calls now fail with a validation error naming the rule; canonical codes are unaffected.
+  Ported from the retired private `ops-uluops-mcp` (5d8d900, 2026-08-21), which had fixed this
+  before the org-routing port and was never carried over.
+- The examples teaching those codes are corrected: `create_issue`'s `failure_code` description and
+  messages, and `get_velocity`'s description (`SEM-VAL` → `EPI-VAL`). Three test fixtures used
+  non-canonical codes as *valid* input (`SEM-ERR/H`, `SEM-VAL/H`, `EPI-DOC/L`) — corrected, with a
+  new negative control that fails against 0.21.3 (`tools-p1.test.ts`, "closed-set membership").
+
 ## [0.21.3] - 2026-09-23
 
 ### Changed

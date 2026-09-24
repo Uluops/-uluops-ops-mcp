@@ -6,7 +6,7 @@ import { z } from 'zod';
 import type { OpsClient } from '@uluops/ops-sdk';
 import { SeveritySchema, PrioritySchema, IssueTypeSchema, FilePathSchema, type McpServerToolRegistration } from '../types/index.js';
 import { createToolHandler } from '../utils/tool-handler.js';
-import { FAILURE_CODE_PATTERN } from '@uluops/taxonomy';
+import { STRICT_FAILURE_CODE_PATTERN } from '@uluops/taxonomy';
 
 /**
  * `.strict()`, not a bare `z.object()` — and that is the actual fix here.
@@ -57,7 +57,11 @@ export const EditIssueInputSchema = z.object({
   severity: SeveritySchema.optional(),
   failure_code: z
     .string()
-    .regex(FAILURE_CODE_PATTERN)
+    .regex(STRICT_FAILURE_CODE_PATTERN, {
+      message:
+        'Must be one of the 28 canonical failure modes plus severity (e.g., EPI-VAL/H). ' +
+        'Modes are domain-bound — SEM-VAL is not a member (VAL is an EPI mode).',
+    })
     .optional(),
   line_number: z.number().int().nonnegative().optional().nullable(),
 }).strict();

@@ -13,7 +13,7 @@ import {
   type McpServerToolRegistration,
 } from '../types/index.js';
 import { createToolHandler } from '../utils/tool-handler.js';
-import { FAILURE_CODE_PATTERN } from '@uluops/taxonomy';
+import { STRICT_FAILURE_CODE_PATTERN } from '@uluops/taxonomy';
 
 export const CreateIssueInputSchema = z.object({
   project: z.string().min(1).describe('Project name'),
@@ -29,16 +29,18 @@ export const CreateIssueInputSchema = z.object({
   line_number: z.number().int().nonnegative().optional().nullable().describe('Line number in file'),
   failure_code: z
     .string()
-    .regex(FAILURE_CODE_PATTERN, {
-      message: 'Must match DOMAIN-MODE/SEVERITY (e.g., SEM-VAL/H, STR-OMI/M). DOMAIN ∈ {STR,SEM,PRA,EPI}; MODE = 3 uppercase letters; SEVERITY ∈ {C,H,M,L,I}.',
+    .regex(STRICT_FAILURE_CODE_PATTERN, {
+      message:
+        'Must be one of the 28 canonical failure modes plus severity (e.g., EPI-VAL/H, STR-OMI/M). ' +
+        'Modes are domain-bound — SEM-VAL is not a member (VAL is an EPI mode).',
     })
     .optional()
-    .describe('Failure code (e.g., SEM-VAL/H)'),
+    .describe('Failure code from the closed canonical set (e.g., EPI-VAL/H)'),
   failure_domain: FailureDomainSchema.optional().describe('Failure domain'),
   failure_mode: z
     .string()
     .regex(/^[A-Z]{3}$/, {
-      message: 'Must be exactly 3 uppercase letters (e.g., VAL, OMI, FRA). For the full code (e.g., SEM-VAL/H), use failure_code instead.',
+      message: 'Must be exactly 3 uppercase letters (e.g., VAL, OMI, FRA). For the full code (e.g., EPI-VAL/H), use failure_code instead.',
     })
     .optional()
     .describe('Failure mode — 3 uppercase letters (e.g., VAL, OMI)'),

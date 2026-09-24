@@ -33,7 +33,7 @@ export function registerGetVelocityTool(
 ): void {
   server.tool(
     'get_velocity',
-    'Get velocity metrics per failure mode (e.g., STR-OMI, SEM-VAL) showing rate of change with sparkline data and trend reliability assessment.',
+    'Get velocity metrics per failure mode (e.g., STR-OMI, EPI-VAL) showing rate of change with sparkline data and trend reliability assessment.',
     GetVelocityInputSchema.shape,
     createToolHandler(GetVelocityInputSchema, (n, scope) => opsClient.analytics.getVelocity(n, scope), { toolName: 'get_velocity' })
   );

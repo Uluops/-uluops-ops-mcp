@@ -1311,14 +1311,14 @@ describe('Tool Handlers', () => {
       await handler({
         issue_id: TEST_UUID_1,
         severity: 'critical',
-        failure_code: 'SEM-ERR/H',
+        failure_code: 'SEM-INC/H',
         file_path: 'src/api.ts',
       });
 
       // normalizeKeys: failure_code → failureCode, file_path → filePath
       expect(mockOpsClient.issues.update).toHaveBeenCalledWith(
         TEST_UUID_1,
-        { severity: 'critical', failureCode: 'SEM-ERR/H', filePath: 'src/api.ts' }, { withResponseContext: true }
+        { severity: 'critical', failureCode: 'SEM-INC/H', filePath: 'src/api.ts' }, { withResponseContext: true }
       );
     });
 
@@ -1828,8 +1828,8 @@ describe('Tool Handlers', () => {
         description: 'Detailed description of the issue',
         file_path: 'src/api.ts',
         line_number: 42,
-        failure_code: 'SEM-VAL/H',
-        failure_domain: 'SEM',
+        failure_code: 'EPI-VAL/H',
+        failure_domain: 'EPI',
         failure_mode: 'VAL',
         agent: 'user-submitted',
       });
@@ -1844,8 +1844,8 @@ describe('Tool Handlers', () => {
         description: 'Detailed description of the issue',
         filePath: 'src/api.ts',
         lineNumber: 42,
-        failureCode: 'SEM-VAL/H',
-        failureDomain: 'SEM',
+        failureCode: 'EPI-VAL/H',
+        failureDomain: 'EPI',
         failureMode: 'VAL',
         agent: 'user-submitted',
       }, { withResponseContext: true });
