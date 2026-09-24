@@ -27,12 +27,12 @@ const policies = JSON.parse(
 // save_run's `description` legitimately relaxes recommendations[].description. The census is
 // therefore every object key at any depth of the tool's Zod input, not just top-level keys.
 function collectKeys(node: unknown, out: Set<string>, seen = new Set<unknown>()): void {
-  if (!node || typeof node !== 'object' || seen.has(node)) return;
+  if (node === null || typeof node !== 'object' || seen.has(node)) return;
   seen.add(node);
   const n = node as Record<string, unknown> & { _def?: Record<string, unknown> };
   const shapeSrc = (n as { shape?: unknown }).shape ?? n._def?.shape;
-  const shape = typeof shapeSrc === 'function' ? (shapeSrc as () => unknown)() : shapeSrc;
-  if (shape && typeof shape === 'object') {
+  const shape: unknown = typeof shapeSrc === 'function' ? (shapeSrc as () => unknown)() : shapeSrc;
+  if (shape !== null && typeof shape === 'object') {
     for (const [k, v] of Object.entries(shape as Record<string, unknown>)) {
       out.add(k);
       collectKeys(v, out, seen);
@@ -48,7 +48,7 @@ function collectKeys(node: unknown, out: Set<string>, seen = new Set<unknown>())
 function collectInputFields(): Map<string, Set<string>> {
   const fields = new Map<string, Set<string>>();
   const mockServer = {
-    tool: (name: string, _description: string, shape: Record<string, unknown>) => {
+    tool: (name: string, _description: string, shape: Record<string, unknown> | undefined) => {
       const keys = new Set<string>();
       for (const [k, v] of Object.entries(shape ?? {})) {
         keys.add(k);
@@ -65,7 +65,7 @@ const inputFields = collectInputFields();
 
 describe('tool-policies.json relaxedFields ↔ input schemas', () => {
   it('the census is non-empty (the checks can fail)', () => {
-    const withRelaxed = Object.values(policies).filter((p) => p.relaxedFields?.length);
+    const withRelaxed = Object.values(policies).filter((p) => (p.relaxedFields?.length ?? 0) > 0);
     expect(inputFields.size).toBeGreaterThan(0);
     expect(withRelaxed.length).toBeGreaterThan(0);
   });

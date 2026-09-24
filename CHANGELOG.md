@@ -15,6 +15,8 @@ considered and left alone; readers scanning only for the standard headings lose 
 
 ## [Unreleased]
 
+## [0.22.1] - 2026-09-24
+
 ### Fixed
 
 - **`update_run` refused recommendations and analysis that quote code; `preview_update_run` had
