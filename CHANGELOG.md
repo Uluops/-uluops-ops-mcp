@@ -15,6 +15,15 @@ considered and left alone; readers scanning only for the standard headings lose 
 
 ## [Unreleased]
 
+### Fixed
+
+- **Correction to the 0.22.0 entry** (docs only, no code change): it says a disabled server
+  without `update_status` in the gated set "could still re-status every issue in one call". The
+  MCP schema was uncapped, but both `@uluops/ops-sdk` and the API cap a bulk status update at 100
+  issues per call (`ops-sdk` `operations/issues.ts`; API `issue-controller.ts`). The gating
+  decision stands — it is the same bulk operation as `bulk_update_status` — but the reach per call
+  was 100, not "every issue".
+
 ## [0.22.0] - 2026-09-24
 
 Confirmation-and-org-provenance spec v0.2.0 (`uluops-specifications`,
