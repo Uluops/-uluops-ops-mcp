@@ -15,6 +15,21 @@ considered and left alone; readers scanning only for the standard headings lose 
 
 ## [Unreleased]
 
+## [0.22.2] - 2026-09-24
+
+### Changed
+
+- **mcp-secure-server `0.0.24-security` → `0.0.25-security` (exact pin).** Behaviour change in
+  the security layer this server runs on: every call-shaped Layer 2 pattern (a function name
+  followed by `(` — `exec(`, `eval(`, `sleep(`, `require(`, `getattr(`, CSS `expression(` …, 20 in
+  all) is now anchored against word suffixes, so text like `codeexec(` or `malfunction(` in a
+  NON-relaxed field is no longer refused as an injection, while a real `exec(` still is. The
+  anchor is a letter lookbehind, not `\b`, so digit-prefixed payloads (`/*!50000SLEEP(5)*/`) stay
+  detected. Verified over stdio against a dead API port: `codeexec(` in `update_run.project`
+  passed the security layer (blocked under 0.0.24); `exec(` in the same field is still blocked.
+  Lockfile re-resolved against registry.npmjs.org after Verdaccio validation (host scan clean;
+  tarball URL 200, nonexistent-version control 404).
+
 ## [0.22.1] - 2026-09-24
 
 ### Fixed
