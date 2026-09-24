@@ -3,12 +3,12 @@
   "tools": {
     "save_run": {
       "level": "STORAGE",
-      "relaxedFields": ["description", "title", "recommendations", "file_path", "raw_markdown"],
+      "relaxedFields": ["description", "title", "recommendations", "file_path", "raw_markdown", "analysis_records", "analysis_summary"],
       "description": "Stores validation results - may contain code snippets in markdown"
     },
     "validate_run": {
       "level": "STORAGE",
-      "relaxedFields": ["description", "title", "recommendations", "file_path", "raw_markdown"],
+      "relaxedFields": ["description", "title", "recommendations", "file_path", "analysis_records", "analysis_summary"],
       "description": "Previews validation results - may contain code snippets in markdown"
     },
     "create_issue": {
@@ -53,8 +53,13 @@
     },
     "update_run": {
       "level": "STORAGE",
-      "relaxedFields": ["raw_markdown", "validators"],
-      "description": "Update run metadata - raw_markdown may contain code snippets"
+      "relaxedFields": ["description", "title", "recommendations", "file_path", "raw_markdown", "analysis_records", "analysis_summary"],
+      "description": "Update run metadata and add recommendations/analysis post-hoc - same content class as save_run (may quote code)"
+    },
+    "preview_update_run": {
+      "level": "STORAGE",
+      "relaxedFields": ["title", "recommendations", "raw_markdown", "analysis_records", "analysis_summary"],
+      "description": "Read-only preview of an update_run analysis write - must be refused exactly when update_run would be"
     },
     "soft_delete_project": {
       "level": "STORAGE",
