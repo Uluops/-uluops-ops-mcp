@@ -15,6 +15,88 @@ considered and left alone; readers scanning only for the standard headings lose 
 
 ## [Unreleased]
 
+## [0.22.0] - 2026-09-24
+
+Confirmation-and-org-provenance spec v0.2.0 (`uluops-specifications`,
+`specs/packages/-uluops-ops-mcp/drafts/`). Every confirmation this server checks is a value the
+model typed, and the model reads text other tracker users wrote (circumvention run #9 A1,
+confirmed by falsification run #12). This release adds the factors the model cannot supply.
+
+### Added
+
+- **`ULUOPS_ALLOW_DESTRUCTIVE`.** Twelve tools are destructive: `delete_project`,
+  `soft_delete_project`, `delete_run`, `merge_projects`, `rehome_project`, `archive_runs`,
+  `bulk_update_status`, `update_status`, `update_run`, `update_profile`, `merge_issues`,
+  `soft_delete_issue`. `false`/`0` disables all twelve: each returns a terminal
+  `DESTRUCTIVE_NOT_ARMED` (`applied: false`) before org resolution or any request, and logs a
+  warning naming the tool. `update_status` is in the set because it makes the same bulk
+  re-status call as `bulk_update_status` with no array cap — without it a disabled server could
+  still re-status every issue in one call. **Unset = enabled — no behaviour change on upgrade** — and
+  the boot log warns, naming the env; `true`/`1` enables them without the warning. Any other value
+  **refuses to start** (a misspelt `flase` must not read as enabled). Each destructive tool's
+  description ends with one sentence naming the env, because the boot warning goes to stderr and
+  the model never sees it.
+- **`_meta["anthropic/requiresUserInteraction"]` on the five irreversible tools** —
+  `delete_project`, `delete_run`, `merge_projects`, `rehome_project`, `update_profile`. Claude Code
+  documents that such a tool prompts the user directly in every permission mode, over allow rules
+  and `allow` hooks, and is denied in `dontAsk` mode. **This is a behaviour change for Claude Code
+  users:** those five now ask before each call, and headless/`dontAsk` runs can no longer perform
+  them through this server. `update_run`, `bulk_update_status` and `archive_runs` run inside
+  pipelines and deliberately do not carry it. Other hosts may ignore the key.
+- **MCP `annotations` on every tool, by effect.** `readOnlyHint` on reads; `destructiveHint: false`
+  only on writes that purely add (`create_issue`, `create_project`, `add_issue_note`) — MCP's own
+  definition; `destructiveHint: true` on every other write, **gated or not** (`save_run` can reopen
+  issues, `edit_issue`/`update_project`/`update_issue_by_fingerprint`/`undo_issue_status` overwrite,
+  `restore_*` reverse a decision); `idempotentHint: false` on the gated twelve; `openWorldHint:
+  false` everywhere. The label is the effect; the gate is a separate decision — a draft of this
+  release conflated them and labelled every ungated write non-destructive, which an
+  annotation-reading host would have read as "safe" (circumvention-forecaster A8). Every write tool
+  must be classified as gated or ungated; an unclassified one is labelled destructive and fails the
+  parity test. **`tools/list` is no longer byte-identical to 0.21.x** (the 0.21.3 entry's claim
+  holds only up to this release): every tool gains `annotations`, five gain `_meta`, and the
+  twelve gated descriptions gain a sentence naming the env — the five prompted ones a second,
+  telling the model to stop rather than substitute another tool if the call is denied (a host-side
+  denial never reaches this server, so the server's refusal text cannot say it).
+- **Per-call warning while `ULUOPS_ORG_ALLOW` is unset.** Every call that resolves a named org —
+  the call's own org or `rehome_project`'s `target_org` — and is about to reach the API (a call
+  that fails validation is not counted) logs a warning naming the org, its source and the unset
+  allowlist. The boot warning was D15's whole signal; this is the evidence the
+  deferred decision to default the allowlist to personal-only is to be made from.
+
+- **`npm run check:wire`** (in `prepublishOnly`, after `build`) — spawns the built server over stdio
+  and asserts `tools/list` carries the annotations and the five `_meta` flags and that a disabled
+  `delete_run` refuses; `--control` proves the refusal assertion fails against an enabled server.
+  Every unit test mocks `SecureMcpServer`, so this is the only committed check of the wire path.
+- The boot warning lists the gated tools by name, derived from the set, and says which pipeline
+  tools disabling them refuses.
+
+### Why
+
+- **Unset = enabled is a decision, not an oversight** (Alex, 2026-09-24): an env that every
+  registration must add is install friction, and a warning is enough for users and the models
+  reading tool descriptions to learn it exists. The spec's recommendation was the opposite
+  (unset = refused); its changelog keeps that position and the reasoning. Consequence, stated
+  plainly: an unconfigured registration is exactly as exposed to an injected `bulk_update_status`
+  or `update_run` replace as 0.21.4 was. The five `_meta` tools are the part that closes A1 by
+  default, and only under Claude Code.
+
+### Not changed — recorded so the next reader does not re-derive it
+
+- The confirmation VALUES (`confirm`, `confirmation_phrase`) are unchanged; they remain typo
+  guards. No phrase the model can read is a phrase it cannot type.
+- The gate runs inside the handler, after the MCP SDK's protocol-layer `inputSchema` check: a
+  malformed call to a disabled tool gets a validation error, not `DESTRUCTIVE_NOT_ARMED`. Neither
+  reaches the API (verified over stdio against the built server).
+- No response-side injection filter (spec O4 — prose detection is a fence, not a control).
+- **Known gaps, found in review and left open pending decisions** (circumvention-forecaster run on
+  this release): with the env unset, `bulk_update_status`/`update_status` re-status an org with no
+  prompt (A1); each prompted tool has an unprompted substitute — `soft_delete_project`,
+  `archive_runs` + `update_run` replace, pairwise `merge_issues` (A2); an ungated `update_project`
+  rename can relabel what the approval card shows before a `delete_project` (A3); `save_run` can
+  reopen issues in bulk and is ungated (A4); loops of single-issue edits reproduce a bulk change
+  (A5). The requiresUserInteraction behaviour itself is documented by Anthropic and not yet
+  observed in this repo.
+
 ## [0.21.4] - 2026-09-24
 
 ### Fixed

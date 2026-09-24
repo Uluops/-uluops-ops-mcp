@@ -1,6 +1,6 @@
 {
   "name": "@uluops/ops-mcp",
-  "version": "0.21.4",
+  "version": "0.22.0",
   "description": "MCP server for the UluOps tracker API — runs, findings, issues, analytics, the project log and org management",
   "type": "module",
   "main": "dist/index.js",
@@ -37,7 +37,8 @@
     "test:integration": "vitest run test/integration",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
-    "prepublishOnly": "npm run lint && npm test && npm audit --audit-level=high --omit=dev && npm run build"
+    "prepublishOnly": "npm run lint && npm test && npm audit --audit-level=high --omit=dev && npm run build && npm run check:wire",
+    "check:wire": "node scripts/check-wire.mjs"
   },
   "keywords": [
     "mcp",

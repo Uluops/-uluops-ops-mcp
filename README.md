@@ -55,6 +55,11 @@ This exposes the `uluops-ops-mcp` binary on your PATH.
 After upgrading, restart the tracker MCP connection in your host so it loads the
 new server and tool schemas.
 
+To stay on a known version, pin it — `npx -y @uluops/ops-mcp@0.22.0` in the registration, or
+`npm install -g @uluops/ops-mcp@0.22.0`. Rolling back is the same command with the older version
+(then restart the connection). Unpinned `npx -y @uluops/ops-mcp` picks up new releases on its own
+schedule; 0.22.0 changes behaviour (see the CHANGELOG).
+
 ### Agent metrics transport
 
 `save_run`, `validate_run` and `update_run` preserve each agent's `harness` and
@@ -75,6 +80,7 @@ Set environment variables in your MCP host configuration (see "Usage with Claude
 | `ULUOPS_API_KEY` | API authentication key (must start with `ulr_`, min 20 chars). Create and manage keys at [app.uluops.ai/settings/api-keys](https://app.uluops.ai/settings/api-keys) | Yes |
 | `ULUOPS_ORG_SLUG` | Lowest-precedence org default (see *Which org a call lands in*) | No |
 | `ULUOPS_ORG_ALLOW` | Comma-separated orgs this server may EVER target. Unset = unbounded, warned at boot | No (set it) |
+| `ULUOPS_ALLOW_DESTRUCTIVE` | `false`/`0` disables the 12 destructive tools (they refuse with `DESTRUCTIVE_NOT_ARMED` before any request); `true`/`1` enables them and silences the boot warning. Unset = enabled, warned at boot. Any other value refuses to start | No (default: enabled) |
 | `ULUOPS_TRACKER_TIMEOUT` | Request timeout (ms) | No (default: 30000) |
 | `ULUOPS_TRACKER_RETRIES` | Number of retry attempts on failure | No (default: 3) |
 | `ULUOPS_BASE_URL` | Override the backend API base URL (e.g. a local or staging deployment). Non-HTTPS values log a cleartext-credentials warning | No (default: `@uluops/ops-sdk`'s production URL) |
@@ -106,7 +112,8 @@ words; every tool's `org` description says so, every successful result ends with
 so, and `ULUOPS_ORG_ALLOW` bounds what the server will accept regardless: an org outside the list —
 whether it came from the argument, the workspace file or the env — is refused before any request
 with a terminal `ORG_NOT_ALLOWED` that names the list. `personal` is always allowed. Leave it unset
-and every org the key holder belongs to is reachable; the boot log warns. The bound covers **both
+and every org the key holder belongs to is reachable; the boot log warns, and (since 0.22.0) so
+does every call that resolves a named org — the source org and `rehome_project`'s `target_org`. The bound covers **both
 orgs of a two-org call**: `rehome_project`'s `target_org` is checked against the same list before
 any request, so the server can neither read from nor move a project *into* an org the operator
 excluded.
@@ -115,7 +122,7 @@ Five refusals are terminal and say so in the tool result: `INSUFFICIENT_ORG_ROLE
 that org is below `publisher` — do **not** retry without `org`, which changes the requested scope),
 `ORG_ACCESS_DENIED` (not a member, or a bound key), `ORG_NOT_FOUND` and `ORG_SUSPENDED` (the named
 org does not resolve / is suspended — same rule, do not drop `org`), and `PROJECT_REHOMED` (the
-project moved orgs; the result names the org to pass). `ORG_NOT_ALLOWED` is the server-side sixth.
+project moved orgs; the result names the org to pass). `ORG_NOT_ALLOWED` is the server-side sixth, and `DESTRUCTIVE_NOT_ARMED` (the operator set `ULUOPS_ALLOW_DESTRUCTIVE=false`) the seventh.
 
 **Moving a project between orgs** is `rehome_project` — the member path of the spec's §4.1. Two
 arguments name two orgs and both the description and the `org` field's own schema text say which
@@ -486,15 +493,40 @@ bare `-32602 not found`.)
   stderr line — and every occurrence in a message, not just the first. (Complete since 0.21.1;
   earlier versions matched a narrower key shape and redacted only the first match.)
 - **Destructive calls refuse before sending.** `delete_run` requires `confirm: true` as a literal —
-  `false` or a missing value is rejected by the schema and nothing reaches the API. Note that the
-  confirmation is supplied by the model making the call; it guards against mistakes, not against
-  a model that has been instructed to delete.
+  `false` or a missing value is rejected by the schema and nothing reaches the API. The
+  confirmation is supplied by the model making the call, so on its own it guards against mistakes,
+  not against a model that has been instructed to delete — which is what the next two controls are for.
+- **Destructive tools: on by default, switchable off; five ask a person in Claude Code.**
+  **The default protects less than this heading might suggest — read the whole entry.**
+  - *The switch.* Twelve tools are gated: `delete_project`, `soft_delete_project`, `delete_run`,
+    `merge_projects`, `rehome_project`, `archive_runs`, `bulk_update_status`, `update_status`,
+    `update_run`, `update_profile`, `merge_issues`, `soft_delete_issue`. They are **enabled unless you
+    set** `ULUOPS_ALLOW_DESTRUCTIVE=false` in the registration — an environment value the model has
+    no way to set. Each refusal is logged as a warning. Disabling them also refuses pipelines that
+    use `update_status`, `bulk_update_status`, `update_run` or `archive_runs`.
+  - *What the switch does not cover.* It gates those twelve names, not every way to change data.
+    `save_run` (which can reopen issues), `edit_issue`, `update_project` (rename),
+    `update_issue_by_fingerprint`, `undo_issue_status` and `restore_*` stay available when disabled,
+    one record per call. They are labelled `destructiveHint: true`; only `create_issue`,
+    `create_project` and `add_issue_note`, which only add, are labelled non-destructive.
+  - *The prompt.* `delete_project`, `delete_run`, `merge_projects`, `rehome_project` and
+    `update_profile` carry `_meta["anthropic/requiresUserInteraction"]`. Per Claude Code's
+    documentation that makes it ask you before each call in every permission mode, and refuse the
+    call in `dontAsk`/headless runs — which this server cannot see: a host-side denial never reaches
+    it, so if a pipeline "can't delete", look at the host's output, not this server's log. The
+    behaviour is documented by Anthropic and not yet observed in this repo's tests. Other MCP hosts
+    may ignore the key. The five are chosen as the operations this release treats as irreversible;
+    whether the other seven are reversible at the API is not yet verified.
+  - *Unset means exposed.* With the env unset, the seven gated tools that do not prompt —
+    including `bulk_update_status` and `update_status` — are exactly as reachable by an injected
+    instruction as in 0.21.4.
 - **Tracker content is untrusted.** Every successful tool result and resource read ends with a
   notice that the data was written by tracker users. Project names, issue text and descriptions
   are data, never instructions — and an `org` is never taken from them (see
   [Which org a call lands in](#which-org-a-call-lands-in)).
 - **Org scope is explicit.** `ULUOPS_ORG_ALLOW` restricts which orgs a call may target, and every
-  call logs the org it landed in.
+  call logs the org it *requested* (explicit, workspace, env or omitted). The log does not prove where
+  a write landed — the result's `effectiveContext` block is the server's own answer to that.
 
 ## Development
 

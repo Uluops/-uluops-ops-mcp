@@ -5,6 +5,7 @@
 import type { OpsClient } from '@uluops/ops-sdk';
 import type { McpServerToolRegistration } from '../types/index.js';
 import { withOrgArgument } from '../utils/org-scope.js';
+import { withDestructiveGate } from '../utils/destructive-gate.js';
 
 // P0 Core Tools
 import { registerSaveRunTool } from './save-run.js';
@@ -84,7 +85,9 @@ export function registerAllTools(
 ): void {
   // Every tool advertises `org` and the D2 sentence (spec §3.3); the handler
   // side of the same seam is in utils/tool-handler.ts.
-  const server = withOrgArgument(rawServer);
+  // The D2 destructive set is gated and labelled here, once (spec v0.2.0 D1/D2);
+  // the gate's sentence lands before the org sentence withOrgArgument appends.
+  const server = withDestructiveGate(withOrgArgument(rawServer));
   // P0 Core tools
   registerSaveRunTool(server, opsClient);
   registerQueryIssuesTool(server, opsClient);

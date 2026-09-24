@@ -4,7 +4,7 @@
  * Loads configuration from environment variables with sensible defaults.
  */
 
-import type { UluopsTrackerConfig, LogLevel } from '../types/index.js';
+import type { UluopsTrackerConfig, LogLevel, DestructiveMode } from '../types/index.js';
 
 const DEFAULT_TIMEOUT = 30000;
 const DEFAULT_RETRIES = 3;
@@ -74,6 +74,25 @@ export function parseOrgAllow(raw: string | undefined): string[] | undefined {
 }
 
 /**
+ * `ULUOPS_ALLOW_DESTRUCTIVE` — spec v0.2.0 D1. Unset or empty → `default`
+ * (armed, and the boot log says how to disarm); `true`/`1` → `armed`;
+ * `false`/`0` → `disarmed`. Anything else REFUSES TO START, for the same
+ * reason as `parseOrgAllow`: a typo in a disarm (`flase`) that silently
+ * read as armed would leave the operator believing the gate is shut.
+ *
+ * @param raw - The raw `ULUOPS_ALLOW_DESTRUCTIVE` value
+ * @returns The resolved mode
+ * @throws Error naming the value and the accepted spellings
+ */
+export function parseAllowDestructive(raw: string | undefined): DestructiveMode {
+  const v = raw?.trim().toLowerCase();
+  if (v === undefined || v === '') return 'default';
+  if (v === 'true' || v === '1') return 'armed';
+  if (v === 'false' || v === '0') return 'disarmed';
+  throw new Error(`ULUOPS_ALLOW_DESTRUCTIVE must be true, false, 1 or 0 (got ${JSON.stringify(raw)})`);
+}
+
+/**
  * Load configuration from environment variables.
  *
  * @returns Object with `config` and `warnings` (deprecation messages for deferred logging)
@@ -96,6 +115,7 @@ export function loadConfig(): { config: UluopsTrackerConfig; warnings: string[] 
       apiKey,
       orgSlug,
       ...(orgAllow !== undefined ? { orgAllow } : {}),
+      destructive: parseAllowDestructive(process.env['ULUOPS_ALLOW_DESTRUCTIVE']),
       timeout: parseInteger(process.env['ULUOPS_TRACKER_TIMEOUT'], DEFAULT_TIMEOUT),
       retries: parseInteger(process.env['ULUOPS_TRACKER_RETRIES'], DEFAULT_RETRIES),
     },

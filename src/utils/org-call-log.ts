@@ -121,6 +121,38 @@ export function isOrgAllowed(org: string | undefined): boolean {
 }
 
 /**
+ * Spec v0.2.0 D4 — while `ULUOPS_ORG_ALLOW` is unset, every call that resolves
+ * a non-personal org (the `org` argument, the workspace file, the env, or
+ * `rehome_project`'s `target_org`) says so, per call. The boot warning was the
+ * whole of D15's signal; this is the evidence the later "unset = personal only"
+ * decision is to be made from. Its own sink, not a field on the org record:
+ * the record is emitted before a target org is known, and one call must not
+ * produce two provenance records.
+ */
+export interface UnboundedOrgWarning {
+  tool: string;
+  org: string;
+  /** `org` = the call's resolved org; `target` = a second org named in the body. */
+  role: 'org' | 'target';
+  orgSource: string;
+}
+export type UnboundedOrgSink = (w: UnboundedOrgWarning) => void;
+const defaultUnboundedOrgSink: UnboundedOrgSink = (w) => {
+  process.stderr.write(
+    `[mcp-tool-org] WARN tool=${w.tool} ${w.role}=${w.org} source=${w.orgSource} — ULUOPS_ORG_ALLOW is unset, so nothing bounds this org\n`
+  );
+};
+let unboundedOrgSink: UnboundedOrgSink = defaultUnboundedOrgSink;
+export function setUnboundedOrgSink(sink: UnboundedOrgSink | undefined): void {
+  unboundedOrgSink = sink ?? defaultUnboundedOrgSink;
+}
+/** Emit D4's warning when the allowlist is unset and `org` names an org; no-op otherwise. */
+export function warnIfUnbounded(tool: string, org: string | undefined, role: 'org' | 'target', orgSource: string): void {
+  if (orgAllowlist !== undefined || org === undefined || org === 'personal') return;
+  unboundedOrgSink({ tool, org, role, orgSource });
+}
+
+/**
  * D16 — appended as the last content block of every successful response.
  * Advisory by nature (a fence is not a control — recorded as such in the
  * spec); it exists because tool results carry text written by other tracker

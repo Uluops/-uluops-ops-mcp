@@ -8,6 +8,7 @@
 // Configuration types
 export type {
   LogLevel,
+  DestructiveMode,
   ApiClientConfig,
   SecurityConfig,
   UluopsTrackerConfig,

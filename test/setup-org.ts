@@ -26,3 +26,10 @@ vi.mock('@uluops/ops-sdk', async (importOriginal) => {
 // tests (org-scope.test.ts installs its own sink to assert on the records).
 import { setOrgCallSink } from '../src/utils/org-call-log.js';
 setOrgCallSink(() => {});
+// Same for spec v0.2.0 D4's per-call unbounded-org warning (org-scope.test.ts
+// and destructive-gate.test.ts install their own sink to assert on it).
+import { setUnboundedOrgSink } from '../src/utils/org-call-log.js';
+setUnboundedOrgSink(() => {});
+// And the arm-to-destroy refusal trace (destructive-gate.test.ts asserts on it).
+import { setDestructiveRefusalSink } from '../src/utils/destructive-gate.js';
+setDestructiveRefusalSink(() => {});

@@ -11,7 +11,7 @@ import { mapSdkErrorToMcp, mapSdkResponseShapeErrorToMcp, mapZodErrorToMcp, reda
 import { ORG_ARG_NAME } from './org-scope.js';
 import { normalizeKeys } from './normalize-keys.js';
 import { createSuccessResponse, type McpToolResponse } from '../types/index.js';
-import { emitOrgCall, formatOrgEcho, getOrgAllowlist, isOrgAllowed, UNTRUSTED_CONTENT_NOTICE, type OrgCallRecord } from './org-call-log.js';
+import { emitOrgCall, formatOrgEcho, getOrgAllowlist, isOrgAllowed, warnIfUnbounded, UNTRUSTED_CONTENT_NOTICE, type OrgCallRecord } from './org-call-log.js';
 
 
 /**
@@ -245,6 +245,11 @@ export function createToolHandler<TInput>(
           });
         }
       }
+      // D4 warns only for calls about to reach the API (code audit F3): a call
+      // that fails Zod or short-circuits in preProcess never used the org, and
+      // counting it would inflate the evidence the deferred flip is decided on.
+      warnIfUnbounded(orgRecord.tool, resolved.org, 'org', resolved.source);
+      if (orgRecord.targetOrg !== undefined) warnIfUnbounded(orgRecord.tool, orgRecord.targetOrg, 'target', 'body');
       const result = await sdkCall(normalized, scope);
       const envelope = isResponseContextEnvelope(result) ? result : { data: result, context: null };
       const response = createSuccessResponse(envelope.data);

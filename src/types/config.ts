@@ -4,6 +4,9 @@
 
 export type LogLevel = 'debug' | 'info' | 'warn' | 'error';
 
+/** Resolved `ULUOPS_ALLOW_DESTRUCTIVE`: `default` (unset → armed, warned), `armed`, `disarmed`. */
+export type DestructiveMode = 'default' | 'armed' | 'disarmed';
+
 export interface ApiClientConfig {
   /**
    * Base URL for the UluOps Platform API. Optional — when undefined, the
@@ -22,6 +25,13 @@ export interface ApiClientConfig {
    * `personal` is always allowed. Bounds, never defaults: D13 stands.
    */
   orgAllow?: string[];
+  /**
+   * `ULUOPS_ALLOW_DESTRUCTIVE` (confirmation-and-org-provenance spec v0.2.0, D1).
+   * `default` = unset = armed with a boot warning (Alex's call: no install
+   * friction); `armed` = explicitly `true`/`1`, no warning; `disarmed` =
+   * `false`/`0`, the destructive set refuses before any SDK call.
+   */
+  destructive: DestructiveMode;
   /** Request timeout in milliseconds (default: 30000) */
   timeout: number;
   /** Number of retry attempts (default: 3) */

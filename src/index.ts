@@ -16,7 +16,8 @@ import { toolRegistry } from './config/tool-registry.js';
 import { registerAllTools } from './tools/index.js';
 import { registerAllResources } from './resources/index.js';
 import { createLogger } from './utils/logger.js';
-import { setOrgCallSink, setOrgAllowlist } from './utils/org-call-log.js';
+import { setOrgCallSink, setOrgAllowlist, setUnboundedOrgSink } from './utils/org-call-log.js';
+import { setDestructiveMode, setDestructiveRefusalSink, toolRegistrationConfig, DESTRUCTIVE_ENV, DESTRUCTIVE_TOOLS } from './utils/destructive-gate.js';
 import type { Logger } from './utils/logger.js';
 import type { McpServerToolRegistration, ToolHandler } from './types/index.js';
 import type { ZodRawShape } from 'zod';
@@ -213,6 +214,9 @@ async function main(): Promise<void> {
 
   setOrgCallSink((record) => { logger.info('tool call org', { ...record }); });
 
+  // Spec v0.2.0 D4: per-call warning while ULUOPS_ORG_ALLOW is unset.
+  setUnboundedOrgSink((w) => { logger.warn('tool call org is unbounded: ULUOPS_ORG_ALLOW is unset', { ...w }); });
+
   // D15: bound the orgs this process may ever target. Unset = unbounded, and
 
   // that is worth a warning every boot — the key is unbound and the `org`
@@ -225,6 +229,15 @@ async function main(): Promise<void> {
 
     logger.warn('ULUOPS_ORG_ALLOW is not set: this server may target ANY org the key holder is a member of (D15). Set it in the registration to bound that.');
 
+  }
+
+  // Spec v0.2.0 D1: destructive tools are armed unless the operator disarms
+  // them. Unset is warned every boot, like the allowlist above; an explicit
+  // `true` is a choice and is not.
+  setDestructiveMode(config.api.destructive);
+  setDestructiveRefusalSink((tool) => { logger.warn('destructive tool refused: disabled by operator', { tool, code: 'DESTRUCTIVE_NOT_ARMED' }); });
+  if (config.api.destructive === 'default') {
+    logger.warn(`${DESTRUCTIVE_ENV} is not set: these destructive tools are enabled — ${[...DESTRUCTIVE_TOOLS].join(', ')}. Set ${DESTRUCTIVE_ENV}=false in the registration to disable them (pipelines that use update_status / bulk_update_status / update_run / archive_runs will then be refused), or =true to silence this warning.`);
   }
 
   logger.info('Starting @uluops/ops-mcp server', {
@@ -240,6 +253,8 @@ async function main(): Promise<void> {
     orgSource: orgDefault.source,
 
     orgAllow: config.api.orgAllow === undefined ? '(unbounded)' : config.api.orgAllow.join(','),
+
+    destructive: config.api.destructive,
 
     ...(orgDefault.path !== undefined ? { orgFile: orgDefault.path } : {}),
 
@@ -286,9 +301,13 @@ async function main(): Promise<void> {
       registeredToolNames.push(name);
       // registerTool(), the SDK's current API (tool() is @deprecated). Same
       // registration: description + raw Zod shape as inputSchema; SecureMcpServer
-      // wraps the handler for Layer 5 exactly as it does for tool(). The
-      // advertised tools/list is byte-identical to the tool() form (checked).
-      server.registerTool(name, { description, inputSchema: schema }, handler);
+      // wraps the handler for Layer 5 exactly as it does for tool(). Through
+      // 0.21.x the advertised tools/list was byte-identical to the tool() form;
+      // since 0.22.0 it is not — `config` also carries annotations (spec v0.2.1
+      // D3, derived from the tool registry) and, for five tools, `_meta` (D5).
+      // SecureMcpServer passes `config` through unchanged; tools-wire.test.ts
+      // guards that path against the built server.
+      server.registerTool(name, toolRegistrationConfig(name, description, schema), handler);
     },
   };
   registerAllTools(recordingServer, opsClient);

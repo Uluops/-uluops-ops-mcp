@@ -123,6 +123,43 @@ describe('Main Entry Point', () => {
     vi.restoreAllMocks();
   });
 
+  describe('ULUOPS_ALLOW_DESTRUCTIVE boot handling (spec v0.2.0 D1)', () => {
+    const api = mockConfig.api as Record<string, unknown>;
+    afterEach(() => { delete api['destructive']; });
+    const destructiveWarned = (): boolean =>
+      mockLoggerInstance.warn.mock.calls.some((c) => String(c[0]).includes('ULUOPS_ALLOW_DESTRUCTIVE is not set'));
+
+    it('unset (default): warns at boot and says how to disable; the mode is in the start record', async () => {
+      api['destructive'] = 'default';
+      const { main } = await import('../index.js');
+      await main();
+      expect(destructiveWarned()).toBe(true);
+      expect(mockLoggerInstance.info).toHaveBeenCalledWith(
+        'Starting @uluops/ops-mcp server',
+        expect.objectContaining({ destructive: 'default' }),
+      );
+    });
+
+    it('control: explicitly armed or disarmed does not warn', async () => {
+      for (const m of ['armed', 'disarmed']) {
+        mockLoggerInstance.warn.mockClear();
+        api['destructive'] = m;
+        vi.resetModules();
+        const { main } = await import('../index.js');
+        await main();
+        expect(destructiveWarned(), m).toBe(false);
+      }
+    });
+
+    it('the mode reaches the gate', async () => {
+      api['destructive'] = 'disarmed';
+      const { main } = await import('../index.js');
+      await main();
+      const { getDestructiveMode } = await import('../utils/destructive-gate.js');
+      expect(getDestructiveMode()).toBe('disarmed');
+    });
+  });
+
   describe('main() function', () => {
     it('should execute full startup sequence', async () => {
       const { main } = await import('../index.js');
