@@ -17,6 +17,34 @@ considered and left alone; readers scanning only for the standard headings lose 
 
 ### Fixed
 
+- **`update_run` refused recommendations and analysis that quote code; `preview_update_run` had
+  no security policy at all.** `tool-policies.json` gave `update_run` `relaxedFields:
+  ["raw_markdown", "validators"]` — `validators` is a field `update_run` no longer accepts, and
+  `recommendations` (the same array `save_run` relaxes) was missing, so its text went through
+  mcp-secure-server's ALWAYS_CHECK patterns. Observed 2026-09-24: an `update_run` filing a
+  security finding that quoted an `exec(` call was refused with "Command injection detected: Exec
+  Call". `preview_update_run` had no entry and fell to `defaultLevel: QUERY`, so the documented
+  preview-first workflow was refused on payloads its write would accept. Now:
+  - `update_run` relaxes what `save_run` relaxes (`description`, `title`, `recommendations`,
+    `file_path`, `raw_markdown`) plus `analysis_records` / `analysis_summary`; stale `validators`
+    removed.
+  - `preview_update_run` gets a STORAGE policy mirroring `update_run` over the fields it accepts.
+  - `validate_run`'s stale `raw_markdown` removed (it does not accept that field).
+  - **Behaviour change, judgment call:** `analysis_records` and `analysis_summary` are now relaxed
+    on `save_run`, `validate_run`, `update_run` and `preview_update_run`. They were never relaxed,
+    but they carry the same content class as `recommendations` — agent prose that quotes the code
+    it analyses — and a record describing an `exec(` call site was as unstorable as a
+    recommendation. Relaxed fields are not pattern-scanned by mcp-secure-server (its documented
+    escape hatch); non-relaxed fields on these tools are still scanned.
+  - New test `tool-policy-fields.test.ts` binds `tool-policies.json` to the Zod input shapes:
+    every `relaxedFields` entry must name a field its tool accepts at some depth (mcp-secure-server
+    matches relaxed names against any path segment, so nested `recommendations[].description`
+    counts), and each dry-run/preview tool (`validate_run`, `preview_update_run`) and `update_run`
+    must match its source tool's level and relaxations. It failed against the prior policy on all
+    four gaps. Verified end to end against mcp-secure-server's Layer 2: the prior policy blocked all
+    three quoting payloads with the observed message; the new one admits them, and `exec(` in the
+    non-relaxed `project` field is still blocked (control).
+
 - **Correction to the 0.22.0 entry** (docs only, no code change): it says a disabled server
   without `update_status` in the gated set "could still re-status every issue in one call". The
   MCP schema was uncapped, but both `@uluops/ops-sdk` and the API cap a bulk status update at 100
