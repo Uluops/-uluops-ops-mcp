@@ -513,9 +513,13 @@ bare `-32602 not found`.)
     `update_profile` carry `_meta["anthropic/requiresUserInteraction"]`. Per Claude Code's
     documentation that makes it ask you before each call in every permission mode, and refuse the
     call in `dontAsk`/headless runs — which this server cannot see: a host-side denial never reaches
-    it, so if a pipeline "can't delete", look at the host's output, not this server's log. The
-    behaviour is documented by Anthropic and not yet observed in this repo's tests. Other MCP hosts
-    may ignore the key. The five are chosen as the operations this release treats as irreversible;
+    it, so if a pipeline "can't delete", look at the host's output, not this server's log.
+    Observed 2026-09-24 against this release on Claude Code 2.1.280, headless: `delete_run` was
+    denied in `dontAsk` mode despite an explicit allow rule, and in `bypassPermissions` mode, while
+    `archive_runs` and `get_project` under the same settings reached the server. The interactive
+    prompt in default mode is documented, not yet observed here. Claude Code's denial text tells
+    the model it *may* try other tools for the same goal; these five tools' descriptions tell it
+    not to. Other MCP hosts may ignore the key. The five are chosen as the operations this release treats as irreversible;
     whether the other seven are reversible at the API is not yet verified.
   - *Unset means exposed.* With the env unset, the seven gated tools that do not prompt —
     including `bulk_update_status` and `update_status` — are exactly as reachable by an injected

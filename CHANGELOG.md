@@ -23,6 +23,13 @@ considered and left alone; readers scanning only for the standard headings lose 
   issues per call (`ops-sdk` `operations/issues.ts`; API `issue-controller.ts`). The gating
   decision stands — it is the same bulk operation as `bulk_update_status` — but the reach per call
   was 100, not "every issue".
+- **The `requiresUserInteraction` behaviour is now observed, not just documented** (docs only).
+  Headless probes against the published 0.22.0 on Claude Code 2.1.280: `delete_run` denied by the
+  host in `dontAsk` mode despite an explicit allow rule, and in `bypassPermissions` mode; controls
+  without `_meta` (`archive_runs`, `get_project`) reached the server under identical settings. The
+  interactive default-mode prompt remains documented-only. Claude Code's denial message tells the
+  model it may use other tools for the same goal — the description sentence on the five is the
+  only counterweight, which raises the priority of gating their unprompted substitutes (spec v0.3.0).
 
 ## [0.22.0] - 2026-09-24
 
