@@ -286,7 +286,7 @@ get_log_stat({ project: "my-project" })
 
 // Analytics and the failure taxonomy
 get_taxonomy({})
-get_burndown({ project: "my-project" })
+get_burndown({ project: "my-project", granularity: "weekly" })
 
 // Reading structured analysis back — summaries per run, records across runs
 get_project_analysis({ project: "my-project", agent_name: "nietzsche-analyst" })
@@ -583,3 +583,10 @@ MIT
 ## Quality metric contracts (F04)
 
 Analytics and lifecycle descriptions distinguish `scoreThresholdPassRate` (legacy alias `passRate`) from gate outcomes. Read denominator, threshold and raw-unscaled score metadata before interpreting the percentage. Requires the F04-tolerant Ops SDK to retain metadata from upgraded producers.
+
+Weekly burndown returns the final available stock snapshot per UTC ISO week,
+with clipped interval boundaries and partial flags. The point date is the
+snapshot date; daily counts are never summed. `asOf` identifies the observation
+time and the current day is partial. Trend diagnostics remain based on daily
+samples, so average daily change keeps issues/day units. Metadata requires the
+upgraded API; older servers remain readable without it.
