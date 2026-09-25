@@ -15,9 +15,11 @@ considered and left alone; readers scanning only for the standard headings lose 
 
 ## [Unreleased]
 
+## [0.22.4] - 2026-09-25
+
 ### Fixed
 
-- F06: Document weekly ending-stock snapshots, UTC bucket metadata and daily trend units; consume the SDK that preserves aggregation metadata.
+- F06: Document weekly ending-stock snapshots, UTC bucket metadata and daily trend units; consume SDK 6.7.2, which preserves aggregation metadata and forwards discovery day/week/month selection correctly.
 
 ## [0.22.3] - 2026-09-24
 
