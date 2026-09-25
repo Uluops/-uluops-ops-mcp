@@ -22,7 +22,7 @@ export function registerGetAgentLifecycleTool(
 ): void {
   server.tool(
     'get_agent_lifecycle',
-    'Get version lifecycle trajectory for an agent. Shows performance per definition version, ordered chronologically.',
+    'Get version lifecycle trajectory for an agent. Shows performance per definition version, ordered chronologically. scoreThresholdPassRate (legacy alias passRate) is the percent of scored runs meeting the reported raw-score threshold, not a gate pass rate; metadata states its denominator and unnormalized scale.',
     GetAgentLifecycleInputSchema.shape,
     createToolHandler(
       GetAgentLifecycleInputSchema,

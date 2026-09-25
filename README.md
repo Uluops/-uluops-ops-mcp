@@ -579,3 +579,7 @@ These contracts require Tracker API 2.1.1 or newer. The agent matrix distinguish
 ## License
 
 MIT
+
+## Quality metric contracts (F04)
+
+Analytics and lifecycle descriptions distinguish `scoreThresholdPassRate` (legacy alias `passRate`) from gate outcomes. Read denominator, threshold and raw-unscaled score metadata before interpreting the percentage. Requires the F04-tolerant Ops SDK to retain metadata from upgraded producers.

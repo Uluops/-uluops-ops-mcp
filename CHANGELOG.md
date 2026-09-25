@@ -15,6 +15,13 @@ considered and left alone; readers scanning only for the standard headings lose 
 
 ## [Unreleased]
 
+## [0.22.3] - 2026-09-24
+
+### Changed
+
+- Preserve score-threshold metadata for agent performance and lifecycle: raw-score threshold, scored-run denominator and percentage units. `passRate` remains the compatibility alias; this metric does not establish a gate outcome.
+
+
 ## [0.22.2] - 2026-09-24
 
 ### Changed
