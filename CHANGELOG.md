@@ -15,10 +15,14 @@ considered and left alone; readers scanning only for the standard headings lose 
 
 ## [Unreleased]
 
+
+
+
+## [0.23.0] - 2026-09-25
+
 ### Added
 
 - F12: opt-in `coverage-v1` pricing with nullable priced cost, run/snapshot/token coverage and separately labeled explicit estimates. Preserve legacy cost defaults; unsupported identities never enter priced buckets under the new contract.
-
 
 ## [0.22.4] - 2026-09-25
 
