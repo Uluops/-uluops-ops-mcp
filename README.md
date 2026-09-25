@@ -590,3 +590,34 @@ snapshot date; daily counts are never summed. `asOf` identifies the observation
 time and the current day is partial. Trend diagnostics remain based on daily
 samples, so average daily change keeps issues/day units. Metadata requires the
 upgraded API; older servers remain readable without it.
+
+### F12 pricing coverage (opt-in)
+
+`coverage-v1` separates supported model pricing from unpriced observations.
+`pricedCost` is in microdollars and is null when no snapshots have a supported
+model; a supported zero-token snapshot costs zero. `pricedCostDisplay` preserves
+the existing dollar formatting. Estimates never contribute to priced totals.
+
+Run coverage partitions distinct runs: a run is fully priced only if every
+snapshot in that population has a supported model. A mixed run counts once as
+unpriced but retains its priced snapshots' cost. Snapshot and token counts also
+partition independently; coverage values are ratios, or null for an empty
+denominator. Group run counts can overlap across groups.
+
+The configured table supports `haiku`, `sonnet`, `opus`, `claude-3-<tier>`, and
+their dated IDs (`20240307` for Haiku, `20240229` for Sonnet/Opus). Whitespace and
+case normalize for lookup; output retains the original identity. Other IDs,
+including newer and provider-prefixed models, remain unpriced pending an explicit
+rate-table review. The table was last verified on 2025-03-27; its source/date are
+returned. This is model-rate coverage, not verified billing or complete token
+telemetry: null token fields retain legacy zero handling.
+
+Legacy cost defaults remain unchanged. Removal requires a separately authorized
+next major and at least 90 days' notice after supported consumers are available.
+
+```json
+{"metric":"cost_analysis","pricing_contract":"coverage-v1","org":"ulu-labs"}
+```
+Use the explicit selector for cost coverage. Add `estimate_model:"sonnet"` only
+when an estimate is desired. The SDK negotiates server support and refuses an
+unsupported contract instead of silently returning legacy Sonnet fallback.
