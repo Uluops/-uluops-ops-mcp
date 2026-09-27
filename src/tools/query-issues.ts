@@ -1,3 +1,4 @@
+import { DiscoveryPageShape, useDiscoveryPage } from '../utils/discovery-page.js';
 /**
  * query_issues tool
  *
@@ -16,7 +17,11 @@ import {
 import { createToolHandler } from '../utils/tool-handler.js';
 
 export const QueryIssuesInputSchema = z.object({
+  ...DiscoveryPageShape,
+  sort_by: z.enum(['createdAt', 'priority']).optional(),
+  sort_order: z.enum(['asc', 'desc']).optional(),
   project: z.string().min(1),
+  offset: z.number().int().min(0).max(Number.MAX_SAFE_INTEGER).optional(),
   workflow_type: z.string().optional(),
   status: IssueStatusFilterSchema.default('open'),
   priority: PriorityFilterSchema.default('all'),
@@ -45,26 +50,16 @@ export function registerQueryIssuesTool(
     QueryIssuesInputSchema.shape,
     createToolHandler(QueryIssuesInputSchema, (n, scope) => {
       const project = n.project as string;
-      // Explicitly pick SDK-compatible fields to avoid passing extra MCP-only fields.
-      //
-      // `failureMode` was declared in this tool's input schema but MISSING from
-      // this list, so the tool accepted `failure_mode` and then silently dropped
-      // it — `query_issues(failure_mode: 'ZZZ')` returned rows whose modes were
-      // INC/COM/COH. `failure_domain` was present and worked, which made the
-      // asymmetry easy to miss. Tracker `1658dafd`.
-      //
-      // Note the SDK's `ListProjectIssuesQuery` type still omits `failureMode`
-      // (its `Issue` type has it). That is a DX gap, not a functional one: this
-      // object is `Record<string, unknown>` and the SDK's `buildIssueListParams`
-      // is a bare `toApiQuery(query)` camelCase->snake_case conversion with no
-      // allowlist, so the key reaches the wire regardless. Adding it to the SDK
-      // type needs a publish + pin bump and is tracked separately.
       const query: Record<string, unknown> = {};
       for (const key of [
         'status', 'priority', 'severity', 'failureDomain', 'failureMode', 'agent',
         'includeResolved', 'minTimesSeen', 'limit', 'offset', 'dateStart', 'dateEnd',
+        'workflowType', 'classified',
       ]) {
         if (n[key] !== undefined) query[key] = n[key];
+      }
+      if (useDiscoveryPage(n)) {
+        return opsClient.discovery.queryIssues(project, n, scope);
       }
       return opsClient.projects.listIssues(project, query, scope);
     }, { toolName: 'query_issues' })

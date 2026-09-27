@@ -621,3 +621,99 @@ next major and at least 90 days' notice after supported consumers are available.
 Use the explicit selector for cost coverage. Add `estimate_model:"sonnet"` only
 when an estimate is desired. The SDK negotiates server support and refuses an
 unsupported contract instead of silently returning legacy Sonnet fallback.
+
+
+## Discovery pages (F15 / page-v1)
+
+Authenticated `GET /api/v1/capabilities` advertises `contracts.discovery: ["page-v1"]`.
+Select `format=page` on the endpoints below to receive
+`{data,total,count,limit,offset,hasMore}`. `count` is the number on this page;
+`total` counts the same authorized and filtered dataset. `hasMore` is
+`offset + data.length < total`. SDK/MCP omit the redundant `count`.
+
+Defaults are limit 50 and offset 0; limit must be an integer 1–100 and offset
+an integer 0–9007199254740991. Malformed, fractional, negative or unsafe values
+are rejected rather than truncated. An offset at or past the total returns an
+empty page and `hasMore=false`. Exhaustive offset traversal is guaranteed for
+a fixed dataset; concurrent writes are not snapshot-isolated.
+
+| Endpoint | Additional controls | Default order |
+|---|---|---|
+| `/projects` | `search`, `sortBy=name/createdAt`, `sortOrder=asc/desc` | name asc, id asc |
+| `/projects/:id/issues` | `workflowType`, `classified`, `sortBy=createdAt/priority`, `sortOrder` | priority asc, createdAt desc, id asc |
+| `/issues/search` | `offset`, `sortBy=createdAt/priority`, `sortOrder` | relevance desc, timesSeen desc, id asc; wildcard uses timesSeen desc, updatedAt desc, id asc |
+| `/runs/project/:projectId` | `showArchived`, `sortBy=runNumber`, `sortOrder` | runNumber desc, id asc |
+| `/analysis/records` | `project` name/UUID and `runId` UUID | createdAt asc, id asc |
+| `/projects/:id/analysis` | existing agent/type/decision filters | run timestamp desc, summary id asc |
+| `/agents/:name/runs-analysis` | existing project/decision filters | run timestamp desc, summary id asc |
+
+All lists accept `fields` as a comma-separated list of public **output** names
+in camelCase. Search, sort and projection require `format=page`. Omitting
+`fields` retains the endpoint's existing projection; an empty list selects
+only `id`. Identity and page metadata are always retained. Unknown/private
+fields and unsupported sorts return validation errors. Projection follows
+authorization, filtering and pagination and never changes database access.
+Explicit sorts always end with immutable id asc; when only `sortOrder` is
+provided it controls the endpoint's default primary key (analysis has no sort
+controls). Optional public fields absent from a row remain absent.
+
+Project search is a case-insensitive literal substring of `name` (the canonical
+project slug; there is no separate slug column). Whitespace is no filter;
+`%`, `_`, quotes and backslashes are literals, never query syntax.
+Issue `workflowType` matches an occurrence in that workflow using EXISTS,
+so repeated occurrences cannot duplicate rows. `classified=true` means a
+non-null `failureCode`; false means null. `failureMode` and all other issue
+filters apply identically to row and count queries. Full-text search chooses
+strict versus relaxed matching from the total, never from the current page.
+
+Referenced projects/runs must be visible in the authenticated org, and a
+selected run must belong to the selected project. Archived runs stay excluded
+unless `showArchived=true`; malformed booleans are rejected in page format.
+Existing analysis-summary archive policy is unchanged.
+
+Issue routes intentionally support legacy global system-key reads. A new
+paged request with a system credential and an explicit `X-Org-Id` or
+`X-Org-Slug` is refused with 403 `UNSUPPORTED_SYSTEM_ORG_SCOPE`; use org-bound
+credentials for scoped discovery. The server never silently ignores a
+requested scope. Ordinary and org-bound keys use existing org authorization.
+
+## Public projection allowlists
+
+- Projects: `id,name,domain,ownerId,orgId,createdAt,updatedAt`.
+- Issues: `id,projectId,authorId,fingerprint,semanticFingerprint,title,status,priority,severity,failureCode,failureDomain,failureMode,failureSeverityCode,category,agent,type,filePath,lineNumber,timesSeen,firstSeenRunId,lastSeenRunId,resolvedAt,resolutionRunId,mergedFromProjectId,mergedIntoIssueId,description,createdAt,updatedAt`.
+- Runs: `id,projectId,runNumber,workflowType,timestamp,allGatesPassed,averageScore,archivedAt,archiveReason,createdAt,totalRecommendations,criticalCount,highCount,suggestedCount,backlogCount,agentScores`.
+- Analysis records: `id,runId,agentName,agentType,agentTypeSource,agentTypeDefinitionId,agentTypeDefinitionVersion,recordType,recordId,title,classification,severity,recordData,createdAt`.
+- Analysis summaries: `id,runId,agentName,agentType,agentTypeSource,agentTypeDefinitionId,agentTypeDefinitionVersion,decision,score,decisionVocabulary,systemMetrics,categoryScores,epistemicAssessment,auditImplications,explorationMaps,createdAt`.
+- Agent analysis: summary fields plus `runNumber,runTimestamp,workflowType,snapshotScore`.
+
+## Compatibility and rollout
+
+Legacy endpoint envelopes, SDK list methods, and MCP calls without `format`
+retain their existing shapes. `search_issues` retains its array default and
+20-result default; opted-in pages default to 50. The SDK's additive
+`client.discovery.*` methods negotiate on the current scoped client for every
+operation and raise `UnsupportedContractError` if page-v1 is unavailable.
+They do not retry using legacy semantics or cache capabilities across orgs.
+MCP new search/sort/projection/archive/scope inputs require `format=page`.
+`query_issues` also exposes offset and repairs workflow/classified forwarding
+on its existing path.
+
+This release explicitly uses offsets instead of adding cursors to every list.
+Project-log and org-audit cursors remain opaque and unchanged. F07 agent
+catalog completeness is separate and follows F15.
+
+Rollout: publish the tolerant SDK, deploy the capability-producing API, then
+publish/select the new MCP. Keep previous packages available; client rollback
+uses the old methods/tools. API rollback makes new clients refuse unsupported
+pages truthfully. No schema migration or legacy default flip is required.
+
+```json
+{"tool":"list_projects","arguments":{"format":"page","search":"billing","sort_by":"createdAt","sort_order":"desc","fields":["name"],"limit":50,"offset":0}}
+```
+
+`list_projects`, `query_issues`, `search_issues`, `list_runs`,
+`query_analysis_records`, `get_project_analysis` and `get_agent_runs_analysis`
+all accept `format: "page"` and `fields`. MCP inputs use snake_case
+(`sort_by`, `sort_order`, `include_archived`, `workflow_type`, `run_id`);
+field names and sort values are public camelCase output names.
+Pass a returned `id` directly into the corresponding read tool.

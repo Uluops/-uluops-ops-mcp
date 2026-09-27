@@ -1,3 +1,4 @@
+import { DiscoveryPageShape, useDiscoveryPage } from '../utils/discovery-page.js';
 /**
  * get_project_analysis tool
  *
@@ -10,6 +11,7 @@ import type { McpServerToolRegistration } from '../types/index.js';
 import { createToolHandler } from '../utils/tool-handler.js';
 
 export const GetProjectAnalysisInputSchema = z.object({
+  ...DiscoveryPageShape,
   project: z.string().min(1).describe('Project name or UUID'),
   agent_name: z.string().max(100).optional().describe('Filter by agent (e.g., nietzsche-analyst)'),
   agent_type: z.enum(['validator', 'analyst', 'explorer', 'forecaster', 'executor', 'generator', 'unknown']).optional().describe('Filter by captured agent type; unknown includes unresolved and historical inferred attribution'),
@@ -32,7 +34,7 @@ export function registerGetProjectAnalysisTool(
     'Get analysis summaries for a project over time. Shows system metrics, category scores, epistemic assessments, and audit implications from cognitive lens runs.',
     GetProjectAnalysisInputSchema.shape,
     createToolHandler(GetProjectAnalysisInputSchema, (n, scope) =>
-      opsClient.runs.getProjectAnalysis(
+      useDiscoveryPage(n) ? opsClient.discovery.getProjectAnalysis(n['project'] as string, n, scope) : opsClient.runs.getProjectAnalysis(
         n['project'] as string,
         {
           agentName: n['agentName'] as string | undefined,

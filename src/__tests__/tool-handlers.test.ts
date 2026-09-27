@@ -123,6 +123,8 @@ describe('Tool Handlers', () => {
       await handler({
         project: 'test-project',
         workflow_type: 'ship',
+        classified: false,
+        offset: 10,
         status: 'completed',
         priority: 'critical',
         agent: 'code-validator',
@@ -133,11 +135,14 @@ describe('Tool Handlers', () => {
         limit: 25,
       });
 
-      // query_issues explicitly picks SDK-compatible fields only (workflowType excluded)
+      // F15 forwards workflow and classification filters end to end.
       expect(mockOpsClient.projects.listIssues).toHaveBeenCalledWith(
         'test-project',
         {
           status: 'completed',
+          workflowType: 'ship',
+          classified: false,
+          offset: 10,
           priority: 'critical',
           agent: 'code-validator',
           minTimesSeen: 3,

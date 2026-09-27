@@ -15,6 +15,15 @@ considered and left alone; readers scanning only for the standard headings lose 
 
 ## [Unreleased]
 
+### Added
+
+- F15: opt-in discovery `page-v1` with project search, stable sorting, public-field projection, filtered totals/hasMore, analysis project/run scope and archived-run inclusion. Legacy response shapes and log cursors remain unchanged.
+
+### Fixed
+
+- Forward workflow/classification issue filters and offset; choose issue-search fallback from the matching total so later pages cannot switch datasets. Preserve public projection fields across the SDK boundary.
+
+
 
 
 

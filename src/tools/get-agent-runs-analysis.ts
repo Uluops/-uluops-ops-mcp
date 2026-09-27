@@ -1,3 +1,4 @@
+import { DiscoveryPageShape, useDiscoveryPage } from '../utils/discovery-page.js';
 /**
  * get_agent_runs_analysis tool
  *
@@ -10,6 +11,7 @@ import type { McpServerToolRegistration } from '../types/index.js';
 import { createToolHandler } from '../utils/tool-handler.js';
 
 export const GetAgentRunsAnalysisInputSchema = z.object({
+  ...DiscoveryPageShape,
   agent_name: z.string().min(1).describe('Agent name (e.g., epictetus-validator)'),
   project: z.string().min(1).describe('Project name or UUID'),
   decision: z.string().max(50).optional().describe('Filter by decision (e.g., ALIGNED, FACTUAL)'),
@@ -31,7 +33,7 @@ export function registerGetAgentRunsAnalysisTool(
     'Get analysis summaries with run context for a specific agent. Returns decision, score, category scores, system metrics, epistemic assessment alongside run number, timestamp, and workflow type.',
     GetAgentRunsAnalysisInputSchema.shape,
     createToolHandler(GetAgentRunsAnalysisInputSchema, (n, scope) =>
-      opsClient.runs.getAgentRunsAnalysis(
+      useDiscoveryPage(n) ? opsClient.discovery.getAgentRunsAnalysis(n['agentName'] as string, n, scope) : opsClient.runs.getAgentRunsAnalysis(
         n['agentName'] as string,
         {
           project: n['project'] as string,

@@ -1,3 +1,4 @@
+import { DiscoveryPageShape, useDiscoveryPage } from '../utils/discovery-page.js';
 /**
  * query_analysis_records tool
  *
@@ -10,6 +11,9 @@ import type { McpServerToolRegistration } from '../types/index.js';
 import { createToolHandler } from '../utils/tool-handler.js';
 
 export const QueryAnalysisRecordsInputSchema = z.object({
+  ...DiscoveryPageShape,
+  project: z.string().min(1).optional().describe('Project name or UUID; requires format=page.'),
+  run_id: z.string().uuid().optional().describe('Run UUID; must belong to the requested project and org; requires format=page.'),
   record_type: z.string().max(50).optional().describe('Filter by record type (convention, tension, decay_vector, power_map, stagnation, four_cause, commitment, etc.)'),
   classification: z.string().max(50).optional().describe('Filter by classification (LIVING, CALCIFIED, CONSTITUTIVE, IMMINENT, ACTIVE, DEGRADED, etc.)'),
   agent_name: z.string().max(100).optional().describe('Filter by agent name (e.g., nietzsche-analyst)'),
@@ -33,7 +37,7 @@ export function registerQueryAnalysisRecordsTool(
     'Query analysis records across all projects. Find calcified conventions, degraded tensions, imminent decay vectors, and other structured findings from cognitive lens agents.',
     QueryAnalysisRecordsInputSchema.shape,
     createToolHandler(QueryAnalysisRecordsInputSchema, (n, scope) =>
-      opsClient.runs.queryAnalysisRecords({
+      useDiscoveryPage(n, ['project', 'runId']) ? opsClient.discovery.queryAnalysisRecords(n, scope) : opsClient.runs.queryAnalysisRecords({
         recordType: n['recordType'] as string | undefined,
         classification: n['classification'] as string | undefined,
         agentName: n['agentName'] as string | undefined,
