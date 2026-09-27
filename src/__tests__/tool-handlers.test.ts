@@ -979,13 +979,11 @@ describe('Tool Handlers', () => {
   });
 
   describe('list_agents', () => {
-    let mockOpsClient: { analytics: { getAgentPerformance: ReturnType<typeof vi.fn> } };
+    let mockOpsClient: { discovery: { listAgents: ReturnType<typeof vi.fn> } };
     let handler: (args: unknown) => Promise<unknown>;
 
     beforeEach(() => {
-      mockOpsClient = {
-        analytics: { getAgentPerformance: vi.fn() },
-      };
+      mockOpsClient = { discovery: { listAgents: vi.fn() } };
       registerListAgentsTool(mockServer, mockOpsClient as unknown as OpsClient);
       handler = getHandler(mockServer.tool);
     });
@@ -996,31 +994,46 @@ describe('Tool Handlers', () => {
     });
 
     it('should list agents with empty input', async () => {
-      mockOpsClient.analytics.getAgentPerformance.mockResolvedValue([
-        { name: 'code-validator' },
-      ]);
+      mockOpsClient.discovery.listAgents.mockResolvedValue({ data: [{ name: 'code-validator' }], total: 1, limit: 50, offset: 0, hasMore: false });
 
       await handler({});
 
-      expect(mockOpsClient.analytics.getAgentPerformance).toHaveBeenCalled();
+      expect(mockOpsClient.discovery.listAgents).toHaveBeenCalledWith({ limit: 100 }, expect.objectContaining({ withResponseContext: true }));
     });
 
-    it('returns the family list envelope {data, total} — the success wrapper is gone (T13)', async () => {
-      mockOpsClient.analytics.getAgentPerformance.mockResolvedValue([
-        { name: 'code-validator' },
-        { name: 'foucault-explorer' },
-        { notAName: true },
-      ]);
-
+    it('collects all pages for the legacy list envelope', async () => {
+      mockOpsClient.discovery.listAgents
+        .mockResolvedValueOnce({ data: [{ name: 'agent-1' }], total: 2, limit: 1, offset: 0, hasMore: true })
+        .mockResolvedValueOnce({ data: [{ name: 'agent-2' }], total: 2, limit: 1, offset: 1, hasMore: false });
       const result = (await handler({})) as { content: Array<{ text: string }> };
       const payload = JSON.parse(result.content[0].text);
-      expect(Object.keys(payload).sort()).toEqual(['data', 'total']);
-      expect(payload.data).toEqual([
-        { name: 'code-validator', enabled: true },
-        { name: 'foucault-explorer', enabled: true },
-      ]);
-      expect(payload.total).toBe(2);
-      expect(payload).not.toHaveProperty('success');
+      expect(payload).toEqual({ data: [{ name: 'agent-1', enabled: true }, { name: 'agent-2', enabled: true }], total: 2 });
+      expect(mockOpsClient.discovery.listAgents).toHaveBeenNthCalledWith(2, { limit: 100, offset: 1 }, expect.anything());
+    });
+
+    it('returns explicit page metadata and forwards requested filters', async () => {
+      mockOpsClient.discovery.listAgents.mockResolvedValue({ data: [{ name: 'scratch-agent' }], total: 30, limit: 1, offset: 29, hasMore: false });
+      const result = (await handler({ format: 'page', project: 'p', days: 14, search: 'scratch', limit: 1, offset: 29 })) as { content: Array<{ text: string }> };
+      expect(JSON.parse(result.content[0].text)).toEqual({ data: [{ name: 'scratch-agent' }], total: 30, limit: 1, offset: 29, hasMore: false });
+      expect(mockOpsClient.discovery.listAgents).toHaveBeenCalledWith({ project: 'p', days: 14, search: 'scratch', limit: 1, offset: 29 }, expect.anything());
+    });
+
+    it('stops when a legacy full-list page makes no progress', async () => {
+      mockOpsClient.discovery.listAgents.mockResolvedValue({ data: [], total: 1, limit: 100, offset: 0, hasMore: true });
+      const result = (await handler({})) as { isError?: boolean; content: Array<{ text: string }> };
+      expect(result.isError).toBe(true);
+      expect(result.content[0].text).toContain('made no progress');
+      expect(mockOpsClient.discovery.listAgents).toHaveBeenCalledTimes(1);
+    });
+
+    it('stops when totals change during the legacy full-list traversal', async () => {
+      mockOpsClient.discovery.listAgents
+        .mockResolvedValueOnce({ data: [{ name: 'agent-1' }], total: 2, limit: 1, offset: 0, hasMore: true })
+        .mockResolvedValueOnce({ data: [{ name: 'agent-2' }], total: 3, limit: 1, offset: 1, hasMore: true });
+      const result = (await handler({})) as { isError?: boolean; content: Array<{ text: string }> };
+      expect(result.isError).toBe(true);
+      expect(result.content[0].text).toContain('totals changed');
+      expect(mockOpsClient.discovery.listAgents).toHaveBeenCalledTimes(2);
     });
   });
 

@@ -17,6 +17,7 @@ considered and left alone; readers scanning only for the standard headings lose 
 
 ### Added
 
+- F07: `list_agents` reads recorded agent history through negotiated `recorded-v1` discovery pages; default calls collect all pages, while `format=page` exposes filters and page metadata. Existing `enabled` output remains advisory and does not represent registry configuration.
 - F15: opt-in discovery `page-v1` with project search, stable sorting, public-field projection, filtered totals/hasMore, analysis project/run scope and archived-run inclusion. Legacy response shapes and log cursors remain unchanged.
 
 ### Fixed

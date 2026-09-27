@@ -380,7 +380,7 @@ units, which let a non-ASCII payload up to ~3x the stated size through.
 | `archive_runs` | Archive old runs without deletion |
 | `get_analytics` | Cross-project analytics (8 metric types; `cross_project_patterns` returns `[]` — placeholder until pattern aggregation ships) |
 | `search_issues` | Search issues across projects with relevance ranking |
-| `list_agents` | List canonical agents from manifest |
+| `list_agents` | Discover agent names recorded in run history; default lists the full 30-day result, `format=page` opts into filters and paging |
 | `validate_run` | Preview save operation without modifying database |
 | `get_issue_history` | Merged audit-event stream (occurrences, status, notes) as an envelope `{issueId, events[], totalEvents, truncated}` — includes undo tombstones (v0.4.0+) |
 | `add_issue_note` | Add context, resolution, or blocker notes to issues |
@@ -626,6 +626,8 @@ unsupported contract instead of silently returning legacy Sonnet fallback.
 ## Discovery pages (F15 / page-v1)
 
 Authenticated `GET /api/v1/capabilities` advertises `contracts.discovery: ["page-v1"]`.
+F07 agent pages additionally require `contracts.agentDiscovery: ["recorded-v1"]`,
+so an older API that only supports F15 pages is not mistaken for an F07 producer.
 Select `format=page` on the endpoints below to receive
 `{data,total,count,limit,offset,hasMore}`. `count` is the number on this page;
 `total` counts the same authorized and filtered dataset. `hasMore` is
@@ -646,13 +648,16 @@ a fixed dataset; concurrent writes are not snapshot-isolated.
 | `/analysis/records` | `project` name/UUID and `runId` UUID | createdAt asc, id asc |
 | `/projects/:id/analysis` | existing agent/type/decision filters | run timestamp desc, summary id asc |
 | `/agents/:name/runs-analysis` | existing project/decision filters | run timestamp desc, summary id asc |
+| `/agents/discovery` | required `format=page`; `project`, `days`, `search` | agent name asc (binary) |
 
-All lists accept `fields` as a comma-separated list of public **output** names
-in camelCase. Search, sort and projection require `format=page`. Omitting
+The F15 page endpoints above accept `fields` as a comma-separated list of
+public **output** names in camelCase. Search, sort and projection require `format=page`. Omitting
 `fields` retains the endpoint's existing projection; an empty list selects
 only `id`. Identity and page metadata are always retained. Unknown/private
 fields and unsupported sorts return validation errors. Projection follows
 authorization, filtering and pagination and never changes database access.
+`/agents/discovery` has a fixed `{name}` row shape and does not accept field
+projection; undeclared query controls are rejected.
 Explicit sorts always end with immutable id asc; when only `sortOrder` is
 provided it controls the endpoint's default primary key (analysis has no sort
 controls). Optional public fields absent from a row remain absent.
@@ -670,6 +675,13 @@ Referenced projects/runs must be visible in the authenticated org, and a
 selected run must belong to the selected project. Archived runs stay excluded
 unless `showArchived=true`; malformed booleans are rejected in page format.
 Existing analysis-summary archive policy is unchanged.
+
+Agent search is a case-insensitive literal substring; `%`, `_` and backslash
+are treated as ordinary characters. The no-filter MCP `list_agents` call
+collects all pages for the default 30-day window and retains the legacy
+`enabled:true` row marker to mean “recorded in this window,” not configured or
+authorized. Explicit `format=page` returns the page envelope and supports
+project/time/search filters and caller-controlled offsets.
 
 Issue routes intentionally support legacy global system-key reads. A new
 paged request with a system credential and an explicit `X-Org-Id` or
@@ -699,8 +711,8 @@ MCP new search/sort/projection/archive/scope inputs require `format=page`.
 on its existing path.
 
 This release explicitly uses offsets instead of adding cursors to every list.
-Project-log and org-audit cursors remain opaque and unchanged. F07 agent
-catalog completeness is separate and follows F15.
+Project-log and org-audit cursors remain opaque and unchanged. F07 uses the
+same page-v1 capability for recorded-agent discovery.
 
 Rollout: publish the tolerant SDK, deploy the capability-producing API, then
 publish/select the new MCP. Keep previous packages available; client rollback

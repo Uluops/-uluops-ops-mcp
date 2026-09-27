@@ -198,6 +198,12 @@ describe('P1 tool schemas', () => {
       const result = ListAgentsInputSchema.safeParse({});
       expect(result.success).toBe(true);
     });
+    it('requires page selection for discovery filters and pagination', () => {
+      expect(ListAgentsInputSchema.safeParse({ format: 'page', search: 'scratch', limit: 100 }).success).toBe(true);
+      expect(ListAgentsInputSchema.safeParse({ search: 'scratch' }).success).toBe(false);
+      expect(ListAgentsInputSchema.safeParse({ format: 'page', limit: 101 }).success).toBe(false);
+      expect(ListAgentsInputSchema.safeParse({ format: 'page', fields: ['name'] }).success).toBe(false);
+    });
   });
 
   describe('ValidateRunInputSchema', () => {
