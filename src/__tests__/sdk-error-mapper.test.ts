@@ -647,3 +647,29 @@ describe('F20 idempotency refusals', () => {
     expect(payload.suggestion).not.toContain('drop');
   });
 });
+
+describe('F16 recovery context', () => {
+  it.each(['averageScore', 'allGatesPassed'])('explains finalized %s without org advice', field => {
+    const error = new ForbiddenError(`Cannot rewrite ${field} on a finalized run`, 'f16-request', 'FINALIZED_RUN_FIELD_IMMUTABLE', {
+      immutableField: field, applicationState: 'not_applied',
+    });
+    const payload = getErrorPayload(mapSdkErrorToMcp(error, 'update_run'));
+    expect(payload).toMatchObject({ code: 'FINALIZED_RUN_FIELD_IMMUTABLE', immutableField: field, applicationState: 'not_applied', request_id: 'f16-request' });
+    expect(payload.suggestion).toContain('telemetry');
+    expect(payload.suggestion).not.toContain('org');
+  });
+
+  it('uses the foreign-key blocker instead of collision and idempotency advice', () => {
+    const error = new ConflictError('Cannot delete referenced record', { reason: 'foreign_key_constraint' });
+    const payload = getErrorPayload(mapSdkErrorToMcp(error, 'delete_run'));
+    expect(payload.suggestion).toContain('referenced');
+    expect(payload.suggestion).not.toContain('idempotency_key');
+  });
+
+  it('keeps field paths once when the API message already includes them', () => {
+    const error = new ValidationError('Validation failed: name: Required', { errors: [{ path: 'name', message: 'Required' }] });
+    const payload = getErrorPayload(mapSdkErrorToMcp(error, 'save_run'));
+    expect((payload.error as string).match(/name: Required/g)).toHaveLength(1);
+    expect(payload.field_errors).toEqual([{ path: 'name', message: 'Required' }]);
+  });
+});

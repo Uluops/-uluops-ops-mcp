@@ -159,6 +159,7 @@ const CONFLICT_REASON_SUGGESTIONS: Record<string, string> = {
   // 409, not 400: project-rehome-service throws it as a ConflictError (code-auditor, 2026-09-15 — it
   // sat in the 400 table and the restore-first remedy was unreachable).
   project_soft_deleted: 'The project is soft-deleted in its current org. Restore it there first (restore_project, with that org as `org`), then move it.',
+  foreign_key_constraint: 'This record is still referenced by another resource. Read its related records and resolve those references before deleting it; do not retry the same deletion unchanged.',
 };
 
 /** Own-property lookup: `reason` is server-supplied text, and a plain-object index resolves `constructor`/`toString` to prototype functions. */
@@ -257,10 +258,12 @@ export function mapSdkErrorToMcp(error: unknown, toolName?: string): McpToolResp
   // T20: pass the API's cause code through so clients can branch on cause,
   // not just HTTP status (CONFIRMATION_MISMATCH, UNDO_WINDOW_EXPIRED, ...).
   const causeCode = (error as { code?: string }).code;
+  const requestId = (error as { requestId?: unknown }).requestId;
   const context: Record<string, unknown> = {
     ...(statusCode !== undefined ? { status: statusCode } : {}),
     error_type: errorType,
     ...(typeof causeCode === 'string' ? { code: causeCode } : {}),
+    ...(typeof requestId === 'string' ? { request_id: sanitizeErrorMessage(requestId) } : {}),
     ...(toolName != null ? { tool: toolName } : {}),
     ...(suggestion != null ? { suggestion } : {}),
   };
@@ -271,6 +274,16 @@ export function mapSdkErrorToMcp(error: unknown, toolName?: string): McpToolResp
       suggestion: causeCode === 'UNSUPPORTED_CONTRACT'
         ? 'The server must advertise this contract before submission. Check compatible API/SDK versions; no write was attempted.'
         : 'Read the original run and verify the intended submission. Keep its key and contract for retries; use a new key only for an intentional new submission.',
+    });
+  }
+
+  if (causeCode === 'FINALIZED_RUN_FIELD_IMMUTABLE') {
+    const details = (error as { details?: Record<string, unknown> }).details;
+    const field = details?.['immutableField'];
+    return buildErrorResponse(sanitizeErrorMessage((error as Error).message), {
+      ...context, status: 403, applicationState: 'not_applied',
+      ...(field === 'averageScore' || field === 'allGatesPassed' ? { immutableField: field } : {}),
+      suggestion: 'This run field has already been finalized and cannot be rewritten. Read the run to confirm its current value; submit only permitted telemetry or analysis enrichment.',
     });
   }
 
@@ -346,15 +359,22 @@ export function mapSdkErrorToMcp(error: unknown, toolName?: string): McpToolResp
     const baseMessage = sanitizeErrorMessage((error as Error).message || 'Invalid request parameters');
     const details = (error as { details?: Record<string, unknown> }).details;
     const fieldErrors = details && Array.isArray((details as { errors?: unknown }).errors)
-      ? ((details as { errors: Array<{ path?: string; message?: string }> }).errors)
+      ? ((details as { errors: unknown[] }).errors)
+          .slice(0, 20)
+          .filter((item): item is Record<string, unknown> => typeof item === 'object' && item !== null)
+          .map((item) => ({
+            path: sanitizeErrorMessage(typeof item['path'] === 'string' ? item['path'] : '?'),
+            message: sanitizeErrorMessage(typeof item['message'] === 'string' ? item['message'] : 'invalid'),
+          }))
       : undefined;
 
     if (fieldErrors && fieldErrors.length > 0) {
       const formatted = fieldErrors
-        .map((e) => `${e.path ?? '?'}: ${e.message ?? 'invalid'}`)
+        .map((e) => `${e.path}: ${e.message}`)
+        .filter((line) => !baseMessage.includes(line))
         .join('; ');
       return buildErrorResponse(
-        `${baseMessage}: ${formatted}`,
+        baseMessage + (formatted !== '' ? `: ${formatted}` : ''),
         { ...context, field_errors: fieldErrors },
       );
     }

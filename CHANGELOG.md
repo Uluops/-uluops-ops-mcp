@@ -15,18 +15,25 @@ considered and left alone; readers scanning only for the standard headings lose 
 
 ## [Unreleased]
 
+### Fixed
+
+- F16: preserve request IDs and cause-specific recovery details in tool errors. A finalized run score/gate rewrite names `FINALIZED_RUN_FIELD_IMMUTABLE` and the immutable field; validation errors retain bounded field paths without duplicate prose. This candidate uses `@uluops/ops-sdk` 6.10.1.
+
+## [0.25.0] - 2026-09-27
+
 ### Added
 
 - F07: `list_agents` reads recorded agent history through negotiated `recorded-v1` discovery pages; default calls collect all pages, while `format=page` exposes filters and page metadata. Existing `enabled` output remains advisory and does not represent registry configuration.
+
+## [0.24.0] - 2026-09-27
+
+### Added
+
 - F15: opt-in discovery `page-v1` with project search, stable sorting, public-field projection, filtered totals/hasMore, analysis project/run scope and archived-run inclusion. Legacy response shapes and log cursors remain unchanged.
 
 ### Fixed
 
 - Forward workflow/classification issue filters and offset; choose issue-search fallback from the matching total so later pages cannot switch datasets. Preserve public projection fields across the SDK boundary.
-
-
-
-
 
 ## [0.23.0] - 2026-09-25
 

@@ -77,7 +77,7 @@ export function registerUpdateRunTool(
 ): void {
   server.tool(
     'update_run',
-    'Update run metadata post-hoc (tokens, scores, timestamps). Also supports adding recommendations/issues, and PER-AGENT analysis writes after initial save — replace (default) or merge, via record_write_mode; writes supersede only the agents named in the payload and cannot remove another agent\'s rows (there is no delete endpoint). Analysis-bearing responses include the analysisWrite echo (a camelCase response key: superseded/created counts — supersededRecords 0 on an enrichment that expected to replace means the named agents had no live rows). Preview with preview_update_run. Identify run by either run_id OR (project + run_number).' + RUN_MAP_CONTRACT,
+    'Update run metadata post-hoc (tokens, write-once score/gate fields, timestamps). Once averageScore or allGatesPassed is recorded, changing it is refused with FINALIZED_RUN_FIELD_IMMUTABLE; telemetry and analysis enrichment remain available. Also supports adding recommendations/issues, and PER-AGENT analysis writes after initial save — replace (default) or merge, via record_write_mode; writes supersede only the agents named in the payload and cannot remove another agent\'s rows (there is no delete endpoint). Analysis-bearing responses include the analysisWrite echo (a camelCase response key: superseded/created counts — supersededRecords 0 on an enrichment that expected to replace means the named agents had no live rows). Preview with preview_update_run. Identify run by either run_id OR (project + run_number).' + RUN_MAP_CONTRACT,
     UpdateRunInputSchema.shape,
     createToolHandler(UpdateRunInputSchema, async (n, scope) => {
       // With-echo variants (F17): the §3.9 echo's counts are the success

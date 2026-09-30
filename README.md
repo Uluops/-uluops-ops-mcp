@@ -124,6 +124,8 @@ that org is below `publisher` — do **not** retry without `org`, which changes 
 org does not resolve / is suspended — same rule, do not drop `org`), and `PROJECT_REHOMED` (the
 project moved orgs; the result names the org to pass). `ORG_NOT_ALLOWED` is the server-side sixth, and `DESTRUCTIVE_NOT_ARMED` (the operator set `ULUOPS_ALLOW_DESTRUCTIVE=false`) the seventh.
 
+`update_run` reports `FINALIZED_RUN_FIELD_IMMUTABLE` when an already recorded score or gate result is changed. The error names `immutableField` and `applicationState: not_applied`; token and analysis enrichment remain available. Field validation errors retain paths in `field_errors` without repeating the same text in `error`. A response-schema failure after a write remains application-unknown: read current state before retrying.
+
 **Moving a project between orgs** is `rehome_project` — the member path of the spec's §4.1. Two
 arguments name two orgs and both the description and the `org` field's own schema text say which
 is which: `org` is where the project is *now* (the API looks it up there — omit it for a work-org
@@ -387,7 +389,7 @@ units, which let a non-ASCII payload up to ~3x the stated size through.
 | `edit_issue` | Edit issue metadata (title, file_path, severity, etc.) |
 | `merge_issues` | Merge duplicate issues into a target issue |
 | `bulk_update_status` | Bulk update multiple issue statuses in one transaction, by issue UUID across the org (`project` is informational, not a scope) |
-| `update_run` | Update run metadata post-hoc (tokens, scores, timestamps); per-agent analysis writes — replace (default) or merge via `record_write_mode`; analysis-bearing responses carry the `analysisWrite` echo (camelCase response key) |
+| `update_run` | Update run telemetry/timestamps and set score/gate fields once; changing an already recorded `averageScore` or `allGatesPassed` is refused with `FINALIZED_RUN_FIELD_IMMUTABLE`. Per-agent analysis writes use replace (default) or merge via `record_write_mode`; analysis-bearing responses carry the `analysisWrite` echo (camelCase response key) |
 | `preview_update_run` | Read-only preview of an analysis-bearing update under the requested mode: per agent, what the write would supersede, create, and (replace only) retire |
 | `get_agent_reliability` | Analyze agent effectiveness: false-positive, declined (wontfix) and resolution rates plus reliability score |
 | `get_agent_lifecycle` | Lifecycle metrics for an agent across runs |
