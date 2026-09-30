@@ -13,11 +13,15 @@ re-derive it`, `### Internal`). They record why a release looks the way it does 
 considered and left alone; readers scanning only for the standard headings lose nothing.
 (Stated here after consumer-validate run #13 flagged the unlabelled deviation from the claim above.)
 
-## [Unreleased]
+## [0.25.1] - Unreleased
 
 ### Fixed
 
 - F16: preserve request IDs and cause-specific recovery details in tool errors. A finalized run score/gate rewrite names `FINALIZED_RUN_FIELD_IMMUTABLE` and the immutable field; validation errors retain bounded field paths without duplicate prose. This candidate uses `@uluops/ops-sdk` 6.10.1.
+
+### Security
+
+- Refresh locked transitive dependencies to patched `brace-expansion`, `fast-uri`, and `ip-address` releases; the production dependency audit reports no vulnerabilities.
 
 ## [0.25.0] - 2026-09-27
 
