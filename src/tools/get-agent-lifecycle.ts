@@ -9,6 +9,7 @@ import { z } from 'zod';
 import type { OpsClient } from '@uluops/ops-sdk';
 import type { McpServerToolRegistration } from '../types/index.js';
 import { createToolHandler } from '../utils/tool-handler.js';
+import { CROSS_VERSION_CAVEAT } from './cross-version-caveat.js';
 
 const GetAgentLifecycleInputSchema = z.object({
   name: z.string().min(1).describe('Agent name (e.g., code-validator, nagarjuna-analyst)'),
@@ -22,7 +23,7 @@ export function registerGetAgentLifecycleTool(
 ): void {
   server.tool(
     'get_agent_lifecycle',
-    'Get version lifecycle trajectory for an agent. Shows performance per definition version, ordered chronologically. scoreThresholdPassRate (legacy alias passRate) is the percent of scored runs meeting the reported raw-score threshold, not a gate pass rate; metadata states its denominator and unnormalized scale.',
+    'Get version lifecycle trajectory for an agent. Shows performance per definition version, ordered chronologically. scoreThresholdPassRate (legacy alias passRate) is the percent of scored runs meeting the reported raw-score threshold, not a gate pass rate; metadata states its denominator and unnormalized scale.' + ' ' + CROSS_VERSION_CAVEAT,
     GetAgentLifecycleInputSchema.shape,
     createToolHandler(
       GetAgentLifecycleInputSchema,

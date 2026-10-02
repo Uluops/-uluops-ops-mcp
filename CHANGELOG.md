@@ -15,6 +15,14 @@ considered and left alone; readers scanning only for the standard headings lose 
 
 ## [Unreleased]
 
+## [0.26.1] - 2026-10-02
+
+### Changed
+
+- `get_agent_lifecycle`'s description now ends with a cross-version caveat: its per-version figures are observational (each version ran in its own period, on its own artifacts, triaged under the process of that time), so differences between versions are not evidence that an edit made the definition better or worse. The same sentence ships in `@uluops/registry-mcp` on its five cross-version tools. Description text only; inputs, outputs and ToolSpecs are unchanged. **Why:** a model asked "did my edit help?" reads per-version tables as the answer (definition-version-dispositions spec v0.7.0, §4.1).
+
+## [0.26.0] - 2026-10-02
+
 ### Added
 
 - F11 (0.26.0): `get_analytics format=page` for list metrics with default50/max100, offset0, true totals and explicit placeholder metadata. Preserve legacy shapes/default20 and object metrics. SDK 6.11.0 negotiates support before opting in.
