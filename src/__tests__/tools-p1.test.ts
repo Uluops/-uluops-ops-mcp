@@ -157,7 +157,7 @@ describe('P1 tool schemas', () => {
       expect(result.success).toBe(true);
       if (result.success) {
         expect(result.data.days).toBe(30);
-        expect(result.data.limit).toBe(20);
+        expect(result.data.limit).toBeUndefined(); // Handler selects legacy20 or page50.
       }
     });
 

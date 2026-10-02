@@ -380,7 +380,7 @@ units, which let a non-ASCII payload up to ~3x the stated size through.
 | `get_run_details` | Run information with all recommendations and stats |
 | `diff_runs` | Compare two validation runs (fixed, new, unchanged issues) |
 | `archive_runs` | Archive old runs without deletion |
-| `get_analytics` | Cross-project analytics (8 metric types; `cross_project_patterns` returns `[]` — placeholder until pattern aggregation ships) |
+| `get_analytics` | Eight metrics; list metrics support negotiated `format=page` with totals and implementation metadata. Legacy shapes and limit20 default remain. |
 | `search_issues` | Search issues across projects with relevance ranking |
 | `list_agents` | Discover agent names recorded in run history; default lists the full 30-day result, `format=page` opts into filters and paging |
 | `validate_run` | Preview save operation without modifying database |
@@ -731,3 +731,18 @@ all accept `format: "page"` and `fields`. MCP inputs use snake_case
 (`sort_by`, `sort_order`, `include_archived`, `workflow_type`, `run_id`);
 field names and sort values are public camelCase output names.
 Pass a returned `id` directly into the corresponding read tool.
+
+### Analytics pages
+
+`get_analytics` accepts `format: "page"` for `agent_performance`, `resolution_rates`,
+`file_hotspots`, `trend_summary`, `taxonomy_distribution` and `cross_project_patterns`.
+The result is `{data,total,limit,offset,hasMore,implemented,reason?}`. Defaults are
+limit50/offset0, maximum limit100; total covers the authorized filtered population.
+The SDK negotiates `analytics/page-v1`; unsupported APIs return an error without fallback.
+Pages use stable ordering on fixed data; concurrent writes are not snapshot-isolated.
+
+Without `format`, agent performance and taxonomy return `{data,total}`; the other
+four list metrics return arrays. Legacy limit defaults to20. Regression and cost
+analysis retain their domain objects and reject page selection. Cross-project patterns
+remain a placeholder: legacy `[]`, or a page with `implemented:false` and a reason.
+Cost's `pricing_contract: "coverage-v1"` remains a separate object contract.

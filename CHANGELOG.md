@@ -13,6 +13,12 @@ re-derive it`, `### Internal`). They record why a release looks the way it does 
 considered and left alone; readers scanning only for the standard headings lose nothing.
 (Stated here after consumer-validate run #13 flagged the unlabelled deviation from the claim above.)
 
+## [Unreleased]
+
+### Added
+
+- F11: `get_analytics format=page` for list metrics with default50/max100, offset0, true totals and explicit placeholder metadata. Preserve legacy shapes/default20 and object metrics. SDK negotiates support before opting in.
+
 ## [0.25.1] - Unreleased
 
 ### Fixed
