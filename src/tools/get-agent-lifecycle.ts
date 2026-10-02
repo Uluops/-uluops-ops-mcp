@@ -31,7 +31,7 @@ export function registerGetAgentLifecycleTool(
         project: input.project as string | undefined,
         days: input.days as number | undefined,
       }, scope),
-      { toolName: 'get_agent_lifecycle' },
+      { toolName: 'get_agent_lifecycle', responseNote: CROSS_VERSION_CAVEAT },
     ),
   );
 }

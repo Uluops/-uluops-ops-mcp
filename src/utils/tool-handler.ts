@@ -143,6 +143,13 @@ export function createToolHandler<TInput>(
      * result, not only inside the SDK payload (F5).
      */
     targetOrgOf?: (normalized: Record<string, unknown>) => string | undefined;
+    /**
+     * Appended to every success response as a `{ caveat }` text block, after the
+     * context and before the untrusted-content notice. Used for the cross-version
+     * caveat (dvc spec §4.1, AH): the model reads the payload, not the description,
+     * when it writes its answer.
+     */
+    responseNote?: string;
   }
 ): (args: unknown) => Promise<McpToolResponse> {
   const toolName = options?.toolName;
@@ -256,6 +263,9 @@ export function createToolHandler<TInput>(
       // Preserve the payload in the first block; report requested and server
       // context separately, including when the server supplied no metadata.
       addContext(response, envelope.context);
+      if (options?.responseNote !== undefined) {
+        response.content.push({ type: 'text', text: JSON.stringify({ caveat: options.responseNote }) });
+      }
       // D16: the untrusted-content notice, last, on every success.
       response.content.push({ type: 'text', text: UNTRUSTED_CONTENT_NOTICE });
       return response;
