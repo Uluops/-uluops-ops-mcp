@@ -19,6 +19,10 @@ considered and left alone; readers scanning only for the standard headings lose 
 
 - F11 (0.26.0): `get_analytics format=page` for list metrics with default50/max100, offset0, true totals and explicit placeholder metadata. Preserve legacy shapes/default20 and object metrics. SDK 6.11.0 negotiates support before opting in.
 
+### Fixed
+
+- Resolve SDK 6.11.0 from npmjs and correct the existing sdk-core 0.18.1 lockfile checksum so clean installs use the published archives.
+
 ## [0.25.1] - Unreleased
 
 ### Fixed
