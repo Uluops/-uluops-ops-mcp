@@ -17,7 +17,7 @@ considered and left alone; readers scanning only for the standard headings lose 
 
 ### Added
 
-- F11: `get_analytics format=page` for list metrics with default50/max100, offset0, true totals and explicit placeholder metadata. Preserve legacy shapes/default20 and object metrics. SDK negotiates support before opting in.
+- F11 (0.26.0): `get_analytics format=page` for list metrics with default50/max100, offset0, true totals and explicit placeholder metadata. Preserve legacy shapes/default20 and object metrics. SDK 6.11.0 negotiates support before opting in.
 
 ## [0.25.1] - Unreleased
 
