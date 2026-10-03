@@ -33,13 +33,16 @@ describe('cross-version caveat (dvc spec \u00a74.1, amendments AC and AH)', () =
 
   it('pins the shared sentence word for word (the same literal is pinned in @uluops/registry-mcp)', () => {
     expect(CROSS_VERSION_CAVEAT).toBe(
-      'Cross-version figures here are observational. Some are not per-version at all: health, failure-domain and ' +
-      'taxonomy figures, where present, pool every version of the definition and are re-stamped onto a version whenever ' +
-      'it is recomputed, so a difference between versions there only reflects when each was recomputed. Pass rates and ' +
-      'scores, where per-version, come from each version\'s own runs in its own period, on its own artifacts, and are the ' +
-      'agent\'s own assessments of those artifacts, so an edit that changes how lenient it is moves them without changing ' +
-      'quality. No difference between versions here is evidence that an edit made the definition better or worse; do not ' +
-      'rank versions or recommend one on the basis of these figures, alone or combined with other figures.',
+      'Cross-version figures here are observational. Some may not be per-version at all: health, failure-domain, ' +
+      'taxonomy and execution-count figures, where present, may be computed for the definition rather than the ' +
+      'version they are shown under (pooling its runs across versions, and possibly across orgs, or taking ' +
+      'issue-derived parts from a single version that need not be the one shown) and are stored against a version ' +
+      'whenever it is recomputed, so a difference between versions there can reflect when and how each was recomputed ' +
+      'rather than the versions. Pass rates and scores, where per-version, come from each version\'s own runs in its ' +
+      'own period, on its own artifacts, and are the agent\'s own assessments of those artifacts, so an edit that ' +
+      'changes how lenient it is moves them without changing quality. No difference between versions here is evidence ' +
+      'that an edit made the definition better or worse; do not rank versions or recommend one on the basis of these ' +
+      'figures, alone or combined with other figures.',
     );
     expect(CROSS_VERSION_CAVEAT).not.toMatch(/figures alone\./);
     expect(CROSS_VERSION_CAVEAT).not.toMatch(/\bgrades?\b/);

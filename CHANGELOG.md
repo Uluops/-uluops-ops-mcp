@@ -15,6 +15,12 @@ considered and left alone; readers scanning only for the standard headings lose 
 
 ## [Unreleased]
 
+## [0.27.1] - 2026-10-03
+
+### Changed
+
+- **The cross-version caveat on `get_agent_lifecycle` no longer says health, failure-domain and taxonomy figures "pool every version".** Their issue-derived parts may come from a single version that need not be the one shown (registry-api `getEffectiveness`, tracker `7ed97aa5`), and the runs behind them carry no org filter. The sentence now says "may" and "possibly", so it stays true whichever way `7ed97aa5` is fixed, and names execution counts among the figures that are not per-version (definition-version-dispositions A35 review, tracker run #67, amendments AS and AN). The literal is identical to `@uluops/registry-mcp` 0.11.4's and pinned word for word in both. **What changes for you:** description and response-block text only.
+
 ## [0.27.0] - 2026-10-03
 
 ### Changed
