@@ -29,7 +29,7 @@
  * count stamped per version row).
  */
 export const CROSS_VERSION_CAVEAT =
-  'Cross-version figures here are observational. Some may not be per-version at all: health, failure-domain, ' +
+  'Cross-version figures here are informational. Some may not be per-version at all: health, failure-domain, ' +
   'taxonomy and execution-count figures, where present, may be computed for the definition rather than the ' +
   'version they are shown under (pooling its runs across versions, and possibly across orgs, or taking ' +
   'issue-derived parts from a single version that need not be the one shown) and are stored against a version ' +
