@@ -8,12 +8,12 @@ type Handler = (args: unknown) => Promise<{ content: { type: string; text: strin
 
 function register(): { name: string; description: string; handler: Handler }[] {
   const registered: { name: string; description: string; handler: Handler }[] = [];
-  const server = {
+  const server: McpServerToolRegistration = {
     tool(name: string, description: string, _shape: unknown, ...rest: unknown[]): void {
       registered.push({ name, description, handler: rest[rest.length - 1] as Handler });
     },
-  } as unknown as McpServerToolRegistration;
-  const client = { analytics: { getAgentLifecycle: async (): Promise<object> => ({ versions: [] }) } };
+  };
+  const client = { analytics: { getAgentLifecycle: (): Promise<object> => Promise.resolve({ versions: [] }) } };
   registerGetAgentLifecycleTool(server, client as unknown as OpsClient);
   return registered;
 }
