@@ -21,6 +21,10 @@ considered and left alone; readers scanning only for the standard headings lose 
 
 - **`get_agent_lifecycle` now carries a cross-version caveat, in its description and in every success response.** The response gains a `{"caveat": "..."}` text block after the context block and before the untrusted-content notice; the data block is still `content[0]`. The sentence: "Cross-version figures here are observational: each version ran in its own period, on its own artifacts, and its findings were triaged under the process of that time. Pass rates and scores are the agent's own grades, so an edit that changes how lenient it is moves them without changing quality. Differences between versions are not evidence that an edit made the definition better or worse; do not rank versions or recommend one on the basis of these figures, alone or combined with other figures." **Why:** the tool returns per-version pass rate and score in first-seen order, which is how a model answers "did my edit help?"; the data cannot support that answer (definition-version-dispositions spec §4.1, amendments AC and AH). A first draft ended "from these figures alone", which licensed ranking as soon as any second source was added (A31 review, tracker run #65); it never shipped. The response copy exists because a model reads the payload, not the description, when it writes its answer. The same sentence ships in `@uluops/registry-mcp` 0.11.2; the test pins it word for word.
 
+### Dependencies
+
+- **`@uluops/ops-sdk` 6.11.0 → 6.12.0** (exact pin). 6.12.0 adds the `GET /auth/me` fields its `AuthUser` schema used to strip (`personalOrgSlug`, `mfaEnabled`, `totpEnabled`, `totpPending`, `webauthnEnabled`, `trust_root_count`, `has_password`, deprecated `auth_method_count`). **What changes for you:** nothing in this server's tools; none call `getMe()`. The bump keeps the server on the current SDK so a later tool that reads the user does not inherit the stripped shape. sdk-core stays 0.18.1, one copy in the tree.
+
 ## [0.26.0] - 2026-10-02
 
 ### Added
