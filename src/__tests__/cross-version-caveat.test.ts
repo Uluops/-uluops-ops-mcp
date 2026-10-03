@@ -31,14 +31,17 @@ describe('cross-version caveat (dvc spec \u00a74.1, amendments AC and AH)', () =
     expect(response.content.map((c) => c.text)).toContain(JSON.stringify({ caveat: CROSS_VERSION_CAVEAT }));
   });
 
-  it('pins the shared sentence word for word (same text ships in @uluops/registry-mcp 0.11.2)', () => {
+  it('pins the shared sentence word for word (the same literal is pinned in @uluops/registry-mcp)', () => {
     expect(CROSS_VERSION_CAVEAT).toBe(
-      'Cross-version figures here are observational: each version ran in its own period, on its own artifacts, ' +
-      'and its findings were triaged under the process of that time. Pass rates and scores are the agent\'s own grades, ' +
-      'so an edit that changes how lenient it is moves them without changing quality. Differences between versions are ' +
-      'not evidence that an edit made the definition better or worse; do not rank versions or recommend one on the basis ' +
-      'of these figures, alone or combined with other figures.',
+      'Cross-version figures here are observational. Some are not per-version at all: health, failure-domain and ' +
+      'taxonomy figures, where present, pool every version of the definition and are re-stamped onto a version whenever ' +
+      'it is recomputed, so a difference between versions there only reflects when each was recomputed. Pass rates and ' +
+      'scores, where per-version, come from each version\'s own runs in its own period, on its own artifacts, and are the ' +
+      'agent\'s own assessments of those artifacts, so an edit that changes how lenient it is moves them without changing ' +
+      'quality. No difference between versions here is evidence that an edit made the definition better or worse; do not ' +
+      'rank versions or recommend one on the basis of these figures, alone or combined with other figures.',
     );
     expect(CROSS_VERSION_CAVEAT).not.toMatch(/figures alone\./);
+    expect(CROSS_VERSION_CAVEAT).not.toMatch(/\bgrades?\b/);
   });
 });

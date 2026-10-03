@@ -15,6 +15,12 @@ considered and left alone; readers scanning only for the standard headings lose 
 
 ## [Unreleased]
 
+## [0.26.2] - 2026-10-02
+
+### Changed
+
+- **`get_agent_lifecycle`'s cross-version caveat reworded**, matching `@uluops/registry-mcp` 0.11.3: it no longer asserts that every cross-version figure is per-version (health, failure-domain and taxonomy figures elsewhere pool every version and are stamped per version on recompute), keeps the per-version clause for pass rates and scores, and drops "grades". The test pins the same literal word for word as registry-mcp's. Source: definition-version-dispositions A33 review, tracker run #66. **What changes for you:** description and response-block text only.
+
 ## [0.26.1] - 2026-10-02
 
 ### Changed
