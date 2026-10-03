@@ -15,6 +15,23 @@ considered and left alone; readers scanning only for the standard headings lose 
 
 ## [Unreleased]
 
+## [0.27.0] - 2026-10-03
+
+### Changed
+
+- **`@uluops/ops-sdk` 6.12.0 → 6.14.0 (exact).** Two consumer-visible effects:
+  - **6.13.0, a fix:** issue reads no longer throw on a domain issue `type` (`design`,
+    `architecture`, …). The API stores `type` as an open string, and one such row made every
+    issue list of its project fail with a `ZodError`. That made `-uluops-platform` and
+    `uluops-registry-api` unreadable through this server.
+  - **6.14.0, additive:** tool results now carry 12 fields the SDK used to strip silently. They
+    were found by the ops-api strip guard (tracker `a6cc132a`):
+    - `requiresReattestation` / `usernameConfirmed` on users;
+    - the run write-echo counters and `payloadHashVersion` / `projectInferred`;
+    - `correlation.duplicatesSkipped`;
+    - occurrence `convergenceClusterId`;
+    - taxonomy `source` and `failureCodePattern.note` / `validCodes`.
+
 ## [0.26.2] - 2026-10-02
 
 ### Changed
