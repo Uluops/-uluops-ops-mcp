@@ -23,6 +23,8 @@ considered and left alone; readers scanning only for the standard headings lose 
 
 ## [0.27.0] - 2026-10-03
 
+_Never published on its own: tagged in git, then released inside 0.27.1 together with the caveat fix above._
+
 ### Changed
 
 - **`@uluops/ops-sdk` 6.12.0 → 6.14.0 (exact).** Two consumer-visible effects:
