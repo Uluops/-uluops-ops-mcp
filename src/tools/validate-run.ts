@@ -50,7 +50,6 @@ export const ValidateRunInputSchema = z.object({
   // forwards project/workflowType/agents/recommendations/analysis_* and nothing else
   // (ops-sdk 6.14.0 operations/runs.js), so these never reach the API.
   definition_type: z.string().max(20).optional().describe('Definition type, as you will send it to save_run (used only for the attribution warnings)'),
-  definition_name: z.string().max(100).optional().describe('Definition name, as you will send it to save_run (used only for the attribution warnings)'),
   definition_version: z.string().max(50).optional().describe('Definition version, as you will send it to save_run (used only for the attribution warnings)'),
 });
 
