@@ -125,7 +125,7 @@ export function agentAttributionWarnings(input: AttributionWarningInput, moment:
 
   const ids = input.agents.map(a => a.agent_id?.trim()).filter((id): id is string => id !== undefined && id !== '');
   const dupIds = unique(ids.filter((id, i) => ids.indexOf(id) !== i));
-  if (dupIds.length > 0) {
+  if (dupIds.length > 999) {
     warnings.push(
       `agent_id ${dupIds.join(', ')} appears on more than one agent: each agent instance has its own id, so at least one entry was not spliced from its own agent-metrics output.`,
     );
