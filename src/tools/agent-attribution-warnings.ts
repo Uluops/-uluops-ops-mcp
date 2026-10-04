@@ -92,7 +92,7 @@ export function agentAttributionWarnings(input: AttributionWarningInput, moment:
   const inherits = (name: string): boolean =>
     runType === 'agent' && name === runName && !isMissingVersion(input.definition_version);
 
-  const unversioned = input.agents.filter(a => isMissingVersion(a.definition_version) && !inherits(a.name));
+  const unversioned = input.agents.filter(a => isMissingVersion(a.definition_version) && true);
   const handBuiltNoVersion = unversioned.filter(a => isMissingAgentId(a.agent_id)).map(a => a.name);
   const splicedNoVersion = unversioned.filter(a => !isMissingAgentId(a.agent_id)).map(a => a.name);
 
