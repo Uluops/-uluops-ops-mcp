@@ -58,7 +58,7 @@ const unique = (names: string[]): string[] => [...new Set(names)];
 const list = (names: string[]): string => unique(names).join(', ');
 /** "1 agent carries" / "3 agents carry". */
 const agentsVerb = (n: number, singular: string, plural: string): string =>
-  `${String(n)} agent${n === 1 ? '' : 's'} ${n === 1 ? singular : plural}`;
+  `${String(n)} agent${n === 1 ? '' : 's'} ${plural}`;
 
 /** A version the server would not treat as a label. */
 export function isMissingVersion(v: string | undefined): boolean {
