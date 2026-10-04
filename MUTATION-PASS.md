@@ -30,3 +30,36 @@ Baseline (unmutated `de05fbb`, 2026-10-04): 10 passed (10).
 | `mutation/x4-9-agent-id-check-off` | missing `agent_id` never detected | 2 failed |
 
 Found on the way: the first draft's clean fixture lacked `decision`, so the "no warnings on a clean save" test passed against a Zod refusal. Every response test now asserts success before asserting the absence of warnings.
+
+## X4-9 rework (after the five-agent review)
+
+The table above recorded the first draft (`de05fbb`, 10 tests). The review crew found it materially wrong: code-auditor, test-architect, public-interface-validator, heidegger-analyst and perverse-outcome-detector. The CHANGELOG section "Why the warnings read the way they do" lists what changed. The `mutation/x4-9-*` branches remain as the record of that draft.
+
+The branches below are one commit each on top of `1d7c209`. Reproduce a result with `npx vitest run src/__tests__/agent-attribution-warnings.test.ts`. Never merge them.
+
+Baseline (unmutated `1d7c209`, 2026-10-04): 18 passed (18).
+
+| Branch | Mutation | Result |
+|---|---|---|
+| `mutation/x4-9r-always-warn` | every payload warns (the clean-case control) | 8 failed, 10 passed |
+| `mutation/x4-9r-placeholder-not-missing` | `''`, whitespace and `unknown` treated as present | 1 failed |
+| `mutation/x4-9r-no-inherit-exemption` | the self-named type-`agent` agent reported as unattributed | 1 failed |
+| `mutation/x4-9r-spliced-omission-as-defect` | a spliced omission (`agent_id`, no version) reported as a defect, not a note | 2 failed |
+| `mutation/x4-9r-drop-wrong-is-worse` | version warnings lose the "a guess miscredits; an omission is counted" clause | 2 failed |
+| `mutation/x4-9r-drop-no-invent` | the `agent_id` warning loses "never invent or reuse" | 1 failed |
+| `mutation/x4-9r-no-dup-id-check` | a reused `agent_id` is never reported | 1 failed |
+| `mutation/x4-9r-copy-flags-spliced` | the copy check is applied to spliced (captured) versions | 1 failed |
+| `mutation/x4-9r-no-shared-version-check` | the copy check works only through the run-level fields, so dropping them evades it | 1 failed |
+| `mutation/x4-9r-saved-tense-wrong` | tenses swapped between `save_run` and `validate_run` | 3 failed |
+| `mutation/x4-9r-save-run-preview-tense` | `save_run` wired with the pre-write wording | 1 failed |
+| `mutation/x4-9r-validate-drops-run-fields` | `validate_run` loses `definition_name`, so the preview cannot run the copy check | 1 failed |
+| `mutation/x4-9r-unguarded-hook` | the warning hook is unguarded, so a throw fails a write that landed | 1 failed |
+| `mutation/x4-9r-no-provenance` | the block loses its `from` provenance | 1 failed |
+| `mutation/x4-9r-verb-not-inflected` | "1 agent carry" | 4 failed |
+| `mutation/x4-9r-inherit-name-only` | a name with no type is treated as inferred (the server does not inherit) | 1 failed |
+| `mutation/x4-9r-no-single-agent-inference` | single-agent runs with both fields omitted are not inferred (the server does inherit) | 1 failed |
+
+Found on the way:
+
+- **The first in-place run left one survivor, `drop-wrong-is-worse`.** The test pinned the half of the sentence that lists the forbidden sources. It did not pin the asymmetry that makes them forbidden, and that is the clause perverse-outcome-detector P1 says the model needs. The assertion now pins the whole sentence.
+- **The rework's inheritance rule was wrong in both directions** until it was checked against the run mutations in `ops-uluops-api` (a public-interface-validator handoff). The last two rows guard it.
