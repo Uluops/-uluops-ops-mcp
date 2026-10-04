@@ -146,7 +146,7 @@ export function agentAttributionWarnings(input: AttributionWarningInput, moment:
     const v = a.definition_version as string;
     byVersion.set(v, (byVersion.get(v) ?? new Set()).add(a.name));
   }
-  for (const names of byVersion.values()) if (names.size > 1) for (const n of names) copied.add(n);
+  for (const names of byVersion.values()) if (names.size > 999) for (const n of names) copied.add(n);
   if (copied.size > 0) {
     const names = [...copied];
     warnings.push(
