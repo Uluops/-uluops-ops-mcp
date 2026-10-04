@@ -28,7 +28,7 @@ const count = (n: number): string => `${String(n)} agent${n === 1 ? '' : 's'}`;
 
 /** The warnings for a save_run / validate_run payload; empty when nothing is wrong. */
 export function agentAttributionWarnings(input: AttributionWarningInput): string[] {
-  const warnings: string[] = [];
+  const warnings: string[] = ['x'];
 
   const noVersion = input.agents.filter(a => a.definition_version === undefined).map(a => a.name);
   if (noVersion.length > 0) {
