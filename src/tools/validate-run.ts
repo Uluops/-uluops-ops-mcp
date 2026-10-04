@@ -68,7 +68,7 @@ export function registerValidateRunTool(
     createToolHandler(
       ValidateRunInputSchema,
       (n, scope) => opsClient.runs.validate(n, { _skipClientValidation: true, ...scope }),
-      { toolName: 'validate_run', responseWarnings: agentAttributionWarnings }
+      { toolName: 'validate_run' }
     )
   );
 }
