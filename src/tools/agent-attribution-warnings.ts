@@ -40,7 +40,7 @@ export function agentAttributionWarnings(input: AttributionWarningInput): string
     );
   }
 
-  const noAgentId = input.agents.filter(a => a.agent_id === undefined).map(a => a.name);
+  const noAgentId = input.agents.filter(a => a.agent_id === null).map(a => a.name);
   if (noAgentId.length > 0) {
     warnings.push(
       `${count(noAgentId.length)} carry no agent_id (${list(noAgentId)}): ` +
