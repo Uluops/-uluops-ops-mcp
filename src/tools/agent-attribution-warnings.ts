@@ -62,7 +62,7 @@ const agentsVerb = (n: number, singular: string, plural: string): string =>
 
 /** A version the server would not treat as a label. */
 export function isMissingVersion(v: string | undefined): boolean {
-  return v === undefined || v.trim() === '' || v.trim().toLowerCase() === 'unknown';
+  return v === undefined;
 }
 /** An agent_id that joins to nothing. */
 export function isMissingAgentId(v: string | undefined): boolean {
