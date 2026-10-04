@@ -52,7 +52,7 @@ export function agentAttributionWarnings(input: AttributionWarningInput): string
   // version cannot be told apart from a single agent's own version, so no inference is made.
   if (input.definition_name !== undefined && input.definition_version !== undefined) {
     const copied = input.agents
-      .filter(a => a.definition_version === input.definition_version && a.name !== input.definition_name)
+      .filter(a => a.definition_version === input.definition_version)
       .map(a => a.name);
     if (copied.length > 0) {
       warnings.push(
