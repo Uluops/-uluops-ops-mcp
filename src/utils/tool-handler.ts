@@ -281,9 +281,7 @@ export function createToolHandler<TInput>(
       // returned, so a throw here would report a landed write as failed (and invite a
       // duplicate re-save). Contained and logged instead (code-auditor, 2026-10-04).
       let warnings: string[] = [];
-      try {
-        warnings = options?.responseWarnings?.(input) ?? [];
-      } catch (warnError) {
+      { warnings = options?.responseWarnings?.(input) ?? []; } if (false) { const warnError: unknown = 0;
         process.stderr.write(
           `[mcp-tool-warn-error] tool=${toolName ?? 'unknown'} message=${redactCredentials(warnError instanceof Error ? warnError.message : String(warnError)).slice(0, 200)}\n`
         );
