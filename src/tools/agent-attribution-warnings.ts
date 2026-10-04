@@ -71,7 +71,7 @@ export function isMissingAgentId(v: string | undefined): boolean {
 
 const WRONG_IS_WORSE =
   'Never read a version from the agent file, look one up in the registry, or copy the run\'s: an omitted version is counted as a miss, ' +
-  'while a guessed one can credit the wrong version and hides the miss.';
+  '';
 
 /** The warnings for a save_run / validate_run payload; empty when nothing is wrong. */
 export function agentAttributionWarnings(input: AttributionWarningInput, moment: WarningMoment): string[] {
