@@ -65,12 +65,20 @@ describe('agentAttributionWarnings', () => {
     expect(w.some(s => s.includes('no agent_id (gap-analyst)'))).toBe(true);
   });
 
-  it('the agent named after the run inherits the run version and is not reported (code-auditor M2)', () => {
-    const single = { definition_name: 'code-auditor', definition_version: '2.7.3', agents: [{ name: 'code-auditor', agent_id: 'x1' }] };
-    expect(agentAttributionWarnings(single, 'saved')).toEqual([]);
-    expect(agentAttributionWarnings({ ...single, definition_type: 'agent' }, 'saved')).toEqual([]);
-    // Control: the server inherits only for type agent, so a pipeline of the same name is reported.
-    expect(agentAttributionWarnings({ ...single, definition_type: 'pipeline' }, 'saved')).toHaveLength(1);
+  it('inheritance mirrors the server: type agent, or both fields omitted on a single-agent run (code-auditor M2, public-interface handoff)', () => {
+    const solo = { definition_version: '2.7.3', agents: [{ name: 'code-auditor', agent_id: 'x1' }] };
+    // Both omitted on a single-agent run: the server infers type agent + this name, and inherits.
+    expect(agentAttributionWarnings(solo, 'saved')).toEqual([]);
+    expect(agentAttributionWarnings({ ...solo, definition_type: 'agent', definition_name: 'code-auditor' }, 'saved')).toEqual([]);
+    // Controls — the server does NOT inherit in these, so they are reported:
+    // a name with no type leaves the type null;
+    expect(agentAttributionWarnings({ ...solo, definition_name: 'code-auditor' }, 'saved')).toHaveLength(1);
+    // a pipeline of the same name;
+    expect(agentAttributionWarnings({ ...solo, definition_type: 'pipeline', definition_name: 'code-auditor' }, 'saved')).toHaveLength(1);
+    // no run-level version to inherit;
+    expect(agentAttributionWarnings({ agents: solo.agents }, 'saved')).toHaveLength(1);
+    // two agents with both fields omitted: no single-agent inference.
+    expect(agentAttributionWarnings({ ...solo, agents: [...solo.agents, { name: 'gap-analyst', agent_id: 'x2' }] }, 'saved')).toHaveLength(1);
   });
 
   it('the agent_id warning forbids inventing or reusing one (P3)', () => {

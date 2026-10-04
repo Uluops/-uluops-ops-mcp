@@ -23,7 +23,7 @@ considered and left alone; readers scanning only for the standard headings lose 
   - agents with no `agent_id`, and reused `agent_id`s;
   - hand-built versions that may have been copied: equal to the run-level version under another name, or shared by differently named agents (tracker c18f1ab1).
 
-  Empty, whitespace and `unknown` values count as missing. The agent named after a type-`agent` run inherits the run version on the server and is not reported.
+  Empty, whitespace and `unknown` values count as missing. The agent a type-`agent` run is named after inherits the run version on the server and is not reported. That includes a single-agent run with both run-level fields omitted, which the server infers; a name given without a type does not inherit (mirrors `ops-uluops-api` run mutations).
 
   **Warn only**, by decision (Alex, 2026-10-04): the tool never refuses, never fills, and sends nothing different to the API. No block appears on a clean payload or on an error, and a throw inside the warning code is logged, never surfaced.
 

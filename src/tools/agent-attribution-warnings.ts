@@ -80,12 +80,17 @@ export function agentAttributionWarnings(input: AttributionWarningInput, moment:
     ? 'This run is already recorded as sent; do not re-save it to change this (a re-save creates a second run) — tell the user which agents are unattributed.'
     : 'Fix this before calling save_run: a saved run cannot be relabelled (update_run does not carry the version).';
 
-  // The server inherits the run-level version for the agent named after the run's own
-  // definition (type `agent`, or omitted and inferred), so that agent is not unattributed.
+  // The server inherits the run-level version for the agent named after a type-`agent`
+  // run, so that agent is not unattributed. Mirrors ops-uluops-api run mutations exactly:
+  // type and name are inferred (`agent`, agents[0].name) only when BOTH are omitted on a
+  // single-agent run; a name with no type leaves the type null, and nothing inherits.
+  // (public-interface-validator handoff, 2026-10-04: the first rework exempted name-only
+  // runs, which the server does not credit, and warned on inferred runs, which it does.)
+  const inferred = input.definition_type === undefined && input.definition_name === undefined;
+  const runType = inferred ? (input.agents.length === 1 ? 'agent' : undefined) : input.definition_type;
+  const runName = inferred ? (input.agents.length === 1 ? input.agents[0]?.name : undefined) : input.definition_name;
   const inherits = (name: string): boolean =>
-    name === input.definition_name
-    && !isMissingVersion(input.definition_version)
-    && (input.definition_type === undefined || input.definition_type === 'agent');
+    runType === 'agent' && name === runName && !isMissingVersion(input.definition_version);
 
   const unversioned = input.agents.filter(a => isMissingVersion(a.definition_version) && !inherits(a.name));
   const handBuiltNoVersion = unversioned.filter(a => isMissingAgentId(a.agent_id)).map(a => a.name);
