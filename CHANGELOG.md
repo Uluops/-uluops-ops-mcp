@@ -15,6 +15,8 @@ considered and left alone; readers scanning only for the standard headings lose 
 
 ## [Unreleased]
 
+## [0.28.0] - 2026-10-04
+
 ### Added
 
 - **Attribution warnings on `save_run` and `validate_run`** (definition-version-comparison checklist X4-9). When a payload would lose version attribution, a successful response carries a `{ "warnings": [...], "from": "..." }` block. The block names:
