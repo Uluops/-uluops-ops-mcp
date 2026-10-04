@@ -114,6 +114,9 @@ function isShortCircuit(value: unknown): value is ShortCircuit {
  * );
  * ```
  */
+/** Provenance label on the `{ warnings }` block (see createToolHandler's responseWarnings). */
+export const WARNINGS_SOURCE = 'this MCP server, computed from your own request — not tracker data';
+
 export function createToolHandler<TInput>(
   schema: z.ZodSchema<TInput>,
   // SAFETY: `normalized` is `any` because normalizeKeys performs a runtime
@@ -150,6 +153,14 @@ export function createToolHandler<TInput>(
      * when it writes its answer.
      */
     responseNote?: string;
+    /**
+     * Payload-dependent warnings, computed from the parsed input and appended to a
+     * success response as a `{ warnings: [...] }` text block (after any caveat, before
+     * the untrusted-content notice). Omitted when empty. Never consulted on an error: a
+     * refused call recorded nothing to warn about. Used for the save-time attribution
+     * warnings (dvc checklist X4-9).
+     */
+    responseWarnings?: (input: TInput) => string[];
   }
 ): (args: unknown) => Promise<McpToolResponse> {
   const toolName = options?.toolName;
@@ -265,6 +276,23 @@ export function createToolHandler<TInput>(
       addContext(response, envelope.context);
       if (options?.responseNote !== undefined) {
         response.content.push({ type: 'text', text: JSON.stringify({ caveat: options.responseNote }) });
+      }
+      // A warning must never decide the outcome of a write: this runs after the SDK call
+      // returned, so a throw here would report a landed write as failed (and invite a
+      // duplicate re-save). Contained and logged instead (code-auditor, 2026-10-04).
+      let warnings: string[] = [];
+      try {
+        warnings = options?.responseWarnings?.(input) ?? [];
+      } catch (warnError) {
+        process.stderr.write(
+          `[mcp-tool-warn-error] tool=${toolName ?? 'unknown'} message=${redactCredentials(warnError instanceof Error ? warnError.message : String(warnError)).slice(0, 200)}\n`
+        );
+      }
+      if (warnings.length > 0) {
+        // `from` sets these apart from tracker data: the untrusted-content notice after
+        // this block covers what users wrote, and these were computed by this server
+        // from the caller's own request (perverse-outcome-detector P8).
+        response.content.push({ type: 'text', text: JSON.stringify({ warnings, from: WARNINGS_SOURCE }) });
       }
       // D16: the untrusted-content notice, last, on every success.
       response.content.push({ type: 'text', text: UNTRUSTED_CONTENT_NOTICE });

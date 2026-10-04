@@ -15,6 +15,39 @@ considered and left alone; readers scanning only for the standard headings lose 
 
 ## [Unreleased]
 
+## [0.28.0] - 2026-10-04
+
+### Added
+
+- **Attribution warnings on `save_run` and `validate_run`** (definition-version-comparison checklist X4-9). When a payload would lose version attribution, a successful response carries a `{ "warnings": [...], "from": "..." }` block. The block names:
+  - hand-built agents (no `agent_id`) with no `definition_version`;
+  - spliced agents with no version, as a no-action note: agent-metrics omitted it because it could not name the definition that ran;
+  - agents with no `agent_id`, and reused `agent_id`s;
+  - hand-built versions that may have been copied: equal to the run-level version under another name, or shared by differently named agents (tracker c18f1ab1).
+
+  Empty, whitespace and `unknown` values count as missing. The agent a type-`agent` run is named after inherits the run version on the server and is not reported. That includes a single-agent run with both run-level fields omitted, which the server infers; a name given without a type does not inherit (mirrors `ops-uluops-api` run mutations).
+
+  **Warn only**, by decision (Alex, 2026-10-04): the tool never refuses, never fills, and sends nothing different to the API. No block appears on a clean payload or on an error, and a throw inside the warning code is logged, never surfaced.
+
+  **What changes for you:** a new text block may appear on success responses. The block is additive.
+  - `validate_run` gains optional `definition_type` / `definition_name` / `definition_version`. They are used only to run the copy check in the preview; the SDK does not forward them.
+  - The `save_run` and `validate_run` descriptions, and `agents[].definition_version`'s describe, now state the attribution rule: the agent's own version, from agent-metrics; omitted when unknown; unchangeable after saving.
+
+### Why the warnings read the way they do
+
+The first draft went to a five-agent review (code-auditor, test-architect, public-interface-validator, heidegger-analyst, perverse-outcome-detector), which read the strings as text an orchestrating model will try to make go away. The draft would have:
+- **Invited a duplicate run.** It told `save_run` callers to "fix it before saving" after the write. A corrected re-save has a different content-derived idempotency key, so it creates a second run. Wording now follows the tool: past tense and "do not re-save" on `save_run`, "fix before calling save_run" on `validate_run`.
+- **Offered fabrication as the only way out.** It stated what an omission costs but not what a guess costs. A built-in or plugin agent, which agent-metrics omits by design, could clear the block only by reading a version from the agent file or the registry, turning a counted miss into a silent wrong credit. The asymmetry is now in every version warning, and a spliced omission is a no-action note.
+- **Invited invented `agent_id`s,** which erases the hand-built signal and corrupts the transcript join key.
+- **Flagged correct versions as copies.** It called a captured version a copy whenever its label coincided with the run's (29 corpus definitions share `1.0.2`), and told the model to remove it.
+- **Let the copy check be evaded** by deleting a run-level field, losing the run's own version.
+- **Been unable to preview the copy case,** so the worst harm surfaced only after it was permanent.
+- **Let placeholders through.** It missed `''` and `unknown`, which the server treats as absent.
+
+### Internal
+
+- `createToolHandler` gains a `responseWarnings` option. It is payload-dependent and success-only, sits beside the fixed `responseNote` caveat, and is contained in its own try/catch.
+
 ## [0.27.1] - 2026-10-03
 
 ### Changed

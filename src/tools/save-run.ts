@@ -18,6 +18,7 @@ import {
   AnalysisSummaryBaseSchema,
 } from '../types/run-schemas.js';
 import { createToolHandler } from '../utils/tool-handler.js';
+import { agentAttributionWarnings } from './agent-attribution-warnings.js';
 
 const AnalysisRecordSchema = AnalysisRecordBaseSchema;
 const AnalysisSummarySchema = AnalysisSummaryBaseSchema;
@@ -66,13 +67,15 @@ export function registerSaveRunTool(
 ): void {
   server.tool(
     'save_run',
-    'Save a run — the findings a definition (agent, workflow or pipeline) produced against a project. Auto-increments run number per project+workflow. Detects regressions and persistent issues. A project that does not exist is CREATED under the name given — check the spelling with list_projects first; a typo becomes a new project.' + RUN_MAP_CONTRACT + RUN_TOKEN_CONTRACT,
+    'Save a run — the findings a definition (agent, workflow or pipeline) produced against a project. Auto-increments run number per project+workflow. Detects regressions and persistent issues. A project that does not exist is CREATED under the name given — check the spelling with list_projects first; a typo becomes a new project. Each agent\'s definition_version must be that agent\'s own, spliced from agent-metrics output; omit it when unknown, never copy the run\'s or look one up. Attribution cannot be changed after saving, so preview with validate_run first; a `warnings` block in the response names agents whose attribution was lost.' + RUN_MAP_CONTRACT + RUN_TOKEN_CONTRACT,
     SaveRunInputSchema.shape,
     createToolHandler(
       SaveRunInputSchema,
       (n, scope) => opsClient.runs.save(n, { _skipClientValidation: true, ...scope }),
       {
         toolName: 'save_run',
+        // X4-9: warn, never refuse or fill.
+        responseWarnings: (input) => agentAttributionWarnings(input, 'saved'),
         preProcess: (input) => ({
           ...input,
           timestamp: input.timestamp ?? new Date().toISOString(),

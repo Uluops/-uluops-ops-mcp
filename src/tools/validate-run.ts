@@ -17,6 +17,7 @@ import {
   AnalysisSummaryBaseSchema,
 } from '../types/run-schemas.js';
 import { createToolHandler } from '../utils/tool-handler.js';
+import { agentAttributionWarnings } from './agent-attribution-warnings.js';
 
 const AnalysisRecordSchema = AnalysisRecordBaseSchema;
 const AnalysisSummarySchema = AnalysisSummaryBaseSchema;
@@ -43,6 +44,14 @@ export const ValidateRunInputSchema = z.object({
       agent_name: z.string().max(100).optional().describe('Agent name for per-agent attribution'),
     })).max(20),
   ], { errorMap: runSummaryErrorMap }).optional().describe('Analysis summary to preview — single object or per-agent array'),
+  // X4-9: the run-level definition fields, so the preview can run the copied-version check
+  // before the write (review 2026-10-04: until then the worst case — a wrong version — was
+  // visible only after save_run, when it is permanent). Local only: the SDK's runs.validate
+  // forwards project/workflowType/agents/recommendations/analysis_* and nothing else
+  // (ops-sdk 6.14.0 operations/runs.js), so these never reach the API.
+  definition_type: z.string().max(20).optional().describe('Definition type, as you will send it to save_run (used only for the attribution warnings)'),
+  definition_name: z.string().max(100).optional().describe('Definition name, as you will send it to save_run (used only for the attribution warnings)'),
+  definition_version: z.string().max(50).optional().describe('Definition version, as you will send it to save_run (used only for the attribution warnings)'),
 });
 
 export type ValidateRunInput = z.infer<typeof ValidateRunInputSchema>;
@@ -56,7 +65,7 @@ export function registerValidateRunTool(
 ): void {
   server.tool(
     'validate_run',
-    'Preview what save_run would do without modifying the database. Returns would_create, would_update, would_regress, would_create_analysis_records, would_create_analysis_summaries, and validation_errors. Accepts the same shape as save_run including optional analysis_records and analysis_summary so the dry-run faithfully reflects the full set of side effects.' + RUN_MAP_CONTRACT + RUN_TOKEN_CONTRACT,
+    'Preview what save_run would do without modifying the database. Returns would_create, would_update, would_regress, would_create_analysis_records, would_create_analysis_summaries, and validation_errors. Accepts the same shape as save_run including optional analysis_records and analysis_summary so the dry-run faithfully reflects the full set of side effects. Preview here before save_run: a `warnings` block names agents whose version attribution would be lost, while it can still be fixed — a saved run cannot be relabelled.' + RUN_MAP_CONTRACT + RUN_TOKEN_CONTRACT,
     ValidateRunInputSchema.shape,
     // `_skipClientValidation`, as save_run / update_run / preview_update_run
     // pass: the tool schema above is the client-side contract and the server
@@ -67,7 +76,7 @@ export function registerValidateRunTool(
     createToolHandler(
       ValidateRunInputSchema,
       (n, scope) => opsClient.runs.validate(n, { _skipClientValidation: true, ...scope }),
-      { toolName: 'validate_run' }
+      { toolName: 'validate_run', responseWarnings: (input) => agentAttributionWarnings(input, 'preview') }
     )
   );
 }
