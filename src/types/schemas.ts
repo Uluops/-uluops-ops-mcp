@@ -212,7 +212,7 @@ export const AgentResultSchema = z
     score: z.number().optional().nullable().describe('Agent score (0-100). Omit for generator/executor agents that do not produce scores.'),
     max_score: z.number().optional().nullable().describe('Maximum possible score. Omit or null for generator/executor agents that do not produce scores (paired with score).'),
     decision: z.string().describe('Agent decision (e.g., PASS, FAIL, CLEAR, BEWITCHED)'),
-    definition_version: z.string().max(50).optional().describe('Definition version for version-aware analytics'),
+    definition_version: z.string().max(50).optional().describe("This agent's own definition version, spliced from agent-metrics output (captured at spawn). Omit when unknown; never copy the run-level version or look one up. Credits the run to that version; cannot be changed after saving."),
     summary: z.string().optional().describe('Brief human-readable summary of agent result'),
     model: z.string().optional().describe('Model used (e.g., sonnet, opus)'),
     harness: z.string().max(32).optional().describe('Execution harness (e.g., claude-code, codex)'),

@@ -75,23 +75,49 @@ normalized `model` in saved and retrieved agent snapshots.
 
 The tracker credits a run to an agent version only when that agent's own
 `definition_version` is sent. Without it the server stores a fallback
-(`inferred-latest`, or nothing) that no version record counts, and a saved run
-cannot be relabelled. When a payload looks wrong, a successful response carries a
-`{ "warnings": [...] }` block, placed after the context block and before the
-untrusted-content notice. It names:
+(`inferred-latest`, or nothing) that no version record counts. A saved run
+cannot be relabelled, because `update_run` does not carry the version. When a
+payload would lose attribution, a successful response carries a
+`{ "warnings": [...], "from": "..." }` block. It sits after the context block and
+before the untrusted-content notice. `from` marks it as computed by this server
+from your own request, not tracker data. The block names:
 
-- agents with no `definition_version`;
-- agents with no `agent_id`, usually a sign the entry was built by hand rather than
-  spliced from `agent-metrics … -f tracker`;
-- agents whose version equals the run-level `definition_version` while their name
-  differs from `definition_name`, the signature of the run's version being copied
-  onto its agents. `save_run` only: `validate_run` has no run-level definition
-  fields, so its preview cannot show this one.
+- **Hand-built agents with no version.** These have no `definition_version` and no
+  `agent_id`. Splice from `agent-metrics … -f tracker`; if there is no
+  agent-metrics output, leave the version out.
+- **Spliced agents with no version.** These have an `agent_id` but no version: a
+  *note, no action needed*. agent-metrics omits the version when it cannot name
+  the definition that ran (built-in or plugin agents, no `version:` in the file,
+  a file changed around spawn).
+- **Agents with no `agent_id`.** These are probably hand-built. Never invent or
+  reuse one: it is the only join key to the transcript.
+- **A reused `agent_id`.**
+- **Hand-built versions that may have been copied.** These match the run's
+  `definition_version` under another name, or are shared by differently named
+  agents (tracker c18f1ab1). Versions on spliced entries (with an `agent_id`) are
+  trusted: they were captured at spawn, and a label that merely coincides with
+  the run's is not a copy.
 
-The warnings never refuse the call, never fill a value, and never change what
-is sent to the API; they are response text only. A clean payload carries no
-block. agent-metrics ≥ 0.12.0 captures each agent's version at spawn, so a
-verbatim splice of its tracker output satisfies all three.
+Empty, whitespace and `unknown` values count as missing. The agent named after
+the run's own definition (type `agent`, or omitted) inherits the run version on
+the server and is not reported.
+
+Every version warning says what not to do as well as what to do. Never read a
+version from the agent file, look one up in the registry, or copy the run's: an
+omitted version is counted as a miss, while a guessed one can credit the wrong
+version and hides the miss.
+
+**Preview first.** `validate_run` shows the same warnings worded for before the
+write ("fix this before calling save_run"). It accepts the run-level
+`definition_type`, `definition_name` and `definition_version` so it can run the
+copy check; these are used only for the warnings and are not forwarded to the
+API. On `save_run` the run is already recorded. The warning then says so, and
+says not to re-save: a corrected payload has a different content-derived
+idempotency key, so a re-save creates a second run.
+
+The warnings never refuse the call, never fill a value, and never change what is
+sent to the API. A clean payload carries no block. A failure inside the warning
+code is logged to stderr and never turns a recorded write into an error.
 
 ## Configuration
 
