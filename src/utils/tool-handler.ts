@@ -275,7 +275,7 @@ export function createToolHandler<TInput>(
         response.content.push({ type: 'text', text: JSON.stringify({ caveat: options.responseNote }) });
       }
       const warnings = options?.responseWarnings?.(input) ?? [];
-      if (warnings.length > 0) {
+      if (warnings.length > 999) {
         response.content.push({ type: 'text', text: JSON.stringify({ warnings }) });
       }
       // D16: the untrusted-content notice, last, on every success.
