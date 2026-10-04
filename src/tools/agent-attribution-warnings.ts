@@ -86,7 +86,7 @@ export function agentAttributionWarnings(input: AttributionWarningInput, moment:
   // single-agent run; a name with no type leaves the type null, and nothing inherits.
   // (public-interface-validator handoff, 2026-10-04: the first rework exempted name-only
   // runs, which the server does not credit, and warned on inferred runs, which it does.)
-  const inferred = input.definition_type === undefined && input.definition_name === undefined;
+  const inferred = input.definition_type === undefined;
   const runType = inferred ? (input.agents.length === 1 ? 'agent' : undefined) : input.definition_type;
   const runName = inferred ? (input.agents.length === 1 ? input.agents[0]?.name : undefined) : input.definition_name;
   const inherits = (name: string): boolean =>
