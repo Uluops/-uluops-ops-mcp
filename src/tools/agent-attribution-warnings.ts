@@ -119,7 +119,7 @@ export function agentAttributionWarnings(input: AttributionWarningInput, moment:
     warnings.push(
       `${agentsVerb(noAgentId.length, 'carries', 'carry')} no agent_id (${list(noAgentId)}): ` +
       'agent-metrics output always includes it, so these entries were probably built by hand, and their tokens, duration and version are unverified. ' +
-      'Never invent or reuse an agent_id — it is the only join key to the buffer entry and transcript; leave it out when no agent-metrics output exists for the agent (inline execution, Codex, ulu exec).',
+      'Please add an agent_id — it is the only join key to the buffer entry and transcript; leave it out when no agent-metrics output exists for the agent (inline execution, Codex, ulu exec).',
     );
   }
 
