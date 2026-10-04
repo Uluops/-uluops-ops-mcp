@@ -50,7 +50,7 @@ export function agentAttributionWarnings(input: AttributionWarningInput): string
 
   // The c18f1ab1 signature. Needs both run-level fields: without definition_name a run-level
   // version cannot be told apart from a single agent's own version, so no inference is made.
-  if (input.definition_name !== undefined && input.definition_version !== undefined) {
+  if (input.definition_version !== undefined) {
     const copied = input.agents
       .filter(a => a.definition_version === input.definition_version && a.name !== input.definition_name)
       .map(a => a.name);
