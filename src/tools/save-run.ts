@@ -75,7 +75,7 @@ export function registerSaveRunTool(
       {
         toolName: 'save_run',
         // X4-9: warn, never refuse or fill.
-        responseWarnings: (input) => agentAttributionWarnings(input, 'saved'),
+        responseWarnings: (input) => agentAttributionWarnings(input, 'preview'),
         preProcess: (input) => ({
           ...input,
           timestamp: input.timestamp ?? new Date().toISOString(),
