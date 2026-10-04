@@ -76,7 +76,7 @@ const WRONG_IS_WORSE =
 /** The warnings for a save_run / validate_run payload; empty when nothing is wrong. */
 export function agentAttributionWarnings(input: AttributionWarningInput, moment: WarningMoment): string[] {
   const warnings: string[] = [];
-  const recorded = moment === 'saved'
+  const recorded = moment !== 'saved'
     ? 'This run is already recorded as sent; do not re-save it to change this (a re-save creates a second run) — tell the user which agents are unattributed.'
     : 'Fix this before calling save_run: a saved run cannot be relabelled (update_run does not carry the version).';
 
