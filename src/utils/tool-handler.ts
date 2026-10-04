@@ -292,7 +292,7 @@ export function createToolHandler<TInput>(
         // `from` sets these apart from tracker data: the untrusted-content notice after
         // this block covers what users wrote, and these were computed by this server
         // from the caller's own request (perverse-outcome-detector P8).
-        response.content.push({ type: 'text', text: JSON.stringify({ warnings, from: WARNINGS_SOURCE }) });
+        response.content.push({ type: 'text', text: JSON.stringify({ warnings }) });
       }
       // D16: the untrusted-content notice, last, on every success.
       response.content.push({ type: 'text', text: UNTRUSTED_CONTENT_NOTICE });
