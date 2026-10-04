@@ -133,7 +133,7 @@ export function agentAttributionWarnings(input: AttributionWarningInput, moment:
 
   // The c18f1ab1 signature, on hand-built entries only (a spliced version was captured at
   // spawn, so a label that coincides with the run's is not a copy).
-  const handBuilt = input.agents.filter(a => isMissingAgentId(a.agent_id) && !isMissingVersion(a.definition_version));
+  const handBuilt = input.agents.filter(a => !isMissingVersion(a.definition_version));
   const copied = new Set<string>();
   if (input.definition_name !== undefined && !isMissingVersion(input.definition_version)) {
     for (const a of handBuilt) {
