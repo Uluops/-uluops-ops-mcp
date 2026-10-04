@@ -71,6 +71,28 @@ components: missing measurements should not be invented as zero.
 SDK 6.5.2 also preserves the API's optional, nullable `modelRaw` alongside the
 normalized `model` in saved and retrieved agent snapshots.
 
+### Attribution warnings on `save_run` and `validate_run`
+
+The tracker credits a run to an agent version only when that agent's own
+`definition_version` is sent. Without it the server stores a fallback
+(`inferred-latest`, or nothing) that no version record counts, and a saved run
+cannot be relabelled. When a payload looks wrong, a successful response carries a
+`{ "warnings": [...] }` block, placed after the context block and before the
+untrusted-content notice. It names:
+
+- agents with no `definition_version`;
+- agents with no `agent_id`, usually a sign the entry was built by hand rather than
+  spliced from `agent-metrics … -f tracker`;
+- agents whose version equals the run-level `definition_version` while their name
+  differs from `definition_name`, the signature of the run's version being copied
+  onto its agents. `save_run` only: `validate_run` has no run-level definition
+  fields, so its preview cannot show this one.
+
+The warnings never refuse the call, never fill a value, and never change what
+is sent to the API; they are response text only. A clean payload carries no
+block. agent-metrics ≥ 0.12.0 captures each agent's version at spawn, so a
+verbatim splice of its tracker output satisfies all three.
+
 ## Configuration
 
 Set environment variables in your MCP host configuration (see "Usage with Claude Code" below) or in a `.env` file when developing locally.

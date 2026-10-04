@@ -150,6 +150,14 @@ export function createToolHandler<TInput>(
      * when it writes its answer.
      */
     responseNote?: string;
+    /**
+     * Payload-dependent warnings, computed from the parsed input and appended to a
+     * success response as a `{ warnings: [...] }` text block (after any caveat, before
+     * the untrusted-content notice). Omitted when empty. Never consulted on an error: a
+     * refused call recorded nothing to warn about. Used for the save-time attribution
+     * warnings (dvc checklist X4-9).
+     */
+    responseWarnings?: (input: TInput) => string[];
   }
 ): (args: unknown) => Promise<McpToolResponse> {
   const toolName = options?.toolName;
@@ -265,6 +273,10 @@ export function createToolHandler<TInput>(
       addContext(response, envelope.context);
       if (options?.responseNote !== undefined) {
         response.content.push({ type: 'text', text: JSON.stringify({ caveat: options.responseNote }) });
+      }
+      const warnings = options?.responseWarnings?.(input) ?? [];
+      if (warnings.length > 0) {
+        response.content.push({ type: 'text', text: JSON.stringify({ warnings }) });
       }
       // D16: the untrusted-content notice, last, on every success.
       response.content.push({ type: 'text', text: UNTRUSTED_CONTENT_NOTICE });

@@ -15,6 +15,17 @@ considered and left alone; readers scanning only for the standard headings lose 
 
 ## [Unreleased]
 
+### Added
+
+- **Attribution warnings on `save_run` and `validate_run`** (definition-version-comparison checklist X4-9). When a successful response's payload would lose version attribution, a `{ "warnings": [...] }` block names the agents concerned:
+  - agents with no `definition_version`: the server records a fallback (`inferred-latest`, or nothing) that no version record counts, and `update_run` cannot relabel the run afterwards;
+  - agents with no `agent_id`: agent-metrics output always carries one, so these entries were most likely built by hand;
+  - agents carrying the run-level `definition_version` under a name other than `definition_name`: the tracker c18f1ab1 signature of the run's version copied onto its agents. `save_run` only, because `validate_run` has no run-level definition fields.
+
+  Warn only, by decision (Alex, 2026-10-04): the tool never refuses and never fills, because a guessed version credits another version silently, while a missing one is counted. Nothing sent to the API changes. A clean payload carries no block, and no warnings are attached to an error response. **What changes for you:** a new text block may appear on success responses. The block is additive; the payload and the context block are unchanged.
+  - **Why `validate_run` too:** the checklist names only `save_run`, but a miss is permanent once saved, and the preview is the one place it can still be fixed.
+  - **Internal:** `createToolHandler` gains a `responseWarnings` option (payload-dependent, success-only), beside the fixed `responseNote` caveat.
+
 ## [0.27.1] - 2026-10-03
 
 ### Changed

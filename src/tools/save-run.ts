@@ -18,6 +18,7 @@ import {
   AnalysisSummaryBaseSchema,
 } from '../types/run-schemas.js';
 import { createToolHandler } from '../utils/tool-handler.js';
+import { agentAttributionWarnings } from './agent-attribution-warnings.js';
 
 const AnalysisRecordSchema = AnalysisRecordBaseSchema;
 const AnalysisSummarySchema = AnalysisSummaryBaseSchema;
@@ -73,6 +74,8 @@ export function registerSaveRunTool(
       (n, scope) => opsClient.runs.save(n, { _skipClientValidation: true, ...scope }),
       {
         toolName: 'save_run',
+        // X4-9: warn, never refuse or fill.
+        responseWarnings: agentAttributionWarnings,
         preProcess: (input) => ({
           ...input,
           timestamp: input.timestamp ?? new Date().toISOString(),

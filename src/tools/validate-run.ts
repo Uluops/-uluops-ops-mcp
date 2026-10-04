@@ -17,6 +17,7 @@ import {
   AnalysisSummaryBaseSchema,
 } from '../types/run-schemas.js';
 import { createToolHandler } from '../utils/tool-handler.js';
+import { agentAttributionWarnings } from './agent-attribution-warnings.js';
 
 const AnalysisRecordSchema = AnalysisRecordBaseSchema;
 const AnalysisSummarySchema = AnalysisSummaryBaseSchema;
@@ -67,7 +68,7 @@ export function registerValidateRunTool(
     createToolHandler(
       ValidateRunInputSchema,
       (n, scope) => opsClient.runs.validate(n, { _skipClientValidation: true, ...scope }),
-      { toolName: 'validate_run' }
+      { toolName: 'validate_run', responseWarnings: agentAttributionWarnings }
     )
   );
 }
