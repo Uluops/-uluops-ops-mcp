@@ -1,7 +1,7 @@
 /**
  * update_run tool
  *
- * Update run metadata post-hoc (tokens, scores, timestamps, recommendations).
+ * Enrich a run post-hoc within its recorded-field policy.
  * Supports identification by run_id OR (project + run_number).
  */
 
@@ -54,11 +54,9 @@ export const UpdateRunInputSchema = z.object({
   project: z.string().min(1),
   run_id: z.string().uuid().optional(),
   run_number: z.number().int().positive().optional(),
-  workflow_type: z.string().optional(),
   agents: z.array(AgentUpdateSchema).optional(),
-  timestamp: z.string().optional(),
-  all_gates_passed: z.boolean().optional(),
-  average_score: z.number().min(0).max(100).optional(),
+  all_gates_passed: z.boolean().optional().describe('Fill an unrecorded result or echo its identical value; recorded false and true cannot be rewritten.'),
+  average_score: z.number().min(0).max(100).optional().describe('Fill an unrecorded score or echo its identical value; recorded zero is immutable too.'),
   raw_markdown: z.string().max(100000).optional(),
   recommendations: z.array(RecommendationSchema).optional().describe('Array of issues/recommendations to correlate with this run'),
   analysis_records: z.array(AnalysisRecordSchema).max(100).optional().describe('Structured analysis records — PER-AGENT REPLACE (API 1a): for each agent named in this array, that agent\'s entire live record set is superseded and these rows written; agents not named are untouched, and nothing here can remove another agent\'s rows. Omitting a record an agent previously had retires it — send every record that agent should keep, and use preview_update_run first when unsure. Leaves analysis_summary untouched. agent_name/record_id matching is case- and accent-insensitive.'),
@@ -77,7 +75,7 @@ export function registerUpdateRunTool(
 ): void {
   server.tool(
     'update_run',
-    'Update run metadata post-hoc (tokens, write-once score/gate fields, timestamps). Once averageScore or allGatesPassed is recorded, changing it is refused with FINALIZED_RUN_FIELD_IMMUTABLE; telemetry and analysis enrichment remain available. Also supports adding recommendations/issues, and PER-AGENT analysis writes after initial save — replace (default) or merge, via record_write_mode; writes supersede only the agents named in the payload and cannot remove another agent\'s rows (there is no delete endpoint). Analysis-bearing responses include the analysisWrite echo (a camelCase response key: superseded/created counts — supersededRecords 0 on an enrichment that expected to replace means the named agents had no live rows). Preview with preview_update_run. Identify run by either run_id OR (project + run_number).' + RUN_MAP_CONTRACT,
+    'Enrich run telemetry, recommendations and analysis post-hoc. Read editCapabilities from get_run, get_latest_run or get_run_details first when available (camelCase API request keys; absence means unknown; writes recheck policy). Run identity and timestamp are immutable. Once averageScore or allGatesPassed is recorded, changing or clearing it is refused with FINALIZED_RUN_FIELD_IMMUTABLE; identical values may be echoed, including zero and false. Agent enrichment follows existing agent update restrictions. Also supports adding recommendations/issues, and PER-AGENT analysis writes after initial save — replace (default) or merge, via record_write_mode; writes supersede only the agents named in the payload and cannot remove another agent\'s rows (there is no delete endpoint). Analysis-bearing responses include the analysisWrite echo (a camelCase response key: superseded/created counts — supersededRecords 0 on an enrichment that expected to replace means the named agents had no live rows). Preview analysis writes with preview_update_run; metadata and quality edits are not previewed. Identify run by either run_id OR (project + run_number).' + RUN_MAP_CONTRACT,
     UpdateRunInputSchema.shape,
     createToolHandler(UpdateRunInputSchema, async (n, scope) => {
       // With-echo variants (F17): the §3.9 echo's counts are the success

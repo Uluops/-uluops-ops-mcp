@@ -24,7 +24,7 @@ export function registerGetRunTool(
 ): void {
   server.tool(
     'get_run',
-    'Get a run by UUID.',
+    'Get a run by UUID. Includes actor-scoped editCapabilities when supported: camelCase API request fields, required role, immutable and mutable fields, unchanged-only and UUID-only fields, and analysis-only preview scope. Absence means unknown; writes recheck policy.',
     GetRunInputSchema.shape,
     createToolHandler(GetRunInputSchema, (n, scope) =>
       opsClient.runs.get(n['runId'] as string, scope),

@@ -25,7 +25,7 @@ export function registerGetLatestRunTool(
 ): void {
   server.tool(
     'get_latest_run',
-    'Get the latest run for a project.',
+    'Get the latest run for a project. Includes actor-scoped editCapabilities when supported: camelCase API request fields, required role, immutable and mutable fields, unchanged-only and UUID-only fields, and analysis-only preview scope. Absence means unknown; writes recheck policy.',
     GetLatestRunInputSchema.shape,
     createToolHandler(GetLatestRunInputSchema, (n, scope) =>
       opsClient.runs.getLatest(n['project'] as string, n['workflowType'] as string | undefined, scope),

@@ -453,8 +453,8 @@ units, which let a non-ASCII payload up to ~3x the stated size through.
 | `edit_issue` | Edit issue metadata (title, file_path, severity, etc.) |
 | `merge_issues` | Merge duplicate issues into a target issue |
 | `bulk_update_status` | Bulk update multiple issue statuses in one transaction, by issue UUID across the org (`project` is informational, not a scope) |
-| `update_run` | Update run telemetry/timestamps and set score/gate fields once; changing an already recorded `averageScore` or `allGatesPassed` is refused with `FINALIZED_RUN_FIELD_IMMUTABLE`. Per-agent analysis writes use replace (default) or merge via `record_write_mode`; analysis-bearing responses carry the `analysisWrite` echo (camelCase response key) |
-| `preview_update_run` | Read-only preview of an analysis-bearing update under the requested mode: per agent, what the write would supersede, create, and (replace only) retire |
+| `update_run` | Enrich run telemetry and set unrecorded score/gate fields; identity and timestamp are immutable; changing an already recorded `averageScore` or `allGatesPassed` is refused with `FINALIZED_RUN_FIELD_IMMUTABLE`. Per-agent analysis writes use replace (default) or merge via `record_write_mode`; analysis-bearing responses carry the `analysisWrite` echo (camelCase response key) |
+| `preview_update_run` | Read-only preview of an analysis-bearing update under the requested mode (metadata and quality edits are not previewed): per agent, what the write would supersede, create, and (replace only) retire |
 | `get_agent_reliability` | Analyze agent effectiveness: false-positive, declined (wontfix) and resolution rates plus reliability score |
 | `get_agent_lifecycle` | Lifecycle metrics for an agent across runs |
 
@@ -810,3 +810,5 @@ four list metrics return arrays. Legacy limit defaults to20. Regression and cost
 analysis retain their domain objects and reject page selection. Cross-project patterns
 remain a placeholder: legacy `[]`, or a page with `implemented:false` and a reason.
 Cost's `pricing_contract: "coverage-v1"` remains a separate object contract.
+
+Authorized `get_run`, `get_latest_run`, and `get_run_details` reads may include actor-scoped `editCapabilities`, using camelCase API request keys. Read-scoped API keys receive `canUpdate: false` with `denialReason: INSUFFICIENT_SCOPE`, even for publisher/owner actors. Absence means unknown on older producers; writes recheck authorization and policy. Recorded zero scores and false gate results cannot be changed or cleared; identical values may be echoed. Archive metadata is UUID-only (`archivedAt`, `archivedReason`) in the API/SDK and is not exposed by `update_run`. Agent enrichment follows existing agent update restrictions. `recordWriteMode` is a conditional option requiring analysis records; it is not an independently mutable run field. `update_run` does not accept immutable `workflow_type` or `timestamp` inputs.

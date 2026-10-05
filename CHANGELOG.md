@@ -15,6 +15,25 @@ considered and left alone; readers scanning only for the standard headings lose 
 
 ## [Unreleased]
 
+## [0.28.3] - 2026-10-04
+
+### Fixed
+
+- F17 actor-scope review: pin SDK 6.15.2 to preserve read-key `INSUFFICIENT_SCOPE` capability denials; verify complete scope-denied capability output on all three reads. Supersedes local 0.28.2 candidate.
+
+## [0.28.2] - 2026-10-04
+
+### Fixed
+
+- F17 review: stop advertising ignored immutable workflow/timestamp update inputs, clarify conditional record mode, and validate complete capability objects through all three reads. Pins SDK 6.15.1; supersedes the locally validated 0.28.1 candidate.
+
+## [0.28.1] - 2026-10-04
+
+### Fixed
+
+- Pin `@uluops/ops-sdk` 6.15.0 to retain edit capabilities returned by the API.
+- F17: run read/update descriptions expose actor-scoped edit capabilities and distinguish immutable identity/timestamp and recorded quality fields from enrichment. Analysis preview guidance now explicitly excludes metadata and quality edits.
+
 ## [0.28.0] - 2026-10-04
 
 ### Added
