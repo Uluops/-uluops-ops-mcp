@@ -20,6 +20,10 @@ considered and left alone; readers scanning only for the standard headings lose 
 - F19: `get_project_log` accepts optional `format: "actionable"` for full issue identities and display prefixes; omitted selectors retain legacy log behavior.
 - `get_org_audit_feed` exposes `hasMore` and `nextCursor` alongside unchanged snake_case aliases. Both cursor spellings preserve the opaque value; context and reason redaction remain intact.
 
+### Changed
+
+- Pin `@uluops/ops-sdk` to 6.16.0 from public npm for the F19 response contract; replace the local Verdaccio SDK lock resolution for cold consumer installs.
+
 ### Security
 - Update the Hono override to 4.13.7 and resolve proxy-addr 2.0.8 to clear inherited production advisories before the F19 release.
 
