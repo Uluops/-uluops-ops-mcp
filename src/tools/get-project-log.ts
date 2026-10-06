@@ -30,6 +30,7 @@ const ISO = z.string().min(1).max(40);
 
 export const GetProjectLogInputSchema = z.object({
   project: z.string().min(1).describe('Project name or UUID'),
+  format: z.literal('actionable').optional().describe('Request full issue fingerprints plus displayFingerprint; requires actionable-v1 API support. Omit for legacy 12-character fingerprints.'),
   since: ISO.optional().describe('Window start, ISO 8601 (e.g. 2026-09-01T00:00:00Z); the API answers 400 when since > until'),
   until: ISO.optional().describe('Window end, ISO 8601'),
   // 1–500: the API's ProjectLogQuerySchema is .min(1).max(500) and answers 400, it does not clamp.
@@ -54,6 +55,7 @@ export function registerGetProjectLogTool(
     'get_project_log',
     'The project\'s second history: runs (what was examined) and decisions (what was decided, with reasons) interleaved, newest first — plus what came back. ' +
     'One page of events (`run` | `decision` | `regression`), keyset-paged (`data[]`, `count`, `hasMore`, `nextCursor`): pass `nextCursor` back as `cursor`. ' +
+    'Select format: actionable for full fingerprints to use in issue lookups; displayFingerprint is presentation text. Omission retains legacy prefixes. ' +
     'Read it right: a `decision` with `reason: null` has NO reason recorded (the ledger\'s silence, not a person\'s); `source: null` is unattributed, never "human"; ' +
     'a `regression` is a finding a RUN re-detected (`viaRunNumber`), while a `resolved → open` decision with no run is reopened by decision — two different facts; ' +
     'a run\'s `counts: null` means saved before counts were recorded, not zero. Never collapsed — every row is returned.',

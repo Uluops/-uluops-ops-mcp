@@ -111,6 +111,24 @@ describe('get_org_audit_feed', () => {
     expect(entries[0]?.['details']).toBeDefined(); // raw entry preserved beside the summary (minus `reason`, §4.4a)
   });
 
+  it('provides both cursor aliases verbatim across pages while preserving context and redaction', async () => {
+    const cursor = 'opaque+/=%:ß';
+    const context = { version: 1, orgSlug: 'acme', source: 'request' };
+    getVisibleAuditLog.mockResolvedValue({ data: { data: { entries: [entry('project.rehome_out', { reason: 'private operator narrative' })] }, count: 1, hasMore: true, nextCursor: cursor }, context });
+    const result = await handler({ org: 'acme' });
+    const first = payload(result);
+    expect(first['hasMore']).toBe(first['has_more']);
+    expect(first['nextCursor']).toBe(cursor);
+    expect(first['next_cursor']).toBe(cursor);
+    expect(JSON.stringify(first)).not.toContain('private operator narrative');
+    expect((first['entries'] as Array<{ details: Record<string, unknown> }>)[0]?.details).toMatchObject({ reason_redacted: true });
+    expect(JSON.parse(result.content[1]?.text ?? '{}')).toMatchObject({ effectiveContext: context });
+    for (const key of ['nextCursor', 'next_cursor']) {
+      await handler({ org: 'acme', cursor: first[key], limit: 25 });
+      expect(getVisibleAuditLog).toHaveBeenLastCalledWith('acme', { cursor, limit: 25 }, { org: 'acme', withResponseContext: true });
+    }
+  });
+
   it('without `org` (personal resolution) it refuses with a 400 that names the argument — no SDK call', async () => {
     const r = await handler({});
     expect(r.isError).toBe(true);

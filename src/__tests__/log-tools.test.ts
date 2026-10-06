@@ -62,6 +62,21 @@ describe('get_project_log', () => {
     expect((p['data'] as unknown[]).length).toBe(1);
   });
 
+  it('forwards the actionable selector and opaque cursor and preserves identities', async () => {
+    const cursor = 'opaque+/=%:ß';
+    const fingerprint = 'a'.repeat(32);
+    getLog.mockResolvedValue({ ...page, nextCursor: cursor, data: [{ ...page.data[0], fingerprint, displayFingerprint: fingerprint.slice(0, 12) }] });
+    const first = payload(await handler({ org: 'acme', project: 'billing', format: 'actionable' }));
+    const second = payload(await handler({ org: 'acme', project: 'billing', format: 'actionable', cursor: first['nextCursor'] }));
+    expect(getLog).toHaveBeenLastCalledWith('billing', { format: 'actionable', cursor }, { org: 'acme', withResponseContext: true });
+    expect(second['data']).toEqual([{ ...page.data[0], fingerprint, displayFingerprint: fingerprint.slice(0, 12) }]);
+    expect(second['nextCursor']).toBe(cursor);
+    expect(second['hasMore']).toBe(true);
+    const invalid = await handler({ project: 'billing', format: 'page' });
+    expect(invalid.isError).toBe(true);
+    expect(getLog).toHaveBeenCalledTimes(2);
+  });
+
   it('rejects an unknown kind and an out-of-range limit before any request', async () => {
     const bad = await handler({ project: 'billing', kind: ['merge'] });
     expect(bad.isError).toBe(true);

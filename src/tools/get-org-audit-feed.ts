@@ -34,7 +34,7 @@ import { createToolHandler, mapContextData } from '../utils/tool-handler.js';
 
 export const GetOrgAuditFeedInputSchema = z.object({
   cursor: z.string().min(1).max(200).optional()
-    .describe('Opaque paging cursor — pass a previous page\'s `next_cursor` back verbatim'),
+    .describe('Opaque paging cursor — pass a previous page\'s `nextCursor` (or `next_cursor`) back verbatim'),
   // 1–100: the API's OrgVisibleAuditLogQuery is .min(1).max(100) and answers 400, it does not clamp.
   limit: z.number().int().min(1).max(100).optional()
     .describe('Page size (1–100; the API default is 50)'),
@@ -68,7 +68,7 @@ export function registerGetOrgAuditFeedTool(
     'get_org_audit_feed',
     'Read an org\'s member-visible audit feed: the events its writers marked org-visible — today, projects that left this org for someone\'s personal org (who, when, where to — the operator\'s free-text reason is not relayed). ' +
     'Any member may read it. `org` names the org whose feed you want and is required in effect (this route needs a named org slug). ' +
-    'Returns raw entries plus a one-line `summary` per re-home entry; page with `next_cursor`.',
+    'Returns raw entries plus a one-line `summary` per re-home entry; page with `nextCursor` (legacy alias `next_cursor`).',
     GetOrgAuditFeedInputSchema.shape,
     createToolHandler(GetOrgAuditFeedInputSchema, async (n, scope) => {
       const slug = scope.org;
@@ -86,6 +86,8 @@ export function registerGetOrgAuditFeedTool(
         org: slug,
         entries: data.data.entries.map((entry) => ({ ...redactFeedEntry(entry), summary: summarizeFeedEntry(entry) })),
         count: data.count,
+        hasMore: data.hasMore,
+        nextCursor: data.nextCursor,
         has_more: data.hasMore,
         next_cursor: data.nextCursor,
       }));

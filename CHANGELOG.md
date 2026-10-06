@@ -15,6 +15,14 @@ considered and left alone; readers scanning only for the standard headings lose 
 
 ## [Unreleased]
 
+### Added
+
+- F19: `get_project_log` accepts optional `format: "actionable"` for full issue identities and display prefixes; omitted selectors retain legacy log behavior.
+- `get_org_audit_feed` exposes `hasMore` and `nextCursor` alongside unchanged snake_case aliases. Both cursor spellings preserve the opaque value; context and reason redaction remain intact.
+
+### Security
+- Update the Hono override to 4.13.7 and resolve proxy-addr 2.0.8 to clear inherited production advisories before the F19 release.
+
 ## [0.28.3] - 2026-10-04
 
 ### Fixed
