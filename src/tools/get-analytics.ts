@@ -56,7 +56,7 @@ export function registerGetAnalyticsTool(
       GetAnalyticsInputSchema.parse(n);
       return opsClient.analytics.getByMetric(n['metric'], { ...n, limit: n['limit'] ?? (n['format'] === 'page' ? 50 : 20), ...(n['format'] === 'page' && { offset: n['offset'] ?? 0 }) }, scope);
     },
-      { toolName: 'get_analytics', responseNote: UNVERSIONED_FIGURES_CAVEAT }
+      { toolName: 'get_analytics' }
     )
   );
 }
