@@ -1,3 +1,18 @@
+# Mutation pass — P0m-3 (unversioned-figures caveat, CM)
+
+Definition-version-dispositions spec v0.11.2 §4.1 (amendment CM), checklist P0m-3: "dropping a tool from the list, the description caveat or the response note fails; a one-word change in the new constant fails". Each failing run is a pushed branch holding the mutated tree, one commit on `feat/p0m-3-unversioned-caveat` at `0c8dbcc`; the commit body carries the vitest summary. **Never merge a `mutation/p0m-3/*` branch.** Reproduce: `git checkout mutation/p0m-3/<slug>` and run `npx vitest run src/__tests__/cross-version-caveat.test.ts`.
+
+Baseline (`0c8dbcc`, 2026-10-08): 10 passed (10); `prepublishOnly` green.
+
+| Control | Defect it names | Failing run (branch @ sha) | Test that fails |
+|---|---|---|---|
+| Tool set pinned independently of the array under test | `get_agent_matrix` silently dropped from `UNVERSIONED_FIGURES_TOOLS` | `mutation/p0m-3/tool-list-drops-get-agent-matrix` @ `00536ee` | the tool list matches the pinned set |
+| Description carries the caveat | `get_agent_reliability` description loses `UNVERSIONED_FIGURES_CAVEAT` | `mutation/p0m-3/description-drops-caveat-get-agent-reliability` @ `493916d` | get_agent_reliability carries the caveat in description and response |
+| Response carries the caveat | `get_analytics` handler loses its `responseNote` | `mutation/p0m-3/response-drops-note-get-analytics` @ `b824aad` | get_analytics carries the caveat in description and response |
+| Sentence pinned word for word (the same literal is pinned in `@uluops/registry-mcp`) | one word changed in the constant ("compare" → "contrast") | `mutation/p0m-3/unversioned-caveat-one-word` @ `af957c1` | pins the shared sentence word for word |
+
+Each mutation failed exactly one test (1 failed, 9 passed). The one-word control edits the exported string in `src/tools/cross-version-caveat.ts`, not a quotation of it. The sentence's sha256 is identical in both packages' built output (`1797c766aa878a07507a6d00775d60bc977d3347f6b21f3334ba4a1916533f8e`, 469 chars) and is recorded in spec §4.1 (BA).
+
 # Mutation pass — P0m-1 (cross-version caveats)
 
 Definition-version-dispositions spec v0.10.0 §11.20: every §11 control a phase owns is run against the defect it names, and must fail. The merged diff cannot show a reverted mutation, so each failing run below is a pushed branch holding the mutated tree; check one out and run `npx vitest run src/__tests__/cross-version-caveat.test.ts` to reproduce. Every branch is one commit on top of `main` at `0b8a60c` and must never be merged.
