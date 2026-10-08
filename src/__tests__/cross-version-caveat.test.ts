@@ -98,11 +98,16 @@ describe('unversioned-figures caveat (dvc spec v0.11.2 \u00a74.1, amendment CM; 
 
   it('pins the shared sentence word for word (the same literal is pinned in @uluops/registry-mcp)', () => {
     expect(UNVERSIONED_FIGURES_CAVEAT).toBe(
-      'Figures here that carry no definition version are not evidence about any one version: each may pool every ' +
-      'version of the agent or definition it describes (some also span several definitions or orgs), even when the ' +
-      'request named a version, or may come from a single version the response does not name. Do not attribute such a ' +
-      'figure to a version, compare it with a version\'s own figures, or read a change in it as evidence that an edit ' +
-      'made a definition better or worse.',
+      'Figures here are not evidence about any one version, including those shown with a version: the response does ' +
+      'not show that the version was checked against the registry, and it may have been filled in by the server. Each ' +
+      'may pool every version of the agent or definition it describes (some also span several definitions or orgs), ' +
+      'even when the request named a version, or may come from a single version. Do not attribute such a figure to a ' +
+      'version, compare it with a version\'s own figures, recommend a definition\'s current version on the basis of it, ' +
+      'or read a change in it as evidence that an edit made a definition better or worse.',
     );
+    // CL: a version on the wire is not identity, so the caveat may not exempt figures by whether one is present
+    // (the first wording did; perverse-outcome P1, review 2026-10-08).
+    expect(UNVERSIONED_FIGURES_CAVEAT).not.toMatch(/(that|which) carry no (definition )?version/i);
+    expect(UNVERSIONED_FIGURES_CAVEAT).toContain('including those shown with a version');
   });
 });

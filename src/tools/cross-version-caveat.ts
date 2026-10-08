@@ -59,18 +59,25 @@ export const CROSS_VERSION_CAVEAT =
  * Why "may" twice: the class holds two shapes. Some figures pool every version (agent reliability, execution counts,
  * the agent matrix across definitions); others are one version's rows serialized without the version (grouped agent
  * performance until bd7282be restores the field, unresolved runs-analysis items). "Even when the request named a
- * version" covers get_execution_stats, whose URL names a version and whose body counts every version and org. The
- * qualifier "that carry no definition version" leaves runs-analysis items with a resolved version outside it (CJ).
+ * version" covers get_execution_stats, whose URL names a version and whose body counts every version and org.
+ *
+ * Why "including those shown with a version" (CL, review 2026-10-08): the first wording opened "Figures here that
+ * carry no definition version", which exempted any figure with a version field — the CJ reading, which CL replaced:
+ * a version is identity only when its provenance checks out, and agentTypeDefinitionVersion on runs-analysis items is
+ * usually the server's inferred-latest. Keyed on presence, the caveat rewarded putting an unverified version on the
+ * wire (perverse-outcome-detector P1, anxiety-reader F4). The "current version" clause closes the reading that ranks
+ * definitions on pooled figures and recommends today's version (P5). Never shipped to npm in the first wording.
  *
  * The sentence is identical in @uluops/ops-mcp and @uluops/registry-mcp; each package's test pins it word for word,
  * and spec §4.1 records its sha256 (BA).
  */
 export const UNVERSIONED_FIGURES_CAVEAT =
-  'Figures here that carry no definition version are not evidence about any one version: each may pool every ' +
-  'version of the agent or definition it describes (some also span several definitions or orgs), even when the ' +
-  'request named a version, or may come from a single version the response does not name. Do not attribute such a ' +
-  'figure to a version, compare it with a version\'s own figures, or read a change in it as evidence that an edit ' +
-  'made a definition better or worse.';
+  'Figures here are not evidence about any one version, including those shown with a version: the response does ' +
+  'not show that the version was checked against the registry, and it may have been filled in by the server. Each ' +
+  'may pool every version of the agent or definition it describes (some also span several definitions or orgs), ' +
+  'even when the request named a version, or may come from a single version. Do not attribute such a figure to a ' +
+  'version, compare it with a version\'s own figures, recommend a definition\'s current version on the basis of it, ' +
+  'or read a change in it as evidence that an edit made a definition better or worse.';
 
 /** Tools whose descriptions and responses must carry UNVERSIONED_FIGURES_CAVEAT. */
 export const UNVERSIONED_FIGURES_TOOLS = [
