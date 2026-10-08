@@ -76,7 +76,7 @@ export const UNVERSIONED_FIGURES_CAVEAT =
   'not show that the version was checked against the registry, and it may have been filled in by the server. Each ' +
   'may pool every version of the agent or definition it describes (some also span several definitions or orgs), ' +
   'even when the request named a version, or may come from a single version. Do not attribute such a figure to a ' +
-  'version, compare it with a version\'s own figures, recommend a definition\'s current version on the basis of it, ' +
+  'version, contrast it with a version\'s own figures, recommend a definition\'s current version on the basis of it, ' +
   'or read a change in it as evidence that an edit made a definition better or worse.';
 
 /** Tools whose descriptions and responses must carry UNVERSIONED_FIGURES_CAVEAT. */
