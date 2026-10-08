@@ -76,6 +76,5 @@ export const UNVERSIONED_FIGURES_CAVEAT =
 export const UNVERSIONED_FIGURES_TOOLS = [
   'get_agent_reliability',
   'get_analytics',
-  'get_agent_matrix',
   'get_agent_runs_analysis',
 ] as const;
