@@ -9,6 +9,7 @@ import { z } from 'zod';
 import type { OpsClient } from '@uluops/ops-sdk';
 import type { McpServerToolRegistration } from '../types/index.js';
 import { createToolHandler } from '../utils/tool-handler.js';
+import { UNVERSIONED_FIGURES_CAVEAT } from './cross-version-caveat.js';
 
 export const GetAgentRunsAnalysisInputSchema = z.object({
   ...DiscoveryPageShape,
@@ -30,7 +31,7 @@ export function registerGetAgentRunsAnalysisTool(
 ): void {
   server.tool(
     'get_agent_runs_analysis',
-    'Get analysis summaries with run context for a specific agent. Returns decision, score, category scores, system metrics, epistemic assessment alongside run number, timestamp, and workflow type.',
+    'Get analysis summaries with run context for a specific agent. Returns decision, score, category scores, system metrics, epistemic assessment alongside run number, timestamp, and workflow type.' + ' ' + UNVERSIONED_FIGURES_CAVEAT,
     GetAgentRunsAnalysisInputSchema.shape,
     createToolHandler(GetAgentRunsAnalysisInputSchema, (n, scope) =>
       useDiscoveryPage(n) ? opsClient.discovery.getAgentRunsAnalysis(n['agentName'] as string, n, scope) : opsClient.runs.getAgentRunsAnalysis(
@@ -43,7 +44,7 @@ export function registerGetAgentRunsAnalysisTool(
         },
         scope
       ),
-      { toolName: 'get_agent_runs_analysis' }
+      { toolName: 'get_agent_runs_analysis', responseNote: UNVERSIONED_FIGURES_CAVEAT }
     )
   );
 }

@@ -1,6 +1,7 @@
 /**
- * Caveat for tools whose response reports quality for more than one definition
- * version side by side (here: get_agent_lifecycle).
+ * CROSS_VERSION_CAVEAT: tools whose response reports quality for more than one
+ * definition version side by side (here: get_agent_lifecycle).
+ * UNVERSIONED_FIGURES_CAVEAT (below): tools whose figures carry no version identity.
  *
  * Why: each version's runs happen in their own period, on their own artifacts, and
  * their findings are triaged under whatever process held at the time, and pass rates
@@ -39,3 +40,42 @@ export const CROSS_VERSION_CAVEAT =
   'changes how lenient it is moves them without changing quality. No difference between versions here is evidence ' +
   'that an edit made the definition better or worse; do not rank versions or recommend one on the basis of these ' +
   'figures, alone or combined with other figures.';
+
+/**
+ * Figures with no version identity (definition-version-dispositions spec v0.11.2 §4.1, amendment CM; P0m-3).
+ *
+ * AK (2026-10-02) left these uncaveated as "an overall picture of the definition". CM withdrew that: the exemption
+ * made the defect state (no version on the wire) the one with no caveat, so restoring a version to a response would
+ * have added a caveat and dropping one removed it (run #73, tracker bd7282be). The tools are the inventory's
+ * no-identity rows (version-comparison-surfaces-inventory v0.1.0, a7221ebb): four in @uluops/ops-mcp
+ * (get_agent_reliability, get_analytics, get_agent_matrix, get_agent_runs_analysis) and two in @uluops/registry-mcp
+ * (get_execution_stats, get_ecosystem_overview).
+ *
+ * Why its own constant and not POOLED_VERSIONS_CAVEAT: that sentence (registry-mcp, get_effectiveness/get_health)
+ * speaks of "the requested version", and these figures sit under no version. The checklist named ops-mcp's constant
+ * POOLED_VERSIONS_CAVEAT; one name carrying two different sentences across the two packages would defeat the
+ * word-for-word pins, so the name is new.
+ *
+ * Why "may" twice: the class holds two shapes. Some figures pool every version (agent reliability, execution counts,
+ * the agent matrix across definitions); others are one version's rows serialized without the version (grouped agent
+ * performance until bd7282be restores the field, unresolved runs-analysis items). "Even when the request named a
+ * version" covers get_execution_stats, whose URL names a version and whose body counts every version and org. The
+ * qualifier "that carry no definition version" leaves runs-analysis items with a resolved version outside it (CJ).
+ *
+ * The sentence is identical in @uluops/ops-mcp and @uluops/registry-mcp; each package's test pins it word for word,
+ * and spec §4.1 records its sha256 (BA).
+ */
+export const UNVERSIONED_FIGURES_CAVEAT =
+  'Figures here that carry no definition version are not evidence about any one version: each may pool every ' +
+  'version of the agent or definition it describes (some also span several definitions or orgs), even when the ' +
+  'request named a version, or may come from a single version the response does not name. Do not attribute such a ' +
+  'figure to a version, compare it with a version\'s own figures, or read a change in it as evidence that an edit ' +
+  'made a definition better or worse.';
+
+/** Tools whose descriptions and responses must carry UNVERSIONED_FIGURES_CAVEAT. */
+export const UNVERSIONED_FIGURES_TOOLS = [
+  'get_agent_reliability',
+  'get_analytics',
+  'get_agent_matrix',
+  'get_agent_runs_analysis',
+] as const;

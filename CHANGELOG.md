@@ -17,6 +17,7 @@ considered and left alone; readers scanning only for the standard headings lose 
 
 ### Added
 
+- **Pooled-figure caveat on the four tools whose figures carry no definition version** (definition-version-dispositions spec v0.11.2 §4.1, amendment CM; P0m-3): `get_agent_reliability`, `get_analytics`, `get_agent_matrix` and `get_agent_runs_analysis` now carry `UNVERSIONED_FIGURES_CAVEAT` in their description **and** as a `{"caveat": …}` content block on every success response, as `get_agent_lifecycle` carries the cross-version caveat. **Why:** AK (2026-10-02) had left these uncaveated; CM withdrew it because it made the defect state (no version on the wire) the one with no caveat. **Consumers:** every success response from these four tools gains one trailing text block. A client that reads `content[0]` is unaffected; one that expects exactly one block is not. The sentence is pinned word for word here and in `@uluops/registry-mcp`, together with the tool set. The name differs from the checklist's `POOLED_VERSIONS_CAVEAT`: registry-mcp already exports that name for a different sentence ("the requested version"), and a shared name with two strings would defeat the pins.
 - F19: `get_project_log` accepts optional `format: "actionable"` for full issue identities and display prefixes; omitted selectors retain legacy log behavior.
 - `get_org_audit_feed` exposes `hasMore` and `nextCursor` alongside unchanged snake_case aliases. Both cursor spellings preserve the opaque value; context and reason redaction remain intact.
 
@@ -25,6 +26,7 @@ considered and left alone; readers scanning only for the standard headings lose 
 - Pin `@uluops/ops-sdk` to 6.16.0 from public npm for the F19 response contract; replace the local Verdaccio SDK lock resolution for cold consumer installs.
 
 ### Security
+- `@modelcontextprotocol/sdk` `1.30.0` (exact) → `1.32.1` (exact): clears GHSA-6qxp-vccf-f47h (high; 1.12.0–1.30.1, OAuth client could send credentials to a server-chosen authorization server), which failed the `npm audit --audit-level=high` step of `prepublishOnly`. Neither this package's `src/` nor `mcp-secure-server`'s `dist/` imports `@modelcontextprotocol/sdk/client` (searched 2026-10-08), so the OAuth client path is not reached; the bump clears the audit gate. Full suite and the lint/test/audit/build/check:wire chain re-run on 1.32.1.
 - Update the Hono override to 4.13.7 and resolve proxy-addr 2.0.8 to clear inherited production advisories before the F19 release.
 
 ## [0.28.3] - 2026-10-04

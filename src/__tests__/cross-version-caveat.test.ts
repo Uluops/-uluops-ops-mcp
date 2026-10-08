@@ -2,7 +2,8 @@ import { describe, it, expect } from 'vitest';
 import type { OpsClient } from '@uluops/ops-sdk';
 import type { McpServerToolRegistration } from '../types/index.js';
 import { registerGetAgentLifecycleTool } from '../tools/get-agent-lifecycle.js';
-import { CROSS_VERSION_CAVEAT } from '../tools/cross-version-caveat.js';
+import { registerAllTools } from '../tools/index.js';
+import { CROSS_VERSION_CAVEAT, UNVERSIONED_FIGURES_CAVEAT, UNVERSIONED_FIGURES_TOOLS } from '../tools/cross-version-caveat.js';
 
 type Handler = (args: unknown) => Promise<{ content: { type: string; text: string }[] }>;
 
@@ -46,5 +47,62 @@ describe('cross-version caveat (dvc spec \u00a74.1, amendments AC and AH)', () =
     );
     expect(CROSS_VERSION_CAVEAT).not.toMatch(/figures alone\./);
     expect(CROSS_VERSION_CAVEAT).not.toMatch(/\bgrades?\b/);
+  });
+});
+
+// Pinned here, independently of the array under test, so removing a tool from
+// UNVERSIONED_FIGURES_TOOLS fails this file (the A31 TA-3 lesson, as in @uluops/registry-mcp).
+const EXPECTED_UNVERSIONED = ['get_agent_matrix', 'get_agent_reliability', 'get_agent_runs_analysis', 'get_analytics'];
+
+function registerAll(): { descriptions: Map<string, string>; handlers: Map<string, Handler> } {
+  const descriptions = new Map<string, string>();
+  const handlers = new Map<string, Handler>();
+  const server: McpServerToolRegistration = {
+    tool(name: string, description: string, _shape: unknown, ...rest: unknown[]): void {
+      descriptions.set(name, description);
+      handlers.set(name, rest[rest.length - 1] as Handler);
+    },
+  };
+  // Every SDK method resolves to an empty object, so each handler reaches its success path.
+  const method = (): Promise<object> => Promise.resolve({});
+  const namespace = new Proxy({}, { get: () => method });
+  const client = new Proxy({}, { get: () => namespace });
+  registerAllTools(server, client as unknown as OpsClient);
+  return { descriptions, handlers };
+}
+
+describe('unversioned-figures caveat (dvc spec v0.11.2 \u00a74.1, amendment CM; P0m-3)', () => {
+  const { descriptions, handlers } = registerAll();
+
+  it('the tool list matches the pinned set', () => {
+    expect([...UNVERSIONED_FIGURES_TOOLS].sort()).toEqual(EXPECTED_UNVERSIONED);
+  });
+
+  it.each(EXPECTED_UNVERSIONED)('%s carries the caveat in description and response', async (name) => {
+    expect(descriptions.get(name), `${name} is not registered`).toContain(UNVERSIONED_FIGURES_CAVEAT);
+    const handler = handlers.get(name);
+    if (handler === undefined) throw new Error(`${name} is not registered`);
+    const response = await handler({ name: 'code-validator', agent_name: 'code-validator', project: 'p', metric: 'agent_performance' });
+    expect(response.content.map((c) => c.text)).toContain(JSON.stringify({ caveat: UNVERSIONED_FIGURES_CAVEAT }));
+  });
+
+  it('only get_agent_lifecycle carries the cross-version caveat, and only the pinned set the unversioned one', () => {
+    const others = [...descriptions].filter(([name]) => !EXPECTED_UNVERSIONED.includes(name));
+    // Vacuity guard: the server registers far more than the covered tools.
+    expect(others.length).toBeGreaterThan(20);
+    for (const [name, description] of others) expect(description, name).not.toContain(UNVERSIONED_FIGURES_CAVEAT);
+    for (const [name, description] of descriptions) {
+      if (name !== 'get_agent_lifecycle') expect(description, name).not.toContain(CROSS_VERSION_CAVEAT);
+    }
+  });
+
+  it('pins the shared sentence word for word (the same literal is pinned in @uluops/registry-mcp)', () => {
+    expect(UNVERSIONED_FIGURES_CAVEAT).toBe(
+      'Figures here that carry no definition version are not evidence about any one version: each may pool every ' +
+      'version of the agent or definition it describes (some also span several definitions or orgs), even when the ' +
+      'request named a version, or may come from a single version the response does not name. Do not attribute such a ' +
+      'figure to a version, compare it with a version\'s own figures, or read a change in it as evidence that an edit ' +
+      'made a definition better or worse.',
+    );
   });
 });

@@ -6,6 +6,7 @@ import { z } from 'zod';
 import type { OpsClient } from '@uluops/ops-sdk';
 import type { McpServerToolRegistration } from '../types/index.js';
 import { createToolHandler } from '../utils/tool-handler.js';
+import { UNVERSIONED_FIGURES_CAVEAT } from './cross-version-caveat.js';
 
 export const GetAgentReliabilityInputSchema = z.object({
   agent: z.string().optional(),
@@ -21,11 +22,11 @@ export function registerGetAgentReliabilityTool(
 ): void {
   server.tool(
     'get_agent_reliability',
-    'Analyze agent effectiveness. Returns per agent: falsePositiveRate (false-positive share only), declinedRate (wontfix share — a judgment not to act, never scored), resolutionRate, avgTimeToResolveDays and reliabilityScore.',
+    'Analyze agent effectiveness. Returns per agent: falsePositiveRate (false-positive share only), declinedRate (wontfix share — a judgment not to act, never scored), resolutionRate, avgTimeToResolveDays and reliabilityScore.' + ' ' + UNVERSIONED_FIGURES_CAVEAT,
     GetAgentReliabilityInputSchema.shape,
     createToolHandler(GetAgentReliabilityInputSchema, (n, scope) =>
       opsClient.analytics.getAgentReliability(n, scope),
-      { toolName: 'get_agent_reliability' }
+      { toolName: 'get_agent_reliability', responseNote: UNVERSIONED_FIGURES_CAVEAT }
     )
   );
 }

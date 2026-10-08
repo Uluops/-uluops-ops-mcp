@@ -9,6 +9,7 @@ import { z } from 'zod';
 import type { OpsClient } from '@uluops/ops-sdk';
 import type { McpServerToolRegistration } from '../types/index.js';
 import { createToolHandler } from '../utils/tool-handler.js';
+import { UNVERSIONED_FIGURES_CAVEAT } from './cross-version-caveat.js';
 
 export const GetAgentMatrixInputSchema = z.object({
   project: z.string().min(1).optional().describe('Project name or UUID to filter by'),
@@ -34,8 +35,8 @@ export function registerGetAgentMatrixTool(
 ): void {
   server.tool(
     'get_agent_matrix',
-    'Get agent-taxonomy matrix showing coverage analysis. Identifies blind spots (missing domains), single points of failure (only one agent detects a mode), and high overlap (3+ agents detect same mode).',
+    'Get agent-taxonomy matrix showing coverage analysis. Identifies blind spots (missing domains), single points of failure (only one agent detects a mode), and high overlap (3+ agents detect same mode).' + ' ' + UNVERSIONED_FIGURES_CAVEAT,
     GetAgentMatrixInputSchema.shape,
-    createToolHandler(GetAgentMatrixInputSchema, (n, scope) => opsClient.analytics.getAgentMatrix(n, scope), { toolName: 'get_agent_matrix' })
+    createToolHandler(GetAgentMatrixInputSchema, (n, scope) => opsClient.analytics.getAgentMatrix(n, scope), { toolName: 'get_agent_matrix', responseNote: UNVERSIONED_FIGURES_CAVEAT })
   );
 }
