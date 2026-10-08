@@ -11,7 +11,15 @@ Baseline (`0c8dbcc`, 2026-10-08): 10 passed (10); `prepublishOnly` green.
 | Response carries the caveat | `get_analytics` handler loses its `responseNote` | `mutation/p0m-3/response-drops-note-get-analytics` @ `b824aad` | get_analytics carries the caveat in description and response |
 | Sentence pinned word for word (the same literal is pinned in `@uluops/registry-mcp`) | one word changed in the constant ("compare" → "contrast") | `mutation/p0m-3/unversioned-caveat-one-word` @ `af957c1` | pins the shared sentence word for word |
 
-Each mutation failed exactly one test (1 failed, 9 passed). The one-word control edits the exported string in `src/tools/cross-version-caveat.ts`, not a quotation of it. The sentence's sha256 is identical in both packages' built output (`1797c766aa878a07507a6d00775d60bc977d3347f6b21f3334ba4a1916533f8e`, 469 chars) and is recorded in spec §4.1 (BA).
+Each mutation failed exactly one test (1 failed, 9 passed). The one-word control edits the exported string in `src/tools/cross-version-caveat.ts`, not a quotation of it. The first wording's sha256 was `1797c766…533f8e` (469 chars).
+
+**Reworded before publish (`81b986c`, review 2026-10-08).** The first sentence opened "Figures here that carry no definition version", exempting any figure with a version field: the CJ reading CL replaced (perverse-outcome P1, anxiety-reader F4). Alex chose provenance wording. New sha256, identical in both packages' built output: `1a674289ce2961c23009074bfd8577a9818aa81763f2234725dc965f24c4b3fc` (632 chars), recorded in spec §4.1 (BA). The list, description and response controls above are unaffected by wording; the one-word control is re-cut, and a guard gets its own:
+
+| Control | Defect | Branch @ sha | Fails |
+|---|---|---|---|
+| Reworded sentence pinned word for word | one word changed ("compare" → "contrast") | `mutation/p0m-3/unversioned-caveat-one-word-v2` @ `b0db6f5` | the word-for-word pin (1 failed, 9 passed) |
+| No presence-keyed exemption (CL) | a deliberate rewording back to "that carry no definition version", **constant and pin edited together**, which the pin alone cannot catch | `mutation/p0m-3/presence-keyed-exemption` @ `7ed008f` | the guard assertion `not.toMatch(/(that\|which) carry no (definition )?version/i)` |
+
 
 # Mutation pass — P0m-1 (cross-version caveats)
 
