@@ -154,6 +154,8 @@ describe('get_org_audit_feed', () => {
     const { description } = grab(registerGetOrgAuditFeedTool, { orgs: { getVisibleAuditLog } });
     expect(description).toContain('actorKind');
     expect(description).toMatch(/never by `details`/);
+    expect(description).toMatch(/org-visible moves only/);
+    expect(description).toMatch(/absence of system rows here is not evidence/);
   });
 
   it('has a read ToolSpec (so its advertised org text is the read variant)', () => {

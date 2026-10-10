@@ -19,7 +19,7 @@ considered and left alone; readers scanning only for the standard headings lose 
 
 ### Added
 
-- **`get_org_audit_feed` relays `actorKind`** on every entry (`user`, `system:org_lifecycle` — the org purge, whose `actorId` is a reserved id, not a user — or `unknown`), and its description tells the model to identify the actor by `actorKind`, never by `details` text a writer authored (system-actor-principal spec v0.3.2 §4, Phase 2). ops-api sends the field from its `@uluops/platform` 1.35.0 pin; 0.30.0's pinned SDK stripped it.
+- **`get_org_audit_feed` relays `actorKind`** on every entry (`user`, `system:org_lifecycle` — the org purge, whose `actorId` is a reserved id, not a user — or `unknown`), and its description tells the model to identify the actor by `actorKind`, never by `details` text a writer authored, and that this member feed holds org-visible moves only, so the absence of system rows is not evidence of no automated activity (system-actor-principal spec v0.3.2 §4, Phase 2). ops-api sends the field from its `@uluops/platform` 1.35.0 pin; 0.30.0's pinned SDK stripped it.
 
 ### Changed
 
