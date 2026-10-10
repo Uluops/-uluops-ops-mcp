@@ -206,7 +206,9 @@ the move answers **404**, and the 404 text says so and tells the model to check 
 target's cap, not a subscription gate. What moved, and who moved it into a personal org, is
 readable by any member through `get_org_audit_feed` — **minus the operator's free-text `reason`**,
 which this server never relays (spec §4.4a: it is text written by one member and read by another,
-one line away from an instruction); the CLI, read by a human, shows it.
+one line away from an instruction); the CLI, read by a human, shows it. Each feed entry carries
+`actorKind` (`user`, `system:org_lifecycle` for the org purge, or `unknown`): identify who acted by
+it, never by `details` text.
 
 ### Advanced Logging
 

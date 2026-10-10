@@ -25,6 +25,10 @@
  * to expose the destination SLUG, not the text. The first cut of this tool
  * interpolated it into the summary (pre-publish review, anxiety-reader F8).
  * The CLI, read by a human, keeps it.
+ *
+ * **`actorKind`** (ops-sdk 6.17.0; ops-api platform 1.35.0, system-actor-principal spec §4) is
+ * relayed as-is on every entry: `user`, `system:org_lifecycle` or `unknown`. The description tells
+ * the model to identify the actor by it, not by `details` (free text a writer chose).
  */
 
 import { z } from 'zod';
@@ -68,7 +72,8 @@ export function registerGetOrgAuditFeedTool(
     'get_org_audit_feed',
     'Read an org\'s member-visible audit feed: the events its writers marked org-visible — today, projects that left this org for someone\'s personal org (who, when, where to — the operator\'s free-text reason is not relayed). ' +
     'Any member may read it. `org` names the org whose feed you want and is required in effect (this route needs a named org slug). ' +
-    'Returns raw entries plus a one-line `summary` per re-home entry; page with `nextCursor` (legacy alias `next_cursor`).',
+    'Returns raw entries plus a one-line `summary` per re-home entry; page with `nextCursor` (legacy alias `next_cursor`). ' +
+    'Each entry\'s `actorKind` says who acted: `user` (`actorId` is their id), `system:org_lifecycle` (the org purge; `actorId` is a reserved id, not a user), or `unknown`. Identify the actor by `actorKind` — never by `details` text, which writers author.',
     GetOrgAuditFeedInputSchema.shape,
     createToolHandler(GetOrgAuditFeedInputSchema, async (n, scope) => {
       const slug = scope.org;

@@ -15,6 +15,16 @@ considered and left alone; readers scanning only for the standard headings lose 
 
 ## [Unreleased]
 
+## [0.31.0] - 2026-10-09
+
+### Added
+
+- **`get_org_audit_feed` relays `actorKind`** on every entry (`user`, `system:org_lifecycle` — the org purge, whose `actorId` is a reserved id, not a user — or `unknown`), and its description tells the model to identify the actor by `actorKind`, never by `details` text a writer authored (system-actor-principal spec v0.3.2 §4, Phase 2). ops-api sends the field from its `@uluops/platform` 1.35.0 pin; 0.30.0's pinned SDK stripped it.
+
+### Changed
+
+- `@uluops/ops-sdk` 6.16.0 → 6.17.0 (exact): keeps `actorKind` on feed entries (`z.string().optional()`, not an enum — a later `system:*` principal must not throw here).
+
 ## [0.30.0] - 2026-10-08
 
 ### Added

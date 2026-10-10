@@ -144,6 +144,18 @@ describe('get_org_audit_feed', () => {
     expect(summarizeFeedEntry({ id: 'e2', actorId: null, action: 'org.updated', createdAt: '2026-09-15T09:00:00.000Z', details: { visibility: 'org', note: 'x' } })).toBeNull();
   });
 
+  it('relays actorKind on every entry, and the description says to identify the actor by it (system-actor-principal §4)', async () => {
+    getVisibleAuditLog.mockResolvedValue({
+      data: { entries: [{ ...entry('project.rehome_out'), actorId: '00000000-0000-4000-8000-0000000000a1', actorKind: 'system:org_lifecycle' }] },
+      count: 1, hasMore: false, nextCursor: null,
+    });
+    const p = payload(await handler({ org: 'acme' }));
+    expect((p['entries'] as Array<Record<string, unknown>>)[0]?.['actorKind']).toBe('system:org_lifecycle');
+    const { description } = grab(registerGetOrgAuditFeedTool, { orgs: { getVisibleAuditLog } });
+    expect(description).toContain('actorKind');
+    expect(description).toMatch(/never by `details`/);
+  });
+
   it('has a read ToolSpec (so its advertised org text is the read variant)', () => {
     const spec = toolRegistry.find((t) => t.name === 'get_org_audit_feed');
     expect(spec?.sideEffects).toBe('read');
