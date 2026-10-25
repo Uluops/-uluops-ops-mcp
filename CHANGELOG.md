@@ -35,8 +35,8 @@ considered and left alone; readers scanning only for the standard headings lose 
 
 ### Not changed, recorded so the next reader does not re-derive it
 
-- **Per-tool string-length and key-count caps** would be tighter than raising them for every tool. mcp-secure-server 0.0.25-security has no per-tool setting for either (`ToolSpec` carries only `maxArgsSize`), so that is a library change, filed against `mcp-secure-server`. Each tool's `maxArgsSize` still caps its own payload in bytes.
-- **Nesting depth (15) and the zero-width/U+202E rejection** are hardcoded in the library. The zero-width joiner in compound emoji refuses a whole call; also filed against `mcp-secure-server`.
+- **Per-tool string-length and key-count caps** would be tighter than raising them for every tool. mcp-secure-server 0.0.25-security has no per-tool setting for either (`ToolSpec` carries only `maxArgsSize`), so that is a library change, filed against `mcp-secure-server` (tracker 17343905). Each tool's `maxArgsSize` still caps its own payload in bytes.
+- **Nesting depth (15) and the zero-width/U+202E rejection** are hardcoded in the library. The zero-width joiner in compound emoji refuses a whole call; filed against `mcp-secure-server` (tracker 53dd1c56). Filing that issue through this server was itself refused for the emoji it quoted.
 
 
 ## [0.32.0] - 2026-10-25

@@ -422,7 +422,7 @@ Claude Code issues tool calls in short, intense bursts (<2s) followed by "thinki
 
 A save_run at the API's limits (100 agents, 500 recommendations, 100 analysis records, 20 summaries, a 500,000-char report) passes the transport; `message-limits.test.ts` runs exactly that payload through the real validation pipeline. The tool schemas also refuse what the API refuses, by name: `agents` at most 100, `recommendations` at most 500, `raw_markdown` at most 500,000 chars. When a payload is rejected at the transport, the error names which cap fired. For a per-string rejection it names the field path (e.g. `raw_markdown`).
 
-These limits apply to every tool on this server. Each tool's `maxArgsSize` still caps its own payload in bytes. Two transport checks are not configurable: nesting deeper than 15 levels, and zero-width characters (U+200B/C/D, U+2060, U+FEFF) or U+202E anywhere in the message. The zero-width joiner U+200D appears in compound emoji, so one such emoji in a report refuses the call; that is filed against `mcp-secure-server`.
+These limits apply to every tool on this server. Each tool's `maxArgsSize` still caps its own payload in bytes. Two transport checks are not configurable: nesting deeper than 15 levels, and zero-width characters (U+200B/C/D, U+2060, U+FEFF) or U+202E anywhere in the message. The zero-width joiner U+200D appears in compound emoji, so one such emoji in a report refuses the call; that is filed against `mcp-secure-server` (tracker 53dd1c56).
 
 **Byte caps are UTF-8 bytes** (since 0.21.2, on `mcp-secure-server` 0.0.23-security and later):
 `maxMessageSize`, `maxParamBytes`, `suspiciousMessageSize` and `maxArgsSize` count encoded

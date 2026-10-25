@@ -36,7 +36,7 @@
  * stays per-tool: each ToolSpec's `maxArgsSize` still binds below the envelope.
  * String length and key count have no per-tool setting in mcp-secure-server
  * 0.0.25-security. Per-tool overrides would be the tighter design; that is a
- * library change, filed separately.
+ * library change, filed as mcp-secure-server tracker 17343905.
  *
  * WHAT BREAKS IF THESE DRIFT: lower them below the API and saves the API would
  * accept are refused at the protocol layer with an opaque -32602. Raise them
