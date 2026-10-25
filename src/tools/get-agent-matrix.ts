@@ -10,19 +10,16 @@ import type { OpsClient } from '@uluops/ops-sdk';
 import type { McpServerToolRegistration } from '../types/index.js';
 import { createToolHandler } from '../utils/tool-handler.js';
 import { UNVERSIONED_FIGURES_CAVEAT } from './cross-version-caveat.js';
+import { toolInteger } from '../utils/tool-schema.js';
 
 export const GetAgentMatrixInputSchema = z.object({
   project: z.string().min(1).optional().describe('Project name or UUID to filter by'),
-  days: z
-    .number()
-    .int()
+  days: toolInteger()
     .min(1)
     .max(365)
     .optional()
     .describe('Time window in days (1-365, default 90)'),
-  minIssues: z
-    .number()
-    .int()
+  minIssues: toolInteger()
     .min(1)
     .max(1000)
     .optional()

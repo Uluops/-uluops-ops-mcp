@@ -8,11 +8,12 @@ import { z } from 'zod';
 import type { OpsClient } from '@uluops/ops-sdk';
 import type { McpServerToolRegistration } from '../types/index.js';
 import { createToolHandler } from '../utils/tool-handler.js';
+import { toolInteger } from '../utils/tool-schema.js';
 
 export const DiffRunsInputSchema = z.object({
   project: z.string().min(1),
-  base_run: z.number().int().positive(),
-  compare_run: z.number().int().positive(),
+  base_run: toolInteger().positive(),
+  compare_run: toolInteger().positive(),
   workflow_type: z.string().optional(),
 });
 

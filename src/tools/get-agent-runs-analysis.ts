@@ -10,14 +10,15 @@ import type { OpsClient } from '@uluops/ops-sdk';
 import type { McpServerToolRegistration } from '../types/index.js';
 import { createToolHandler } from '../utils/tool-handler.js';
 import { UNVERSIONED_FIGURES_CAVEAT } from './cross-version-caveat.js';
+import { toolInteger } from '../utils/tool-schema.js';
 
 export const GetAgentRunsAnalysisInputSchema = z.object({
   ...DiscoveryPageShape,
   agent_name: z.string().min(1).describe('Agent name (e.g., epictetus-validator)'),
   project: z.string().min(1).describe('Project name or UUID'),
   decision: z.string().max(50).optional().describe('Filter by decision (e.g., ALIGNED, FACTUAL)'),
-  limit: z.number().int().min(1).max(100).optional().describe('Max results (default 20)'),
-  offset: z.number().int().min(0).optional().describe('Pagination offset'),
+  limit: toolInteger().min(1).max(100).optional().describe('Max results (default 20)'),
+  offset: toolInteger().min(0).optional().describe('Pagination offset'),
 });
 
 export type GetAgentRunsAnalysisInput = z.infer<typeof GetAgentRunsAnalysisInputSchema>;

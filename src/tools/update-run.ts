@@ -5,7 +5,7 @@
  * Supports identification by run_id OR (project + run_number).
  */
 
-import { runSummaryErrorMap, RUN_MAP_CONTRACT } from './run-input-contract.js';
+import { runSummaryError, RUN_MAP_CONTRACT } from './run-input-contract.js';
 import { z } from 'zod';
 import type { OpsClient } from '@uluops/ops-sdk';
 import type { McpServerToolRegistration } from '../types/index.js';
@@ -15,6 +15,7 @@ import {
   AnalysisRecordBaseSchema,
   AnalysisSummaryBaseSchema,
 } from '../types/run-schemas.js';
+import { toolInteger, toolGuid } from '../utils/tool-schema.js';
 
 const AgentUpdateSchema = z.object({
   name: z.string().min(1),
@@ -23,16 +24,16 @@ const AgentUpdateSchema = z.object({
     .string()
     .optional()
     .describe('Agent decision (e.g., PASS, FAIL, CLEAR, BEWITCHED, VITAL)'),
-  input_tokens: z.number().int().nonnegative().optional(),
-  output_tokens: z.number().int().nonnegative().optional(),
-  cache_creation_tokens: z.number().int().nonnegative().optional(),
-  cache_read_tokens: z.number().int().nonnegative().optional(),
-  cached_input_tokens: z.number().int().nonnegative().optional(),
-  reasoning_output_tokens: z.number().int().nonnegative().optional(),
-  thinking_tokens: z.number().int().nonnegative().optional(),
-  tool_tokens: z.number().int().nonnegative().optional(),
-  total_effective_tokens: z.number().int().nonnegative().optional(),
-  duration_ms: z.number().int().nonnegative().optional(),
+  input_tokens: toolInteger().nonnegative().optional(),
+  output_tokens: toolInteger().nonnegative().optional(),
+  cache_creation_tokens: toolInteger().nonnegative().optional(),
+  cache_read_tokens: toolInteger().nonnegative().optional(),
+  cached_input_tokens: toolInteger().nonnegative().optional(),
+  reasoning_output_tokens: toolInteger().nonnegative().optional(),
+  thinking_tokens: toolInteger().nonnegative().optional(),
+  tool_tokens: toolInteger().nonnegative().optional(),
+  total_effective_tokens: toolInteger().nonnegative().optional(),
+  duration_ms: toolInteger().nonnegative().optional(),
   model: z.string().optional(),
   harness: z.string().max(32).optional().describe('Execution harness (e.g., claude-code, codex)'),
   agent_id: z
@@ -52,8 +53,8 @@ export const AnalysisSummarySchema = AnalysisSummaryBaseSchema.extend({
 
 export const UpdateRunInputSchema = z.object({
   project: z.string().min(1),
-  run_id: z.string().uuid().optional(),
-  run_number: z.number().int().positive().optional(),
+  run_id: toolGuid().optional(),
+  run_number: toolInteger().positive().optional(),
   agents: z.array(AgentUpdateSchema).optional(),
   all_gates_passed: z.boolean().optional().describe('Fill an unrecorded result or echo its identical value; recorded false and true cannot be rewritten.'),
   average_score: z.number().min(0).max(100).optional().describe('Fill an unrecorded score or echo its identical value; recorded zero is immutable too.'),
@@ -63,7 +64,7 @@ export const UpdateRunInputSchema = z.object({
   analysis_summary: z.union([
     AnalysisSummarySchema,
     z.array(AnalysisSummarySchema).max(20),
-  ], { errorMap: runSummaryErrorMap }).optional().describe('Analysis summary — single object or per-agent array. PER-AGENT REPLACE, and summaries have no mode: each named agent\'s live summary rows are superseded by its entries here; agents not named are untouched. Leaves analysis_records untouched. agent_name matching is case- and accent-insensitive.'),
+  ], { error: runSummaryError }).optional().describe('Analysis summary — single object or per-agent array. PER-AGENT REPLACE, and summaries have no mode: each named agent\'s live summary rows are superseded by its entries here; agents not named are untouched. Leaves analysis_records untouched. agent_name matching is case- and accent-insensitive.'),
   record_write_mode: z.enum(['replace', 'merge']).optional().describe('Records-only write mode (API 1b; default replace). replace: each named agent\'s FULL record set is superseded by the payload\'s — omission retires. merge: upsert on (agent_name, record_id) — matched records are superseded (prior duplicates collapse to one, visible in analysis_write.supersededRecords), unmatched keys are pure appends, and NOTHING is retired; merge cannot remove anything, and there is no delete endpoint. Summaries are unaffected (always per-agent replace). Sending this without analysis_records is an error. NOTE: past the 100-records-per-call cap, replace can no longer restate a merged agent\'s full set.'),
 });
 

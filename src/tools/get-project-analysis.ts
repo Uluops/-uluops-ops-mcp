@@ -9,6 +9,7 @@ import { z } from 'zod';
 import type { OpsClient } from '@uluops/ops-sdk';
 import type { McpServerToolRegistration } from '../types/index.js';
 import { createToolHandler } from '../utils/tool-handler.js';
+import { toolInteger } from '../utils/tool-schema.js';
 
 export const GetProjectAnalysisInputSchema = z.object({
   ...DiscoveryPageShape,
@@ -16,8 +17,8 @@ export const GetProjectAnalysisInputSchema = z.object({
   agent_name: z.string().max(100).optional().describe('Filter by agent (e.g., nietzsche-analyst)'),
   agent_type: z.enum(['validator', 'analyst', 'explorer', 'forecaster', 'executor', 'generator', 'unknown']).optional().describe('Filter by captured agent type; unknown includes unresolved and historical inferred attribution'),
   decision: z.string().max(50).optional().describe('Filter by decision (e.g., VITAL, FLOWING)'),
-  limit: z.number().int().min(1).max(100).optional().describe('Max results (default 50)'),
-  offset: z.number().int().min(0).optional().describe('Pagination offset'),
+  limit: toolInteger().min(1).max(100).optional().describe('Max results (default 50)'),
+  offset: toolInteger().min(0).optional().describe('Pagination offset'),
 });
 
 export type GetProjectAnalysisInput = z.infer<typeof GetProjectAnalysisInputSchema>;

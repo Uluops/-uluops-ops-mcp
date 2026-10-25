@@ -7,11 +7,12 @@ import type { OpsClient } from '@uluops/ops-sdk';
 import type { McpServerToolRegistration } from '../types/index.js';
 import { createToolHandler } from '../utils/tool-handler.js';
 import { UNVERSIONED_FIGURES_CAVEAT } from './cross-version-caveat.js';
+import { toolInteger } from '../utils/tool-schema.js';
 
 export const GetAgentReliabilityInputSchema = z.object({
   agent: z.string().optional(),
   project: z.string().optional(),
-  days: z.number().int().positive().default(90),
+  days: toolInteger().positive().default(90),
 });
 
 export type GetAgentReliabilityInput = z.infer<typeof GetAgentReliabilityInputSchema>;

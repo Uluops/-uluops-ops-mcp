@@ -37,12 +37,13 @@ import { z } from 'zod';
 import { InputValidationError, readRehomeAuditDetails, type OpsClient, type OrgAuditEntry } from '@uluops/ops-sdk';
 import type { McpServerToolRegistration } from '../types/index.js';
 import { createToolHandler, mapContextData } from '../utils/tool-handler.js';
+import { toolInteger } from '../utils/tool-schema.js';
 
 export const GetOrgAuditFeedInputSchema = z.object({
   cursor: z.string().min(1).max(200).optional()
     .describe('Opaque paging cursor — pass a previous page\'s `nextCursor` (or `next_cursor`) back verbatim'),
   // 1–100: the API's OrgVisibleAuditLogQuery is .min(1).max(100) and answers 400, it does not clamp.
-  limit: z.number().int().min(1).max(100).optional()
+  limit: toolInteger().min(1).max(100).optional()
     .describe('Page size (1–100; the API default is 50)'),
 });
 

@@ -8,9 +8,10 @@ import { z } from 'zod';
 import type { OpsClient } from '@uluops/ops-sdk';
 import type { McpServerToolRegistration } from '../types/index.js';
 import { createToolHandler } from '../utils/tool-handler.js';
+import { toolGuid } from '../utils/tool-schema.js';
 
 export const DeleteRunInputSchema = z.object({
-  run_id: z.string().uuid().describe('Run UUID to delete'),
+  run_id: toolGuid().describe('Run UUID to delete'),
   // `z.literal(true)`, not `z.boolean()`: until 0.21.1 `confirm: false` passed
   // the schema and the handler forwarded only run_id — the SDK synthesizes the
   // X-Confirm-Delete header from the id, so true and false produced the same

@@ -11,9 +11,10 @@ import { z } from 'zod';
 import type { OpsClient } from '@uluops/ops-sdk';
 import type { McpServerToolRegistration } from '../types/index.js';
 import { createToolHandler } from '../utils/tool-handler.js';
+import { toolGuid } from '../utils/tool-schema.js';
 
 export const GetIssueHistoryInputSchema = z.object({
-  issue_id: z.string().uuid(),
+  issue_id: toolGuid(),
 });
 
 export type GetIssueHistoryInput = z.infer<typeof GetIssueHistoryInputSchema>;

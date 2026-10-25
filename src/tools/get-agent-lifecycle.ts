@@ -10,11 +10,12 @@ import type { OpsClient } from '@uluops/ops-sdk';
 import type { McpServerToolRegistration } from '../types/index.js';
 import { createToolHandler } from '../utils/tool-handler.js';
 import { CROSS_VERSION_CAVEAT } from './cross-version-caveat.js';
+import { toolInteger } from '../utils/tool-schema.js';
 
 const GetAgentLifecycleInputSchema = z.object({
   name: z.string().min(1).describe('Agent name (e.g., code-validator, nagarjuna-analyst)'),
   project: z.string().optional().describe('Filter to specific project'),
-  days: z.number().int().min(1).max(365).optional().describe('Time window in days (default: all)'),
+  days: toolInteger().min(1).max(365).optional().describe('Time window in days (default: all)'),
 });
 
 export function registerGetAgentLifecycleTool(

@@ -8,12 +8,13 @@ import { z } from 'zod';
 import type { OpsClient } from '@uluops/ops-sdk';
 import type { McpServerToolRegistration } from '../types/index.js';
 import { createToolHandler } from '../utils/tool-handler.js';
+import { toolInteger } from '../utils/tool-schema.js';
 
 export const ArchiveRunsInputSchema = z.object({
   project: z.string().min(1),
-  before_run_number: z.number().int().positive().optional(),
+  before_run_number: toolInteger().positive().optional(),
   before_date: z.string().optional(),
-  keep_last: z.number().int().positive().optional(),
+  keep_last: toolInteger().positive().optional(),
   reason: z.string().optional(),
 });
 

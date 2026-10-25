@@ -4,7 +4,7 @@
  * Preview what save_run would do without modifying the database.
  */
 
-import { runSummaryErrorMap, RUN_MAP_CONTRACT, RUN_TOKEN_CONTRACT } from './run-input-contract.js';
+import { runSummaryError, RUN_MAP_CONTRACT, RUN_TOKEN_CONTRACT } from './run-input-contract.js';
 import { z } from 'zod';
 import type { OpsClient } from '@uluops/ops-sdk';
 import {
@@ -43,7 +43,7 @@ export const ValidateRunInputSchema = z.object({
     z.array(AnalysisSummarySchema.extend({
       agent_name: z.string().max(100).optional().describe('Agent name for per-agent attribution'),
     })).max(20),
-  ], { errorMap: runSummaryErrorMap }).optional().describe('Analysis summary to preview — single object or per-agent array'),
+  ], { error: runSummaryError }).optional().describe('Analysis summary to preview — single object or per-agent array'),
   // X4-9: the run-level definition fields, so the preview can run the copied-version check
   // before the write (review 2026-10-04: until then the worst case — a wrong version — was
   // visible only after save_run, when it is permanent). Local only: the SDK's runs.validate

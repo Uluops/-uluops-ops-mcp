@@ -4,7 +4,7 @@
  * Save validation pipeline output with automatic correlation.
  */
 
-import { runSummaryErrorMap, RUN_MAP_CONTRACT, RUN_TOKEN_CONTRACT } from './run-input-contract.js';
+import { runSummaryError, RUN_MAP_CONTRACT, RUN_TOKEN_CONTRACT } from './run-input-contract.js';
 import { z } from 'zod';
 import type { OpsClient } from '@uluops/ops-sdk';
 import {
@@ -19,6 +19,7 @@ import {
 } from '../types/run-schemas.js';
 import { createToolHandler } from '../utils/tool-handler.js';
 import { agentAttributionWarnings } from './agent-attribution-warnings.js';
+import { toolGuid } from '../utils/tool-schema.js';
 
 const AnalysisRecordSchema = AnalysisRecordBaseSchema;
 const AnalysisSummarySchema = AnalysisSummaryBaseSchema;
@@ -46,14 +47,14 @@ export const SaveRunInputSchema = z.object({
   definition_name: z.string().max(100).optional().describe('Definition name'),
   definition_version: z.string().max(50).optional().describe('Definition version'),
   definition_hash: z.string().max(64).optional().describe('SHA-256 content hash of the definition'),
-  definition_id: z.string().uuid().optional().describe('Registry definition UUID for direct identity linkage'),
+  definition_id: toolGuid().optional().describe('Registry definition UUID for direct identity linkage'),
   analysis_records: z.array(AnalysisRecordSchema).max(100).optional().describe('Structured analysis records (v1.4.0)'),
   analysis_summary: z.union([
     AnalysisSummarySchema,
     z.array(AnalysisSummarySchema.extend({
       agent_name: z.string().max(100).optional().describe('Agent name for per-agent attribution'),
     })).max(20),
-  ], { errorMap: runSummaryErrorMap }).optional().describe('Analysis summary — single object or per-agent array (v1.8.0). For pipelines, pass an array with one entry per agent.'),
+  ], { error: runSummaryError }).optional().describe('Analysis summary — single object or per-agent array (v1.8.0). For pipelines, pass an array with one entry per agent.'),
 });
 
 export type SaveRunInput = z.infer<typeof SaveRunInputSchema>;

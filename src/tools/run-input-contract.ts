@@ -1,21 +1,29 @@
-import type { z } from 'zod';
-
 /**
  * SDK 1.30 formats only top-level issues. Preserve nested summary diagnostics
- * in the union's message via Zod's public per-schema error map, before that
- * boundary. This does not parse again or change the emitted JSON Schema.
+ * in the union's message via Zod's public per-schema error customization,
+ * before that boundary. This does not parse again or change the emitted JSON Schema.
+ *
+ * zod 4 (T4): the hook is the `error` param (was `errorMap`); branches arrive as
+ * `issue.errors` (issue arrays, was `unionErrors`); and branch paths are RELATIVE
+ * to the union (zod 3's were absolute). The callback runs when the error's issues
+ * are first read, by which time `issue.path` is the union's absolute path, so each
+ * reported path is the union's path plus the branch path: the message text is the
+ * same as on zod 3 (pinned in run-schemas.test.ts, "keeps metadata paths").
+ * Returning undefined defers to zod's default message.
  */
-export const runSummaryErrorMap: z.ZodErrorMap = (issue, context) => {
-  if (issue.code !== 'invalid_union') return { message: context.defaultError };
-  const branches = issue.unionErrors.map(error => error.issues);
+type UnionIssue = { code: string; path?: PropertyKey[]; errors?: Array<Array<{ path: PropertyKey[]; message: string }>> };
+
+export const runSummaryError = (issue: UnionIssue): string | undefined => {
+  if (issue.code !== 'invalid_union') return undefined;
+  const branches = issue.errors ?? [];
   const depths = branches.map(branch => branch.reduce((depth, child) => Math.max(depth, child.path.length), 0));
   const deepest = Math.max(...depths);
   const candidates = branches.filter((_, index) => depths[index] === deepest);
   const selected = candidates[0];
-  if (candidates.length !== 1 || selected === undefined || deepest <= issue.path.length) {
-    return { message: context.defaultError };
-  }
-  return { message: selected.map(child => `${child.path.join('.')}: ${child.message}`).join('; ') };
+  // A branch that failed only at the union's own level (relative depth 0) carries no nested detail.
+  if (candidates.length !== 1 || selected === undefined || deepest <= 0) return undefined;
+  const at = issue.path ?? [];
+  return selected.map(child => `${[...at, ...child.path].map(String).join('.')}: ${child.message}`).join('; ');
 };
 
 /** Kept in top-level descriptions because hosts may abbreviate nested schemas. */

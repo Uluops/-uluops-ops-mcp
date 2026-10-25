@@ -15,24 +15,25 @@ import {
   type McpServerToolRegistration,
 } from '../types/index.js';
 import { createToolHandler } from '../utils/tool-handler.js';
+import { toolInteger } from '../utils/tool-schema.js';
 
 export const QueryIssuesInputSchema = z.object({
   ...DiscoveryPageShape,
   sort_by: z.enum(['createdAt', 'priority']).optional(),
   sort_order: z.enum(['asc', 'desc']).optional(),
   project: z.string().min(1),
-  offset: z.number().int().min(0).max(Number.MAX_SAFE_INTEGER).optional(),
+  offset: toolInteger().min(0).max(Number.MAX_SAFE_INTEGER).optional(),
   workflow_type: z.string().optional(),
   status: IssueStatusFilterSchema.default('open'),
   priority: PriorityFilterSchema.default('all'),
   agent: z.string().optional(),
-  min_times_seen: z.number().int().positive().optional(),
+  min_times_seen: toolInteger().positive().optional(),
   include_resolved: z.boolean().default(false),
   classified: z.boolean().optional(),
   failure_domain: FailureDomainSchema.optional(),
   failure_mode: z.string().optional(),
   severity: SeveritySchema.optional(),
-  limit: z.number().int().positive().max(100).default(50),
+  limit: toolInteger().positive().max(100).default(50),
 });
 
 export type QueryIssuesInput = z.infer<typeof QueryIssuesInputSchema>;

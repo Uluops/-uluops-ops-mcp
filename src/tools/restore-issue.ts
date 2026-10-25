@@ -8,9 +8,10 @@ import { z } from 'zod';
 import type { OpsClient } from '@uluops/ops-sdk';
 import type { McpServerToolRegistration } from '../types/index.js';
 import { createToolHandler } from '../utils/tool-handler.js';
+import { toolGuid } from '../utils/tool-schema.js';
 
 export const RestoreIssueInputSchema = z.object({
-  issue_id: z.string().uuid().describe('Issue UUID to restore'),
+  issue_id: toolGuid().describe('Issue UUID to restore'),
 });
 
 export type RestoreIssueInput = z.infer<typeof RestoreIssueInputSchema>;

@@ -8,9 +8,10 @@ import { z } from 'zod';
 import type { OpsClient } from '@uluops/ops-sdk';
 import type { McpServerToolRegistration } from '../types/index.js';
 import { createToolHandler } from '../utils/tool-handler.js';
+import { toolGuid } from '../utils/tool-schema.js';
 
 export const SoftDeleteIssueInputSchema = z.object({
-  issue_id: z.string().uuid().describe('Issue UUID to soft-delete'),
+  issue_id: toolGuid().describe('Issue UUID to soft-delete'),
 });
 
 export type SoftDeleteIssueInput = z.infer<typeof SoftDeleteIssueInputSchema>;

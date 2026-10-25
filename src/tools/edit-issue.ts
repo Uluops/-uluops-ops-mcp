@@ -7,6 +7,7 @@ import type { OpsClient } from '@uluops/ops-sdk';
 import { SeveritySchema, PrioritySchema, IssueTypeSchema, FilePathSchema, type McpServerToolRegistration } from '../types/index.js';
 import { createToolHandler } from '../utils/tool-handler.js';
 import { STRICT_FAILURE_CODE_PATTERN } from '@uluops/taxonomy';
+import { toolInteger, toolGuid } from '../utils/tool-schema.js';
 
 /**
  * `.strict()`, not a bare `z.object()` — and that is the actual fix here.
@@ -38,7 +39,7 @@ import { STRICT_FAILURE_CODE_PATTERN } from '@uluops/taxonomy';
  *               between them.
  */
 export const EditIssueInputSchema = z.object({
-  issue_id: z.string().uuid(),
+  issue_id: toolGuid(),
   title: z.string().min(1).max(500).optional(),
   /**
    * The tracker's queue is sorted by priority, so an edit that silently fails to
@@ -63,7 +64,7 @@ export const EditIssueInputSchema = z.object({
         'Modes are domain-bound — SEM-VAL is not a member (VAL is an EPI mode).',
     })
     .optional(),
-  line_number: z.number().int().nonnegative().optional().nullable(),
+  line_number: toolInteger().nonnegative().optional().nullable(),
 }).strict();
 
 export type EditIssueInput = z.infer<typeof EditIssueInputSchema>;

@@ -9,6 +9,7 @@ import type { OpsClient } from '@uluops/ops-sdk';
 import type { McpServerToolRegistration } from '../types/index.js';
 import { createToolHandler } from '../utils/tool-handler.js';
 import { UNVERSIONED_FIGURES_CAVEAT } from './cross-version-caveat.js';
+import { toolInteger } from '../utils/tool-schema.js';
 
 const GetAnalyticsInputObject = z.object({
   metric: z.enum([
@@ -22,10 +23,10 @@ const GetAnalyticsInputObject = z.object({
     'taxonomy_distribution',
   ]),
   project: z.string().optional(),
-  days: z.number().int().positive().default(30),
-  limit: z.number().int().positive().optional(),
+  days: toolInteger().positive().default(30),
+  limit: toolInteger().positive().optional(),
   format: z.literal('page').optional().describe('Opt in to a negotiated list page; object metrics reject this selector.'),
-  offset: z.number().int().min(0).max(Number.MAX_SAFE_INTEGER).optional(),
+  offset: toolInteger().min(0).max(Number.MAX_SAFE_INTEGER).optional(),
   pricing_contract: z.literal('coverage-v1').optional().describe('Opt-in pricing coverage for cost_analysis. Omission retains legacy estimates, including Sonnet fallback for unknown models.'),
   estimate_model: z.enum(['haiku', 'sonnet', 'opus']).optional().describe('Explicit estimate for unpriced snapshots only; requires pricing_contract=coverage-v1. Excluded from pricedCost.'),
 });

@@ -8,9 +8,10 @@ import { z } from 'zod';
 import type { OpsClient } from '@uluops/ops-sdk';
 import type { McpServerToolRegistration } from '../types/index.js';
 import { createToolHandler } from '../utils/tool-handler.js';
+import { toolGuid } from '../utils/tool-schema.js';
 
 export const GetRunAnalysisInputSchema = z.object({
-  run_id: z.string().uuid().describe('Run UUID'),
+  run_id: toolGuid().describe('Run UUID'),
 });
 
 export type GetRunAnalysisInput = z.infer<typeof GetRunAnalysisInputSchema>;

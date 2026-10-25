@@ -8,11 +8,12 @@ import { z } from 'zod';
 import type { OpsClient } from '@uluops/ops-sdk';
 import type { McpServerToolRegistration } from '../types/index.js';
 import { createToolHandler } from '../utils/tool-handler.js';
+import { toolInteger } from '../utils/tool-schema.js';
 
 export const GetFullTaxonomyAnalyticsInputSchema = z.object({
   project: z.string().optional().describe('Filter by project name or UUID'),
-  days: z.number().int().min(1).max(365).optional().describe('Number of days to include (1-365)'),
-  limit: z.number().int().min(1).max(100).optional().describe('Results limit'),
+  days: toolInteger().min(1).max(365).optional().describe('Number of days to include (1-365)'),
+  limit: toolInteger().min(1).max(100).optional().describe('Results limit'),
 });
 
 export type GetFullTaxonomyAnalyticsInput = z.infer<typeof GetFullTaxonomyAnalyticsInputSchema>;

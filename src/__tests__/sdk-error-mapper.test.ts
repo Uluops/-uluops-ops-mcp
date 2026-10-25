@@ -5,6 +5,7 @@
  * The mapper now preserves error context while only redacting actual credential values.
  */
 
+import { ZodError } from 'zod';
 import { describe, it, expect } from 'vitest';
 import { mapSdkErrorToMcp, mapZodErrorToMcp } from '../client/sdk-error-mapper.js';
 import {
@@ -519,9 +520,16 @@ describe('SDK Error Mapper', () => {
   });
 
   describe('Zod error mapping', () => {
+    // Fixtures carry `issues`, the field both zod majors have; zod 4 dropped zod 3's `.errors` alias.
+    it('maps a hand-built zod 4 ZodError, which is not instanceof Error', () => {
+      const built = new ZodError([{ code: 'custom', path: ['project'], message: 'Required' }]);
+      expect(built instanceof Error).toBe(false);
+      expect(getErrorText(mapZodErrorToMcp(built))).toContain('project: Required');
+    });
+
     it('should map ZodError with field details', () => {
       const error = Object.assign(new Error('Validation'), {
-        errors: [
+        issues: [
           { path: ['project'], message: 'Required' },
           { path: ['limit'], message: 'Expected number' },
         ],
@@ -534,7 +542,7 @@ describe('SDK Error Mapper', () => {
 
     it('should show ALL Zod errors, not just first 3', () => {
       const error = Object.assign(new Error('Validation'), {
-        errors: [
+        issues: [
           { path: ['a'], message: 'err1' },
           { path: ['b'], message: 'err2' },
           { path: ['c'], message: 'err3' },
@@ -550,7 +558,7 @@ describe('SDK Error Mapper', () => {
 
     it('should include error count in message', () => {
       const error = Object.assign(new Error('Validation'), {
-        errors: [
+        issues: [
           { path: ['x'], message: 'bad' },
         ],
       });
@@ -560,7 +568,7 @@ describe('SDK Error Mapper', () => {
 
     it('should include status 400 in Zod error payload', () => {
       const error = Object.assign(new Error('Validation'), {
-        errors: [{ path: ['x'], message: 'bad' }],
+        issues: [{ path: ['x'], message: 'bad' }],
       });
       const result = mapZodErrorToMcp(error);
       expect(getErrorPayload(result).status).toBe(400);

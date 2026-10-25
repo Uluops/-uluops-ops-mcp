@@ -9,18 +9,19 @@ import { z } from 'zod';
 import type { OpsClient } from '@uluops/ops-sdk';
 import type { McpServerToolRegistration } from '../types/index.js';
 import { createToolHandler } from '../utils/tool-handler.js';
+import { toolInteger, toolGuid } from '../utils/tool-schema.js';
 
 export const QueryAnalysisRecordsInputSchema = z.object({
   ...DiscoveryPageShape,
   project: z.string().min(1).optional().describe('Project name or UUID; requires format=page.'),
-  run_id: z.string().uuid().optional().describe('Run UUID; must belong to the requested project and org; requires format=page.'),
+  run_id: toolGuid().optional().describe('Run UUID; must belong to the requested project and org; requires format=page.'),
   record_type: z.string().max(50).optional().describe('Filter by record type (convention, tension, decay_vector, power_map, stagnation, four_cause, commitment, etc.)'),
   classification: z.string().max(50).optional().describe('Filter by classification (LIVING, CALCIFIED, CONSTITUTIVE, IMMINENT, ACTIVE, DEGRADED, etc.)'),
   agent_name: z.string().max(100).optional().describe('Filter by agent name (e.g., nietzsche-analyst)'),
   agent_type: z.enum(['validator', 'analyst', 'explorer', 'forecaster', 'executor', 'generator', 'unknown']).optional().describe('Filter by captured agent type; unknown includes unresolved and historical inferred attribution'),
   severity: z.enum(['critical', 'high', 'medium', 'low', 'info']).optional().describe('Filter by severity'),
-  limit: z.number().int().min(1).max(100).optional().describe('Max results (default 50)'),
-  offset: z.number().int().min(0).optional().describe('Pagination offset'),
+  limit: toolInteger().min(1).max(100).optional().describe('Max results (default 50)'),
+  offset: toolInteger().min(0).optional().describe('Pagination offset'),
 });
 
 export type QueryAnalysisRecordsInput = z.infer<typeof QueryAnalysisRecordsInputSchema>;

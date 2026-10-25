@@ -19,11 +19,11 @@ import { emitOrgCall, formatOrgEcho, getOrgAllowlist, isOrgAllowed, warnIfUnboun
  * MCP JSON-RPC sometimes serializes numeric parameters as strings (e.g., "50" instead of 50).
  * This runs before Zod validation to prevent spurious type errors at the boundary.
  */
-function coerceNumericFields(args: unknown, schema: z.ZodSchema): unknown {
+function coerceNumericFields(args: unknown, schema: z.ZodType): unknown {
   if (typeof args !== 'object' || args === null) return args;
   if (!(schema instanceof z.ZodObject)) return args;
 
-  const shape: Record<string, z.ZodTypeAny> = schema.shape;
+  const shape: Record<string, z.ZodType> = schema.shape;
   const obj = { ...(args as Record<string, unknown>) };
 
   for (const [key, fieldSchema] of Object.entries(shape)) {
@@ -41,13 +41,13 @@ function coerceNumericFields(args: unknown, schema: z.ZodSchema): unknown {
 }
 
 /** Check if a Zod schema (possibly wrapped in optional/nullable/default) expects a number. */
-function isNumericSchema(schema: z.ZodTypeAny): boolean {
+function isNumericSchema(schema: z.ZodType): boolean {
   if (schema instanceof z.ZodNumber) return true;
   if (schema instanceof z.ZodOptional || schema instanceof z.ZodNullable) {
-    return isNumericSchema(schema.unwrap());
+    return isNumericSchema(schema.unwrap() as z.ZodType);
   }
   if (schema instanceof z.ZodDefault) {
-    return isNumericSchema(schema.removeDefault());
+    return isNumericSchema(schema.unwrap() as z.ZodType);
   }
   return false;
 }
@@ -118,7 +118,7 @@ function isShortCircuit(value: unknown): value is ShortCircuit {
 export const WARNINGS_SOURCE = 'this MCP server, computed from your own request — not tracker data';
 
 export function createToolHandler<TInput>(
-  schema: z.ZodSchema<TInput>,
+  schema: z.ZodType<TInput>,
   // SAFETY: `normalized` is `any` because normalizeKeys performs a runtime
   // snake_case → camelCase key transformation that TypeScript cannot track
   // statically. Zod validation immediately upstream enforces the shape; the

@@ -8,10 +8,11 @@ import { z } from 'zod';
 import { STATUS_REASON_MAX_LENGTH, type OpsClient } from '@uluops/ops-sdk';
 import { IssueStatusSchema, type McpServerToolRegistration } from '../types/index.js';
 import { createToolHandler } from '../utils/tool-handler.js';
+import { toolGuid } from '../utils/tool-schema.js';
 
 const StatusUpdateSchema = z.object({
-  id: z.string().uuid().optional().describe('Issue UUID (preferred identifier)'),
-  issue_id: z.string().uuid().optional().describe('Issue UUID (alias for id)'),
+  id: toolGuid().optional().describe('Issue UUID (preferred identifier)'),
+  issue_id: toolGuid().optional().describe('Issue UUID (alias for id)'),
   fingerprint: z.string().optional().describe('Issue fingerprint hash'),
   file_path: z.string().optional().describe('File path (use with title)'),
   title: z.string().optional().describe('Issue title (use with file_path)'),

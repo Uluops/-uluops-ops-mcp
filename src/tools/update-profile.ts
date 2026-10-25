@@ -26,7 +26,7 @@ export const UpdateProfileInputSchema = z.object({
     .string()
     .describe('IANA timezone string (e.g. America/New_York)')
     .optional(),
-  websiteUrl: z.string().url().max(500).describe('Website URL').optional(),
+  websiteUrl: z.url().max(500).describe('Website URL').optional(),
 });
 
 export type UpdateProfileInput = z.infer<typeof UpdateProfileInputSchema>;

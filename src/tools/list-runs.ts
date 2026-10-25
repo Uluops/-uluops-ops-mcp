@@ -9,6 +9,7 @@ import { z } from 'zod';
 import type { OpsClient } from '@uluops/ops-sdk';
 import type { McpServerToolRegistration } from '../types/index.js';
 import { createToolHandler } from '../utils/tool-handler.js';
+import { toolInteger } from '../utils/tool-schema.js';
 
 export const ListRunsInputSchema = z.object({
   ...DiscoveryPageShape,
@@ -17,8 +18,8 @@ export const ListRunsInputSchema = z.object({
   project: z.string().min(1).describe('Project name or UUID'),
   include_archived: z.boolean().optional().describe('Include archived runs; requires format=page.'),
   workflow_type: z.string().optional().describe('Filter by workflow type'),
-  limit: z.number().int().min(1).max(100).optional().describe('Results limit (1-100)'),
-  offset: z.number().int().min(0).optional().describe('Pagination offset'),
+  limit: toolInteger().min(1).max(100).optional().describe('Results limit (1-100)'),
+  offset: toolInteger().min(0).optional().describe('Pagination offset'),
 });
 
 export type ListRunsInput = z.infer<typeof ListRunsInputSchema>;

@@ -6,11 +6,12 @@ import { z } from 'zod';
 import { STATUS_REASON_MAX_LENGTH, type OpsClient } from '@uluops/ops-sdk';
 import { IssueStatusSchema, type McpServerToolRegistration } from '../types/index.js';
 import { createToolHandler } from '../utils/tool-handler.js';
+import { toolGuid } from '../utils/tool-schema.js';
 
 const BulkStatusUpdateSchema = z
   .object({
-    issue_id: z.string().uuid().optional().describe('Issue UUID (preferred)'),
-    id: z.string().uuid().optional().describe('Issue UUID (alias for issue_id)'),
+    issue_id: toolGuid().optional().describe('Issue UUID (preferred)'),
+    id: toolGuid().optional().describe('Issue UUID (alias for issue_id)'),
     status: IssueStatusSchema,
     reason: z.string().max(STATUS_REASON_MAX_LENGTH).optional(),
   })

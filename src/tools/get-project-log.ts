@@ -25,6 +25,7 @@ import { z } from 'zod';
 import type { OpsClient, ProjectLogQuery } from '@uluops/ops-sdk';
 import type { McpServerToolRegistration } from '../types/index.js';
 import { createToolHandler } from '../utils/tool-handler.js';
+import { toolInteger } from '../utils/tool-schema.js';
 
 const ISO = z.string().min(1).max(40);
 
@@ -34,7 +35,7 @@ export const GetProjectLogInputSchema = z.object({
   since: ISO.optional().describe('Window start, ISO 8601 (e.g. 2026-09-01T00:00:00Z); the API answers 400 when since > until'),
   until: ISO.optional().describe('Window end, ISO 8601'),
   // 1–500: the API's ProjectLogQuerySchema is .min(1).max(500) and answers 400, it does not clamp.
-  limit: z.number().int().min(1).max(500).optional().describe('Events per page (1–500; the API default is 50)'),
+  limit: toolInteger().min(1).max(500).optional().describe('Events per page (1–500; the API default is 50)'),
   cursor: z.string().min(1).max(500).optional().describe('Opaque paging cursor — pass a previous page\'s `nextCursor` back verbatim'),
   kind: z.array(z.enum(['run', 'decision', 'regression'])).min(1).optional()
     .describe('Subset of event kinds to return (default all three)'),

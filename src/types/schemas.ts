@@ -13,6 +13,7 @@ import { z } from 'zod';
 // classification at ingest (RE-PROBE-02 N2 — this package missed the sibling's
 // fix; the two MCP packages must move together).
 import { STRICT_FAILURE_CODE_PATTERN } from '@uluops/taxonomy';
+import { toolInteger } from '../utils/tool-schema.js';
 
 /**
  * Issue priority levels
@@ -172,30 +173,24 @@ export const FilePathSchema = z
  */
 export const TokenUsageSchema = z
   .object({
-    input_tokens: z.number().int().nonnegative().describe('Input tokens consumed'),
-    output_tokens: z.number().int().nonnegative().describe('Output tokens generated'),
-    cached_input_tokens: z.number().int().nonnegative().optional().describe('Cached input tokens included in input (Codex)'),
-    reasoning_output_tokens: z.number().int().nonnegative().optional().describe('Reasoning tokens included in output'),
-    thinking_tokens: z.number().int().nonnegative().optional().describe('Thinking tokens included in output'),
-    tool_tokens: z.number().int().nonnegative().optional().describe('Tool-call tokens included in output'),
-    cache_creation: z.number().int().nonnegative().optional().describe('Cache creation tokens'),
-    cache_creation_tokens: z
-      .number()
-      .int()
+    input_tokens: toolInteger().nonnegative().describe('Input tokens consumed'),
+    output_tokens: toolInteger().nonnegative().describe('Output tokens generated'),
+    cached_input_tokens: toolInteger().nonnegative().optional().describe('Cached input tokens included in input (Codex)'),
+    reasoning_output_tokens: toolInteger().nonnegative().optional().describe('Reasoning tokens included in output'),
+    thinking_tokens: toolInteger().nonnegative().optional().describe('Thinking tokens included in output'),
+    tool_tokens: toolInteger().nonnegative().optional().describe('Tool-call tokens included in output'),
+    cache_creation: toolInteger().nonnegative().optional().describe('Cache creation tokens'),
+    cache_creation_tokens: toolInteger()
       .nonnegative()
       .optional()
       .describe('Cache creation tokens (alias)'),
-    cache_read: z.number().int().nonnegative().optional().describe('Cache read tokens'),
-    cache_read_tokens: z
-      .number()
-      .int()
+    cache_read: toolInteger().nonnegative().optional().describe('Cache read tokens'),
+    cache_read_tokens: toolInteger()
       .nonnegative()
       .optional()
       .describe('Cache read tokens (alias)'),
-    total_effective: z.number().int().nonnegative().optional().describe('Total effective tokens'),
-    total_effective_tokens: z
-      .number()
-      .int()
+    total_effective: toolInteger().nonnegative().optional().describe('Total effective tokens'),
+    total_effective_tokens: toolInteger()
       .nonnegative()
       .optional()
       .describe('Total effective tokens (alias)'),
@@ -217,9 +212,7 @@ export const AgentResultSchema = z
     model: z.string().optional().describe('Model used (e.g., sonnet, opus)'),
     harness: z.string().max(32).optional().describe('Execution harness (e.g., claude-code, codex)'),
     tokens: TokenUsageSchema.optional().describe('Token usage metrics'),
-    duration_ms: z
-      .number()
-      .int()
+    duration_ms: toolInteger()
       .nonnegative()
       .optional()
       .describe('Execution duration in milliseconds'),
@@ -245,7 +238,7 @@ export const RecommendationSchema = z
     ),
     description: z.string().optional().describe('Detailed description'),
     file_path: FilePathSchema.optional().describe('File path where issue was found'),
-    line_number: z.number().int().nonnegative().optional().nullable().describe('Line number in file'),
+    line_number: toolInteger().nonnegative().optional().nullable().describe('Line number in file'),
     category: z.string().optional().describe('Issue category'),
     severity: SeveritySchema.optional().describe('Issue severity'),
     failure_code: z

@@ -9,12 +9,13 @@
 import { z } from 'zod';
 import { ANALYSIS_RECORD_ID_MAX_LENGTH } from '@uluops/ops-sdk';
 import { AnalysisRecordTypeSchema, SeveritySchema } from './schemas.js';
+import { toolInteger } from '../utils/tool-schema.js';
 
 /** Per-category score breakdown for an agent. */
 export const CategoryScoreSchema = z.object({
   name: z.string().describe('Category name'),
-  weight: z.number().int().min(1).describe('Category weight'),
-  score: z.number().int().min(0).describe('Points earned'),
+  weight: toolInteger().min(1).describe('Category weight'),
+  score: toolInteger().min(0).describe('Points earned'),
 });
 
 const ExplorationSectionBase = z.object({
@@ -22,47 +23,52 @@ const ExplorationSectionBase = z.object({
   summary: z.string().optional().describe('Brief section description'),
 });
 
-/** Discriminated union of exploration map section variants. */
-export const ExplorationSectionSchema = z.discriminatedUnion('type', [
+/**
+ * Union of exploration map section variants, mutually exclusive by their `type` literal.
+ * A plain union, not z.discriminatedUnion: zod 4 advertises a discriminated union as `oneOf`
+ * (zod 3: `anyOf`), which OpenAI strict schemas do not support. Same accepted set; only the
+ * message for an unknown `type` differs (zod-4 train T4).
+ */
+export const ExplorationSectionSchema = z.union([
   ExplorationSectionBase.extend({
     type: z.literal('inventory'),
-    items: z.array(z.record(z.unknown())).optional().describe('Inventory items'),
+    items: z.array(z.record(z.string(), z.unknown())).optional().describe('Inventory items'),
     gaps: z.array(z.string()).optional().describe('Identified gaps'),
-  }).passthrough(),
+  }).loose(),
   ExplorationSectionBase.extend({
     type: z.literal('topology'),
-    entities: z.array(z.record(z.unknown())).optional().describe('Entities in the topology'),
-    relationships: z.array(z.record(z.unknown())).optional().describe('Relationships between entities'),
-    clusters: z.array(z.record(z.unknown())).optional().describe('Entity clusters'),
-  }).passthrough(),
+    entities: z.array(z.record(z.string(), z.unknown())).optional().describe('Entities in the topology'),
+    relationships: z.array(z.record(z.string(), z.unknown())).optional().describe('Relationships between entities'),
+    clusters: z.array(z.record(z.string(), z.unknown())).optional().describe('Entity clusters'),
+  }).loose(),
   ExplorationSectionBase.extend({
     type: z.literal('landscape'),
     dimensions: z.array(z.string()).optional().describe('Landscape dimensions'),
-    findings: z.array(z.record(z.unknown())).optional().describe('Findings across dimensions'),
-  }).passthrough(),
+    findings: z.array(z.record(z.string(), z.unknown())).optional().describe('Findings across dimensions'),
+  }).loose(),
   ExplorationSectionBase.extend({
     type: z.literal('classification'),
-    hierarchy: z.array(z.record(z.unknown())).optional().describe('Taxonomic hierarchy'),
-  }).passthrough(),
+    hierarchy: z.array(z.record(z.string(), z.unknown())).optional().describe('Taxonomic hierarchy'),
+  }).loose(),
   ExplorationSectionBase.extend({
     type: z.literal('mapping'),
     source_domain: z.string().optional().describe('Source domain name'),
     target_domain: z.string().optional().describe('Target domain name'),
-    translations: z.array(z.record(z.unknown())).optional().describe('Source-to-target translations'),
-  }).passthrough(),
+    translations: z.array(z.record(z.string(), z.unknown())).optional().describe('Source-to-target translations'),
+  }).loose(),
   ExplorationSectionBase.extend({
     type: z.literal('synthesis'),
-    patterns: z.array(z.record(z.unknown())).optional().describe('Discovered patterns'),
-    archetypes: z.array(z.record(z.unknown())).optional().describe('Identified archetypes'),
-  }).passthrough(),
+    patterns: z.array(z.record(z.string(), z.unknown())).optional().describe('Discovered patterns'),
+    archetypes: z.array(z.record(z.string(), z.unknown())).optional().describe('Identified archetypes'),
+  }).loose(),
   ExplorationSectionBase.extend({
     type: z.literal('limitation'),
-    blind_spots: z.array(z.record(z.unknown())).optional().describe('Framework blind spots'),
-  }).passthrough(),
+    blind_spots: z.array(z.record(z.string(), z.unknown())).optional().describe('Framework blind spots'),
+  }).loose(),
   ExplorationSectionBase.extend({
     type: z.literal('agenda'),
-    questions: z.array(z.record(z.unknown())).optional().describe('Inquiry questions for downstream analysis'),
-  }).passthrough(),
+    questions: z.array(z.record(z.string(), z.unknown())).optional().describe('Inquiry questions for downstream analysis'),
+  }).loose(),
 ]).describe('Typed section — type determines available fields');
 
 /** A complete structural map emitted by an explorer agent. */
@@ -82,9 +88,9 @@ export const AnalysisSummaryBaseSchema = z.object({
   decision: z.string().max(50).describe('Decision (VITAL, FLOWING, PASS, etc.)'),
   score: z.number().min(0).max(100).optional().nullable().describe('Score. Omit for scoreless agents.'),
   decision_vocabulary: z.string().max(100).optional().nullable().describe('e.g., VITAL/DECADENT'),
-  system_metrics: z.record(z.unknown()).optional().nullable().describe("Agent's cognitive measurements — counts, levels, categorical indicators (values: number | boolean | string ≤100 chars). Execution telemetry (tokens/model/duration) belongs in agents[], not here. Objects/arrays are stripped at ingest; keys starting with _ are reserved."),
+  system_metrics: z.record(z.string(), z.unknown()).optional().nullable().describe("Agent's cognitive measurements — counts, levels, categorical indicators (values: number | boolean | string ≤100 chars). Execution telemetry (tokens/model/duration) belongs in agents[], not here. Objects/arrays are stripped at ingest; keys starting with _ are reserved."),
   category_scores: z.array(CategoryScoreSchema).optional().nullable().describe('Category score breakdown'),
-  epistemic_assessment: z.record(z.unknown()).optional().nullable().describe('Failure signature risk ratings'),
+  epistemic_assessment: z.record(z.string(), z.unknown()).optional().nullable().describe('Failure signature risk ratings'),
   audit_implications: z.array(z.string()).optional().nullable().describe('Trajectory projections'),
   exploration_maps: z.array(ExplorationMapSchema).optional().nullable().describe('Structural maps from explorer agents — inventories, topologies, claim extractions, etc.'),
 });
@@ -132,5 +138,5 @@ export const AnalysisRecordBaseSchema = z.object({
   title: z.string().max(500).describe('Human-readable title'),
   classification: z.string().max(50).optional().nullable().describe('Type-specific classification (LIVING, CALCIFIED, IMMINENT, etc.)'),
   severity: SeveritySchema.optional().nullable().describe('Severity when applicable'),
-  data: z.record(z.unknown()).describe('Full structured data for this record'),
+  data: z.record(z.string(), z.unknown()).describe('Full structured data for this record'),
 });

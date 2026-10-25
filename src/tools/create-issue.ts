@@ -14,6 +14,7 @@ import {
 } from '../types/index.js';
 import { createToolHandler } from '../utils/tool-handler.js';
 import { STRICT_FAILURE_CODE_PATTERN } from '@uluops/taxonomy';
+import { toolInteger } from '../utils/tool-schema.js';
 
 export const CreateIssueInputSchema = z.object({
   project: z.string().min(1).describe('Project name'),
@@ -26,7 +27,7 @@ export const CreateIssueInputSchema = z.object({
   category: z.string().max(100).optional().describe('Issue category'),
   description: z.string().max(10000).optional().describe('Detailed description'),
   file_path: FilePathSchema.optional().describe('File path where issue was found'),
-  line_number: z.number().int().nonnegative().optional().nullable().describe('Line number in file'),
+  line_number: toolInteger().nonnegative().optional().nullable().describe('Line number in file'),
   failure_code: z
     .string()
     .regex(STRICT_FAILURE_CODE_PATTERN, {

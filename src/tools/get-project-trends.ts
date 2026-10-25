@@ -8,12 +8,11 @@ import { z } from 'zod';
 import type { OpsClient } from '@uluops/ops-sdk';
 import type { McpServerToolRegistration } from '../types/index.js';
 import { createToolHandler } from '../utils/tool-handler.js';
+import { toolInteger } from '../utils/tool-schema.js';
 
 export const GetProjectTrendsInputSchema = z.object({
   project: z.string().min(1).describe('Project name or UUID'),
-  days: z
-    .number()
-    .int()
+  days: toolInteger()
     .min(1)
     .max(365)
     .optional()

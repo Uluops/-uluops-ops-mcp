@@ -15,6 +15,27 @@ considered and left alone; readers scanning only for the standard headings lose 
 
 ## [Unreleased]
 
+## [0.32.0] - 2026-10-25
+
+### Changed
+
+- **zod 3.25.76 → 4.6.7 and `@uluops/ops-sdk` 6.17.0 → 7.0.0 (zod-4 release train spec v0.2.1, T4).** Clears GHSA-mrhx-c7xc-m3w5 (zod < 4.6.6; no zod 3 fix). The installed tree holds one zod (4.6.7; was 3.25.76 here plus 4.3.6 under ops-sdk and 4.4.3 under `mcp-secure-server`, whose `^4.1.13` now resolves 4.6.7) and one sdk-core. Validation messages and issue codes follow zod 4.
+- **What MCP clients see (`tools/list`, Z7): 55 tools, each accepting exactly what 0.31.0 accepted.** Measured by spawning the 0.31.0 global install and this build over stdio and diffing every `inputSchema` after resolving `$ref`s. Changes, all in how the schema is written, none in what it admits:
+  - zod 4 inlines repeated sub-schemas where zod 3 emitted `$ref`s (`"#/properties/since"`), and writes an optional field as the field itself where zod 3 wrote `anyOf: [{"not": {}}, X]`. Clients that could not resolve `$ref` now see the full schema.
+  - `additionalProperties: false` is no longer advertised on strip-mode objects (the server has always accepted and dropped extra keys); `.loose()` objects say `additionalProperties: {}` where zod 3 said `true` (both mean "anything").
+  - records advertise `propertyNames: {"type": "string"}` (JSON keys are always strings); nullable numbers are `type: ["number","null"]` where zod 3 used `anyOf`.
+- **Integers, ids and the exploration-section union keep the 0.31.0 wire** (`src/utils/tool-schema.ts`). zod 4's built-ins would have added constructs new to every client (Claude Code → Anthropic, Codex → OpenAI): `.int()` a `maximum: 9007199254740991` (73 params), `z.guid()` a hex `pattern` (20 ids), and `z.discriminatedUnion` a `oneOf` (OpenAI strict schemas do not support it). `toolInteger()` and `toolGuid()` advertise `{ "type": "integer" }` and `{ "type": "string", "format": "uuid" }` as before; `ExplorationSectionSchema` is a plain `z.union` of the same branches, which are mutually exclusive by their `type` literal. Same decision as `@uluops/core` 0.52.0 and `@uluops/registry-mcp` 0.17.0. Pinned in `tools-integration.test.ts` (`tool schema wire`, per-tool counts so the four declared `offset ≤ MAX_SAFE_INTEGER` caps stay allowed and nothing else is).
+- **Id parameters accept any 8-4-4-4-12 hex id, as on zod 3** (`toolGuid()`, 20 sites). zod 4's `uuid()` is RFC-strict, and stored ids include non-RFC ones (production census 2026-10-25: the `system` org, 2 users, issue and pipeline-run authors); a tool must not refuse an id its API accepts.
+
+### Fixed
+
+- **Every tool-input validation error lost its detail on zod 4.** `mapZodErrorToMcp` read `.errors`, which zod 4 removed (zod 3 had it as an alias of `.issues`), so it fell back to "Invalid input parameters". It reads `.issues`, and recognises a hand-built zod 4 `ZodError` (not `instanceof Error`) by zod's trait set, the same rule as both APIs. The spec flagged this cast (D4). `InputValidationError` from ops-sdk (the other `.errors` read) carries its own `errors` field and is unaffected.
+- **`analysis_summary` nested diagnostics** (`runSummaryErrorMap` → `runSummaryError`): ported to zod 4's `error` hook. Branch issues arrive as `issue.errors` with paths relative to the union, so each reported path is the union's path plus the branch path; the text is unchanged ("keeps metadata paths" in `run-schemas.test.ts` fails with the prefix removed).
+
+### Security
+
+- **Production audit: transitive advisories through `@modelcontextprotocol/sdk` fixed where non-breaking** (lockfile only). Still open, moderate and below the publish gate: `hono` 4.13.7, held by the SDK's range.
+
 ## [0.31.0] - 2026-10-09
 
 ### Added

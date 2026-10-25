@@ -8,19 +8,20 @@ import { z } from 'zod';
 import type { OpsClient } from '@uluops/ops-sdk';
 import type { McpServerToolRegistration } from '../types/index.js';
 import { createToolHandler, mapContextData } from '../utils/tool-handler.js';
+import { toolInteger } from '../utils/tool-schema.js';
 
 const ListAgentsInputObject = z.object({
   format: z.enum(['page']).optional(),
   project: z.string().min(1).optional(),
-  days: z.number().int().min(1).max(365).optional(),
+  days: toolInteger().min(1).max(365).optional(),
   search: z.string().max(200).optional(),
-  limit: z.number().int().min(1).max(100).optional(),
-  offset: z.number().int().min(0).optional(),
+  limit: toolInteger().min(1).max(100).optional(),
+  offset: toolInteger().min(0).optional(),
 }).strict();
 
 export const ListAgentsInputSchema = ListAgentsInputObject.superRefine((value, context) => {
   if (value.format !== 'page' && (value.project !== undefined || value.days !== undefined || value.search !== undefined || value.limit !== undefined || value.offset !== undefined)) {
-    context.addIssue({ code: z.ZodIssueCode.custom, path: ['format'], message: 'Select format=page to use agent discovery filters or pagination' });
+    context.addIssue({ code: 'custom', path: ['format'], message: 'Select format=page to use agent discovery filters or pagination' });
   }
 });
 

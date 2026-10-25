@@ -6,11 +6,12 @@ import { z } from 'zod';
 import type { OpsClient } from '@uluops/ops-sdk';
 import { MergeStrategySchema, type McpServerToolRegistration } from '../types/index.js';
 import { createToolHandler } from '../utils/tool-handler.js';
+import { toolGuid } from '../utils/tool-schema.js';
 
 export const MergeIssuesInputSchema = z.object({
   project: z.string().min(1),
-  target_issue_id: z.string().uuid(),
-  source_issue_ids: z.array(z.string().uuid()).min(1),
+  target_issue_id: toolGuid(),
+  source_issue_ids: z.array(toolGuid()).min(1),
   strategy: MergeStrategySchema.default('keep_target'),
 });
 

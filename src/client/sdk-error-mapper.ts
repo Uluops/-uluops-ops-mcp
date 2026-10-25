@@ -814,13 +814,19 @@ export function mapSdkResponseShapeErrorToMcp(error: Error, toolName?: string): 
 export function mapZodErrorToMcp(error: unknown, toolName?: string): McpToolResponse {
   let message = 'Invalid input parameters';
 
-  if (error instanceof Error) {
-    const zodError = error as { errors?: Array<{ path: (string | number)[]; message: string }> };
-    if (zodError.errors && Array.isArray(zodError.errors)) {
-      const details = zodError.errors
-        .map((e) => `${e.path.join('.')}: ${e.message}`)
+  // `.issues`, not `.errors`: zod 4 removed the `.errors` alias (zod 3 had both), so on zod 4 this
+  // read nothing and every tool-input error collapsed to the generic message. And not only
+  // `instanceof Error`: zod 4's exported ZodError does not extend Error (ZodRealError, thrown by
+  // `.parse()`, does), so a hand-built one is recognised by zod's trait set, as in both APIs'
+  // utils/zod-errors.ts (zod-4 train T4).
+  const traits = (error as { _zod?: { traits?: unknown } } | null)?._zod?.traits;
+  if (error instanceof Error || (traits instanceof Set && traits.has('ZodError'))) {
+    const zodError = error as { issues?: Array<{ path: PropertyKey[]; message: string }> };
+    if (zodError.issues && Array.isArray(zodError.issues)) {
+      const details = zodError.issues
+        .map((e) => `${e.path.map(String).join('.')}: ${e.message}`)
         .join('; ');
-      const count = zodError.errors.length;
+      const count = zodError.issues.length;
       message = `Validation failed (${String(count)} error${count > 1 ? 's' : ''}): ${details}`;
     }
   }

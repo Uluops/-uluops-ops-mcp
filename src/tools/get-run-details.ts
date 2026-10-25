@@ -8,10 +8,11 @@ import { z } from 'zod';
 import type { OpsClient } from '@uluops/ops-sdk';
 import type { McpServerToolRegistration } from '../types/index.js';
 import { createToolHandler } from '../utils/tool-handler.js';
+import { toolInteger } from '../utils/tool-schema.js';
 
 export const GetRunDetailsInputSchema = z.object({
   project: z.string().min(1),
-  run_number: z.number().int().positive().optional(),
+  run_number: toolInteger().positive().optional(),
   workflow_type: z.string().optional(),
 });
 

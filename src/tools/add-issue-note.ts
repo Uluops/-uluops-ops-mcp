@@ -6,9 +6,10 @@ import { z } from 'zod';
 import type { OpsClient } from '@uluops/ops-sdk';
 import { NoteTypeSchema, type McpServerToolRegistration } from '../types/index.js';
 import { createToolHandler } from '../utils/tool-handler.js';
+import { toolGuid } from '../utils/tool-schema.js';
 
 export const AddIssueNoteInputSchema = z.object({
-  issue_id: z.string().uuid(),
+  issue_id: toolGuid(),
   content: z.string().min(1).max(10000),
   note_type: NoteTypeSchema.default('context'),
   created_by: z.string().max(200).optional(),

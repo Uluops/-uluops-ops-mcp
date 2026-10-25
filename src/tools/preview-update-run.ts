@@ -20,7 +20,7 @@
  * can actually fire.
  */
 
-import { runSummaryErrorMap, RUN_MAP_CONTRACT } from './run-input-contract.js';
+import { runSummaryError, RUN_MAP_CONTRACT } from './run-input-contract.js';
 import { z } from 'zod';
 import type { OpsClient } from '@uluops/ops-sdk';
 import { ValidationError } from '@uluops/ops-sdk';
@@ -28,6 +28,7 @@ import type { McpServerToolRegistration } from '../types/index.js';
 import { createToolHandler } from '../utils/tool-handler.js';
 import { AnalysisRecordBaseSchema } from '../types/run-schemas.js';
 import { AnalysisSummarySchema } from './update-run.js';
+import { toolInteger, toolGuid } from '../utils/tool-schema.js';
 
 const FORBIDDEN_NOTE =
   'NOT ACCEPTED — update-preview takes analysis concerns only. Sending this field is a named error, never a silent strip: a preview that dropped it would model only part of the write you are about to perform.';
@@ -51,13 +52,13 @@ const FORBIDDEN_PREVIEW_FIELDS = [
 
 export const PreviewUpdateRunInputSchema = z.object({
   project: z.string().min(1),
-  run_id: z.string().uuid().optional(),
-  run_number: z.number().int().positive().optional(),
+  run_id: toolGuid().optional(),
+  run_number: toolInteger().positive().optional(),
   analysis_records: z.array(AnalysisRecordBaseSchema).max(100).optional().describe('Analysis records the update would write. Per agent named here, the preview reports wouldSupersedeRecords, wouldCreateRecords, and wouldRetireRecordIds (the RESPONSE echoes camelCase, matching update_run) — the live records omitted from this payload that a replace write would retire.'),
   analysis_summary: z.union([
     AnalysisSummarySchema,
     z.array(AnalysisSummarySchema).max(20),
-  ], { errorMap: runSummaryErrorMap }).optional().describe('Analysis summary/summaries the update would write. Per named agent, the preview reports wouldSupersedeSummaries and wouldCreateSummaries (camelCase in the response).'),
+  ], { error: runSummaryError }).optional().describe('Analysis summary/summaries the update would write. Per named agent, the preview reports wouldSupersedeSummaries and wouldCreateSummaries (camelCase in the response).'),
   record_write_mode: z.enum(['replace', 'merge']).optional().describe('Preview under this mode (default replace) — MUST match the mode the write will use: previewing replace while the write merges reports retirements that will not happen (and vice versa). Under merge, wouldSupersedeRecords counts matched keys and wouldRetireRecordIds is always empty (merge cannot retire).'),
   // Declared so the transport does not strip them — the handler rejects them
   // by name (see module docblock).

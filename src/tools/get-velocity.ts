@@ -9,12 +9,11 @@ import { z } from 'zod';
 import type { OpsClient } from '@uluops/ops-sdk';
 import type { McpServerToolRegistration } from '../types/index.js';
 import { createToolHandler } from '../utils/tool-handler.js';
+import { toolInteger } from '../utils/tool-schema.js';
 
 export const GetVelocityInputSchema = z.object({
   project: z.string().min(1).optional().describe('Project name or UUID to filter by'),
-  days: z
-    .number()
-    .int()
+  days: toolInteger()
     .min(1)
     .max(365)
     .optional()
