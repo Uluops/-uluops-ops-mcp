@@ -83,6 +83,18 @@ describe('transport limits match the API (2026-10-25 length audit)', () => {
     expect(old.reason).toMatch(/String parameter too long|too large/);
   });
 
+  // mcp-secure-server 0.1.1-security (tracker 53dd1c56): through 0.1.0 Layer 1 refused any
+  // message containing U+200D, so one compound emoji in a report refused the whole save,
+  // while eight of the nine bidi controls passed. Fails on 0.0.25-security for both reasons.
+  it('a compound emoji in raw_markdown passes; a bidi isolate is refused', async () => {
+    const p = await pipeline();
+    const emoji = await p.validate(toolCallMessage('save_run', smallSaveRun('Shipped \u{1F468}\u200D\u{1F4BB} today')));
+    expect({ passed: emoji.passed, reason: emoji.reason }).toMatchObject({ passed: true });
+    const isolate = await p.validate(toolCallMessage('save_run', smallSaveRun('access\u2066level')));
+    expect(isolate.passed).toBe(false);
+    expect(isolate.violationType).toBe('SUSPICIOUS_ENCODING');
+  });
+
   it('every limit sits at or above the API value it is derived from', () => {
     expect(MESSAGE_LIMITS.maxMessageSize).toBeGreaterThanOrEqual(API_BODY_LIMIT_BYTES);
     expect(MESSAGE_LIMITS.maxParamBytes).toBeGreaterThanOrEqual(API_BODY_LIMIT_BYTES);

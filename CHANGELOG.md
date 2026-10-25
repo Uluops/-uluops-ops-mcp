@@ -15,6 +15,25 @@ considered and left alone; readers scanning only for the standard headings lose 
 
 ## [Unreleased]
 
+## [0.34.0] - 2026-10-25
+
+### Changed: mcp-secure-server 0.0.25-security → 0.1.1-security
+
+- **A compound emoji no longer refuses a whole call.** 0.0.25 refused any message containing the zero-width joiner U+200D. Every multi-person, profession and flag emoji contains it, so one in a `raw_markdown` report refused the save. That is how mcp-secure-server issue 53dd1c56 was found: filing it through this server was refused for the emoji it quoted.
+- **Security: every bidirectional control is now refused,** not only U+202E: U+202A–U+202D and U+2066–U+2069 too (Trojan Source, CVE-2021-42574). A payload carrying one now gets `SUSPICIOUS_ENCODING`.
+- **The library releases in between (0.0.26, 0.0.27, 0.1.0) are mostly HTTP-transport changes,** which this stdio server does not use. Four also apply to stdio:
+  - notifications bypass Layer 4 method chaining;
+  - Layer 5 sees a renamed tool's current name;
+  - tool handlers receive every argument the SDK passes;
+  - client responses are checked.
+  
+  The full suite, `check:wire` and the largest-payload test pass on 0.1.1. The upgrade was validated through Verdaccio before the npm publish.
+
+### Added
+
+- **`message-limits.test.ts`: a compound emoji in `raw_markdown` passes the production pipeline, and a bidi isolate is refused.** Fails on 0.0.25-security for both reasons.
+
+
 ## [0.33.0] - 2026-10-25
 
 ### Changed: transport limits now match what the tracker API accepts
