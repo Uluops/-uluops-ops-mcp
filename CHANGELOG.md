@@ -15,6 +15,8 @@ considered and left alone; readers scanning only for the standard headings lose 
 
 ## [Unreleased]
 
+## [0.33.0] - 2026-10-25
+
 ### Changed: transport limits now match what the tracker API accepts
 
 - **The five server-wide `mcp-secure-server` caps are now derived from the API** (`src/config/message-limits.ts`).
