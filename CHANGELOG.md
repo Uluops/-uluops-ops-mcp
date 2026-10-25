@@ -15,6 +15,30 @@ considered and left alone; readers scanning only for the standard headings lose 
 
 ## [Unreleased]
 
+### Changed: transport limits now match what the tracker API accepts
+
+- **The five server-wide `mcp-secure-server` caps are now derived from the API** (`src/config/message-limits.ts`).
+  - Envelope, params-bytes and suspicious-message caps: 500 KB → 2 MiB + 64 KiB (the API's `express.json` 2 MB limit).
+  - Per-string cap: 128 Ki → 512 Ki chars (the API's `rawMarkdown` max of 500,000).
+  - Key-count cap: 3000 → 32,768.
+
+  The key count was the binding one. mcp-secure-server counts every key and array index recursively, so a `save_run` hit 3000 at roughly 150–230 recommendations, against the API's 500. A save at every API array limit measures 17,498.
+- **Why:** the 2026-10-25 save_run length audit found the transport refusing payloads the API accepts. Those refusals are opaque protocol errors (-32602), not the API's named 400s.
+- **`save_run`'s schema refuses what the API refuses, by name:** `agents` at most 100, `recommendations` at most 500, `raw_markdown` at most 500,000 chars. Before, an over-limit run failed only at the API.
+- **`update_run.raw_markdown` max 100,000 → 500,000**, the API's update cap. It refused valid updates.
+- **`buildServerOptions` moved** to `src/config/server-options.ts`, so a test can build the exact production options without starting the server. No behaviour change.
+
+### Added
+
+- **`message-limits.test.ts`:** builds the largest valid `save_run` and runs it through mcp-secure-server's real pipeline, with the production options and the transport's context.
+  - **Controls:** the same payload is refused under the 0.32.0 limits, and under the 0.32.0 key-count cap alone (`EXCESSIVE_PARAM_COUNT`). A 500,000-char report is refused under the old string cap.
+
+### Not changed, recorded so the next reader does not re-derive it
+
+- **Per-tool string-length and key-count caps** would be tighter than raising them for every tool. mcp-secure-server 0.0.25-security has no per-tool setting for either (`ToolSpec` carries only `maxArgsSize`), so that is a library change, filed against `mcp-secure-server`. Each tool's `maxArgsSize` still caps its own payload in bytes.
+- **Nesting depth (15) and the zero-width/U+202E rejection** are hardcoded in the library. The zero-width joiner in compound emoji refuses a whole call; also filed against `mcp-secure-server`.
+
+
 ## [0.32.0] - 2026-10-25
 
 ### Changed

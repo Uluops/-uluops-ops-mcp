@@ -408,19 +408,21 @@ Claude Code issues tool calls in short, intense bursts (<2s) followed by "thinki
 
 ### Payload Size Limits
 
-`save_run`, `update_run`, and `preview_update_run` carry the largest payloads on the surface — long `raw_markdown` reports, plus 40+ recommendations with per-agent analysis summaries (the preview accepts the same analysis payload the write does). `mcp-secure-server` enforces payload size at several independent layers, and the defaults (tuned for small tool calls) sit far below the per-tool `maxArgsSize`. This server raises each to a common ceiling so the per-tool limit is the one that actually governs:
+`save_run`, `update_run`, and `preview_update_run` carry the largest payloads on the surface: long `raw_markdown` reports, plus hundreds of recommendations with per-agent analysis summaries (the preview accepts the same analysis payload the write does). `mcp-secure-server` enforces payload size at several independent layers, server-wide, before any tool's own policy. This server sets each to what the tracker API itself accepts, so the API, not the transport, decides what a run may contain (`src/config/message-limits.ts` has the derivation):
 
 ```typescript
 {
-  maxMessageSize: 500 * 1024,        // Layer 1 whole-message envelope
-  maxStringLength: 128 * 1024,       // Layer 1 per-string cap (raw_markdown)
-  maxParamBytes: 500 * 1024,         // Layer 2 serialized-params cap
-  suspiciousMessageSize: 500 * 1024, // Layer 3 large-message block
-  maxParamCount: 3000,               // supports ~150 issues per run
+  maxMessageSize: 2 MiB + 64 KiB,        // Layer 1 envelope: the API's 2 MB body limit, plus JSON-RPC headroom
+  maxStringLength: 512 * 1024,           // Layer 1 per-string cap: the API's raw_markdown max is 500,000 chars
+  maxParamBytes: 2 MiB + 64 KiB,         // Layer 2 serialized-params cap
+  suspiciousMessageSize: 2 MiB + 64 KiB, // Layer 3 large-message block
+  maxParamCount: 32_768,                 // keys counted recursively; a save_run at every API array limit is 17,498
 }
 ```
 
-The per-tool `maxArgsSize` (2 MB for `save_run`) and the 500 KB message envelope remain the effective gates. When a payload is rejected, the error names which cap fired — for a per-string rejection, it names the offending field path (e.g. `raw_markdown`) and notes that `maxStringLength` is a separate, lower cap than the tool's `maxArgsSize` — so the fix (shorten a field vs. split the call) is unambiguous.
+A save_run at the API's limits (100 agents, 500 recommendations, 100 analysis records, 20 summaries, a 500,000-char report) passes the transport; `message-limits.test.ts` runs exactly that payload through the real validation pipeline. The tool schemas also refuse what the API refuses, by name: `agents` at most 100, `recommendations` at most 500, `raw_markdown` at most 500,000 chars. When a payload is rejected at the transport, the error names which cap fired. For a per-string rejection it names the field path (e.g. `raw_markdown`).
+
+These limits apply to every tool on this server. Each tool's `maxArgsSize` still caps its own payload in bytes. Two transport checks are not configurable: nesting deeper than 15 levels, and zero-width characters (U+200B/C/D, U+2060, U+FEFF) or U+202E anywhere in the message. The zero-width joiner U+200D appears in compound emoji, so one such emoji in a report refuses the call; that is filed against `mcp-secure-server`.
 
 **Byte caps are UTF-8 bytes** (since 0.21.2, on `mcp-secure-server` 0.0.23-security and later):
 `maxMessageSize`, `maxParamBytes`, `suspiciousMessageSize` and `maxArgsSize` count encoded

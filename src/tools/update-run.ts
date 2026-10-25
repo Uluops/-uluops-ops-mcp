@@ -16,6 +16,7 @@ import {
   AnalysisSummaryBaseSchema,
 } from '../types/run-schemas.js';
 import { toolInteger, toolGuid } from '../utils/tool-schema.js';
+import { API_RAW_MARKDOWN_MAX_CHARS } from '../config/message-limits.js';
 
 const AgentUpdateSchema = z.object({
   name: z.string().min(1),
@@ -58,7 +59,9 @@ export const UpdateRunInputSchema = z.object({
   agents: z.array(AgentUpdateSchema).optional(),
   all_gates_passed: z.boolean().optional().describe('Fill an unrecorded result or echo its identical value; recorded false and true cannot be rewritten.'),
   average_score: z.number().min(0).max(100).optional().describe('Fill an unrecorded score or echo its identical value; recorded zero is immutable too.'),
-  raw_markdown: z.string().max(100000).optional(),
+  // The API accepts 500,000 (run-transformers.ts UpdateRun schemas); 100,000 here refused
+  // valid updates (2026-10-25 length audit).
+  raw_markdown: z.string().max(API_RAW_MARKDOWN_MAX_CHARS).optional(),
   recommendations: z.array(RecommendationSchema).optional().describe('Array of issues/recommendations to correlate with this run'),
   analysis_records: z.array(AnalysisRecordSchema).max(100).optional().describe('Structured analysis records — PER-AGENT REPLACE (API 1a): for each agent named in this array, that agent\'s entire live record set is superseded and these rows written; agents not named are untouched, and nothing here can remove another agent\'s rows. Omitting a record an agent previously had retires it — send every record that agent should keep, and use preview_update_run first when unsure. Leaves analysis_summary untouched. agent_name/record_id matching is case- and accent-insensitive.'),
   analysis_summary: z.union([

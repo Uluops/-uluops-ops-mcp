@@ -20,6 +20,7 @@ import {
 import { createToolHandler } from '../utils/tool-handler.js';
 import { agentAttributionWarnings } from './agent-attribution-warnings.js';
 import { toolGuid } from '../utils/tool-schema.js';
+import { API_RAW_MARKDOWN_MAX_CHARS } from '../config/message-limits.js';
 
 const AnalysisRecordSchema = AnalysisRecordBaseSchema;
 const AnalysisSummarySchema = AnalysisSummaryBaseSchema;
@@ -34,13 +35,16 @@ export const SaveRunInputSchema = z.object({
   // schema and the API both omitted the bound while the SDK's client
   // validator — which this tool skips — enforced it, so save_run persisted
   // agent-less runs (and auto-created the named project).
-  agents: z.array(AgentResultSchema).min(1).describe('Array of agent results — at least one'),
+  // .max(100) / .max(500) mirror the API's SaveRunSchema, so an over-limit run is refused
+  // here by name instead of as a round-trip 400 (2026-10-25 length audit).
+  agents: z.array(AgentResultSchema).min(1).max(100).describe('Array of agent results — at least one, at most 100'),
   recommendations: z
     .array(RecommendationSchema)
+    .max(500)
     .default([])
-    .describe('Array of issues/recommendations'),
+    .describe('Array of issues/recommendations (at most 500)'),
   summary: ValidationSummarySchema.optional().describe('Summary statistics for the run'),
-  raw_markdown: z.string().nullish().describe('Raw markdown report content'),
+  raw_markdown: z.string().max(API_RAW_MARKDOWN_MAX_CHARS).nullish().describe('Raw markdown report content (at most 500,000 chars)'),
   idempotency_contract: z.enum(['legacy-v1', 'report-v2']).optional().describe('Omission keeps legacy-v1, which excludes report text from comparison. report-v2 compares exact report bytes and requires server capability support. Reusing a key with another contract or payload conflicts; use a new key only for an intentional new submission.'),
   idempotency_key: z.string().max(100).optional().describe('Key for duplicate prevention. When omitted, a content-derived key is used (sha256 of the payload), so a byte-identical retry returns the original run with deduplicated:true instead of creating a second one. Pass explicit distinct keys to deliberately save identical payloads twice.'),
   definition_type: z.string().max(20).optional().describe('Definition type (agent, command, workflow, pipeline)'),

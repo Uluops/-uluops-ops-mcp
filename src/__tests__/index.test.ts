@@ -5,6 +5,7 @@
  */
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { MESSAGE_LIMITS } from '../config/message-limits.js';
 
 // Store original process.on (binding required for proper restoration)
 // eslint-disable-next-line @typescript-eslint/unbound-method
@@ -378,7 +379,7 @@ describe('Main Entry Point', () => {
           toolPoliciesPath: expect.stringMatching(/tool-policies\.json$/),
           securityLevel: 'basic',
           maxRequestsPerMinute: 120,
-          maxParamCount: 3000,
+          ...MESSAGE_LIMITS,
           burstThreshold: 15,
           burstWindowMs: 5000,
           automationDetection: { enabled: false },
