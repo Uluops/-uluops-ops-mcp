@@ -11,7 +11,7 @@ const capabilities = { canUpdate: false, mutableFields: [], immutableFields: [{ 
 describe('run edit capability guidance and output', () => {
   it.each([
     [registerGetRunTool, 'get', { run_id: id }, false],
-    [registerGetLatestRunTool, 'getLatest', { project: 'p' }, false],
+    [registerGetLatestRunTool, 'findLatest', { project: 'p' }, false],
     [registerGetRunDetailsTool, 'getDetails', { project: 'p' }, true],
   ] as const)('preserves capabilities in read output', async (register, method, input, details) => {
     const run = { id, editCapabilities: capabilities };

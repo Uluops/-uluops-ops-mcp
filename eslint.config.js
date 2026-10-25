@@ -18,7 +18,7 @@ export default tseslint.config(
           // fixtures; at 20 the 21st file made two UNRELATED test files fail to parse
           // ("Too many files (>20) have matched the default project"), which reads as
           // a lint error in files nobody touched. Raise it deliberately when adding tests.
-          maximumDefaultProjectFileMatchCount_THIS_WILL_SLOW_DOWN_LINTING: 32,
+          maximumDefaultProjectFileMatchCount_THIS_WILL_SLOW_DOWN_LINTING: 48, // 33 test files as of 0.34.0 (get-latest-run.test.ts)
         },
         tsconfigRootDir: import.meta.dirname,
       },

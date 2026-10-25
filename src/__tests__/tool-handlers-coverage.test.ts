@@ -71,7 +71,7 @@ const cases: Case[] = [
   { name: 'get_discovery', register: registerGetDiscoveryTool, domain: 'analytics', method: 'getDiscovery', input: {} },
   { name: 'get_full_taxonomy_analytics', register: registerGetFullTaxonomyAnalyticsTool, domain: 'analytics', method: 'getFullTaxonomy', input: {} },
   { name: 'get_issue_by_fingerprint', register: registerGetIssueByFingerprintTool, domain: 'issues', method: 'getByFingerprint', input: { fingerprint: 'fp', project: 'p' } },
-  { name: 'get_latest_run', register: registerGetLatestRunTool, domain: 'runs', method: 'getLatest', input: { project: 'p' } },
+  { name: 'get_latest_run', register: registerGetLatestRunTool, domain: 'runs', method: 'findLatest', input: { project: 'p' } },
   { name: 'get_project_analysis', register: registerGetProjectAnalysisTool, domain: 'runs', method: 'getProjectAnalysis', input: { project: 'p' } },
   { name: 'get_project_trends', register: registerGetProjectTrendsTool, domain: 'projects', method: 'getTrends', input: { project: 'p' } },
   { name: 'get_project_log', register: registerGetProjectLogTool, domain: 'projects', method: 'getLog', input: { project: 'p' } },

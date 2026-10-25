@@ -496,7 +496,7 @@ snake_case as on every tool here. This release also moves the server's `.uluops.
 |------|-------------|
 | `get_run` | Get a run by UUID |
 | `list_runs` | List runs for a project |
-| `get_latest_run` | Get the latest run for a project |
+| `get_latest_run` | Get the latest run for a project; `{ run: null, message }` when it has none yet |
 | `delete_run` | Permanently delete a run (`confirm: true` required — false or missing is refused by the schema, nothing is sent) |
 
 ### Issue Tools (P2)

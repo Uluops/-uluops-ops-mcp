@@ -29,9 +29,14 @@ considered and left alone; readers scanning only for the standard headings lose 
   
   The full suite, `check:wire` and the largest-payload test pass on 0.1.1. The upgrade was validated through Verdaccio before the npm publish.
 
+### Fixed: `get_latest_run` on a project with no runs
+
+- **Returns `{ run: null, project, workflow_type?, message }` instead of `SDK_RESPONSE_SHAPE_MISMATCH`.** The API answers `{ data: null }` on purpose when a project has no matching run. ops-sdk's `getLatest` parsed that as a malformed response, so this tool reported "server and SDK disagree" for an ordinary empty project (seen during registry-mcp consumer-validate run #4, 2026-10-25). The tool now calls `runs.findLatest` (`@uluops/ops-sdk` 7.0.0 → 7.1.0), which returns `null` for that case. A project that does not exist is still an error. A found run is returned unchanged. The tool description says so (the one `tools/list` change in this part).
+
 ### Added
 
 - **`message-limits.test.ts`: a compound emoji in `raw_markdown` passes the production pipeline, and a bidi isolate is refused.** Fails on 0.0.25-security for both reasons.
+- **`get-latest-run.test.ts`: a project with no runs yields `{ run: null, message }`, not an error.** Fails against the 0.33.0 tool.
 
 
 ## [0.33.0] - 2026-10-25
