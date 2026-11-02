@@ -84,7 +84,7 @@ export const ExplorationMapSchema = z.object({
 /** Analysis summary base — extend with agent_name for per-agent updates. */
 export const AnalysisSummaryBaseSchema = z.object({
   agent_name: z.string().trim().min(1).max(100).optional().describe("Agent that produced this summary; required with an explicit type on multi-agent runs."),
-  agent_type: z.enum(['validator', 'analyst', 'explorer', 'forecaster', 'executor', 'generator']).nullish().describe('Explicit type for an unregistered agent. Must agree with the exact linked registry version; unresolved attribution is unknown, never inferred from the name.'),
+  agent_type: z.enum(['validator', 'analyst', 'explorer', 'forecaster', 'executor', 'generator']).nullish().describe('Only for an agent that is not in the registry. A registered agent\'s type comes from its exact linked definition version; a different declaration is overridden (registry type stored, agent_type_source=conflict). On a multi-agent run, a declaration without agent_name is discarded. Unresolved attribution is unknown, never inferred from the name.'),
   decision: z.string().max(50).describe('Decision (VITAL, FLOWING, PASS, etc.)'),
   score: z.number().min(0).max(100).optional().nullable().describe('Score. Omit for scoreless agents.'),
   decision_vocabulary: z.string().max(100).optional().nullable().describe('e.g., VITAL/DECADENT'),
@@ -120,7 +120,7 @@ export const AnalysisSummaryBaseSchema = z.object({
  * read schema requires to be non-empty. min(1) alone would admit whitespace.
  */
 export const AnalysisRecordBaseSchema = z.object({
-  agent_type: z.enum(['validator', 'analyst', 'explorer', 'forecaster', 'executor', 'generator']).nullish().describe('Explicit type for an unregistered agent. Must agree with the exact linked registry version; unresolved attribution is unknown, never inferred from the name.'),
+  agent_type: z.enum(['validator', 'analyst', 'explorer', 'forecaster', 'executor', 'generator']).nullish().describe('Only for an agent that is not in the registry. A registered agent\'s type comes from its exact linked definition version; a different declaration is overridden (registry type stored, agent_type_source=conflict). On a multi-agent run, a declaration without agent_name is discarded. Unresolved attribution is unknown, never inferred from the name.'),
   agent_name: z
     .string()
     .trim()
