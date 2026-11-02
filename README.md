@@ -14,7 +14,7 @@ MCP (Model Context Protocol) server for the UluOps tracker API — runs, finding
 
 ## Analysis type attribution (Unreleased)
 
-`save_run`, `update_run` and their preview schemas accept `agent_type` on analysis records and summaries. Use `agent_name` on each typed row in a multi-agent run. Registered agents are checked against their exact saved execution version; an explicit conflicting type is rejected. Unregistered agents may declare their type. Analysis reads retain the captured type, source and definition ID/version. `get_project_analysis` and `query_analysis_records` accept `agent_type: "unknown"` for unresolved or historical inferred attribution. The F02 API and SDK must ship together in the coordinated release.
+`save_run`, `update_run` and their preview schemas accept `agent_type` on analysis records and summaries. Use `agent_name` on each typed row in a multi-agent run. Registered agents take their type from their exact saved execution version: do not declare one. A conflicting declaration is overridden, and the row is stored with the registry type and `agent_type_source: conflict` (ops-api R0, analysis-never-loses-the-run). Before R0 it rejected the whole save. Unregistered agents may declare their type. On a multi-agent run, a declaration without `agent_name` is discarded. Analysis reads retain the captured type, source and definition ID/version. `get_project_analysis` and `query_analysis_records` accept `agent_type: "unknown"` for unresolved or historical inferred attribution. The F02 API and SDK must ship together in the coordinated release.
 
 ## Table of Contents
 
@@ -645,7 +645,7 @@ key for harness retries (the tool still defaults the timestamp on each call).
 
 ### Analysis types and saved history
 
-Pass `agent_type` on analysis records and summaries when known. The API checks declarations against the exact linked registry version and retains type provenance; query filters also accept `unknown`. Saved occurrence classifications describe the finding at that run, even after its current issue status changes. Legacy history without those facts remains `unknown`.
+Pass `agent_type` on analysis records and summaries only for agents that are not in the registry. A registered agent's type comes from its exact linked version, and a different declaration is overridden and marked `conflict`. The API retains type provenance; query filters also accept `unknown`. Saved occurrence classifications describe the finding at that run, even after its current issue status changes. Legacy history without those facts remains `unknown`.
 
 These contracts require Tracker API 2.1.1 or newer. The agent matrix distinguishes the complete per-agent population from pairs eligible for the requested `minIssues` threshold.
 

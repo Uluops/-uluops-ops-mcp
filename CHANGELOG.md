@@ -13,6 +13,24 @@ re-derive it`, `### Internal`). They record why a release looks the way it does 
 considered and left alone; readers scanning only for the standard headings lose nothing.
 (Stated here after consumer-validate run #13 flagged the unlabelled deviation from the claim above.)
 
+## [0.34.1] - 2026-11-02
+
+### Changed
+- **`agent_type` guidance: declare it only for unregistered agents.**
+  - The `save_run` / `update_run` description used to say "On multi-agent runs, name and type each summary explicitly", and its example summary declared `agent_type`.
+  - The `agent_type` field described a declaration that "must agree" with the registry.
+  - Sessions followed that literally and guessed a type for registered agents. ops-api's prod log census (2026-10-07 → 11-02) found 27 analysis-caused `400`s from wrong guesses on three registered agents, and each one lost the whole run.
+  - ops-api R0 (analysis-never-loses-the-run spec v0.2.1 §3.2) now stores the registry type and marks the row `agent_type_source=conflict` instead of rejecting.
+  - This release corrects the instructions at the source:
+    - set `agent_name` on every summary on a multi-agent run;
+    - declare `agent_type` only for an agent that is not in the registry;
+    - a different declaration is overridden.
+  - The example summary no longer declares a type.
+- **No schema change.** The `agent_type` field and its enum are unchanged. Descriptions and README only.
+
+### Why
+- **Release order:** publish after ops-api R0 is deployed. Before that, the descriptions describe an override the server does not yet do, and a conflict still returns `400`.
+
 ## [Unreleased]
 
 ## [0.34.0] - 2026-10-25
