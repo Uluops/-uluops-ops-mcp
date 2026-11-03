@@ -13,14 +13,15 @@ import {
   type McpServerToolRegistration,
 } from '../types/index.js';
 import {
-  AnalysisRecordBaseSchema,
-  AnalysisSummaryBaseSchema,
+  SaveAnalysisRecordSchema,
+  SaveAnalysisSummarySchema,
 } from '../types/run-schemas.js';
 import { createToolHandler } from '../utils/tool-handler.js';
 import { agentAttributionWarnings } from './agent-attribution-warnings.js';
 
-const AnalysisRecordSchema = AnalysisRecordBaseSchema;
-const AnalysisSummarySchema = AnalysisSummaryBaseSchema;
+// The save-path variants: no stricter than the server's save schemas (spec §3.5).
+const AnalysisRecordSchema = SaveAnalysisRecordSchema;
+const AnalysisSummarySchema = SaveAnalysisSummarySchema;
 
 export const ValidateRunInputSchema = z.object({
   project: z.string().min(1).max(200).describe('Project name'),
@@ -40,9 +41,7 @@ export const ValidateRunInputSchema = z.object({
   analysis_records: z.array(AnalysisRecordSchema).max(100).optional().describe('Structured analysis records to preview (mirrors save_run shape)'),
   analysis_summary: z.union([
     AnalysisSummarySchema,
-    z.array(AnalysisSummarySchema.extend({
-      agent_name: z.string().max(100).optional().describe('Agent name for per-agent attribution'),
-    })).max(20),
+    z.array(AnalysisSummarySchema).max(20),
   ], { error: runSummaryError }).optional().describe('Analysis summary to preview — single object or per-agent array'),
   // X4-9: the run-level definition fields, so the preview can run the copied-version check
   // before the write (review 2026-10-04: until then the worst case — a wrong version — was
@@ -65,7 +64,7 @@ export function registerValidateRunTool(
 ): void {
   server.tool(
     'validate_run',
-    'Preview what save_run would do without modifying the database. Returns would_create, would_update, would_regress, would_create_analysis_records, would_create_analysis_summaries, and validation_errors. Accepts the same shape as save_run including optional analysis_records and analysis_summary so the dry-run faithfully reflects the full set of side effects. Preview here before save_run: a `warnings` block names agents whose version attribution would be lost, while it can still be fixed — a saved run cannot be relabelled.' + RUN_MAP_CONTRACT + RUN_TOKEN_CONTRACT,
+    'Preview what save_run would do without modifying the database. Returns would_create, would_update, would_regress, would_create_analysis_records, would_create_analysis_summaries, and validation_errors. Accepts the same shape as save_run including optional analysis_records and analysis_summary so the dry-run faithfully reflects the full set of side effects. Preview here before save_run: a `warnings` block names agents whose version attribution would be lost, while it can still be fixed — a saved run cannot be relabelled. wouldReject[] lists the agents whose analysis a save of this payload would reject (same shape as save_run\'s analysisWrite.rejected[]): fix those entries before saving.' + RUN_MAP_CONTRACT + RUN_TOKEN_CONTRACT,
     ValidateRunInputSchema.shape,
     // `_skipClientValidation`, as save_run / update_run / preview_update_run
     // pass: the tool schema above is the client-side contract and the server

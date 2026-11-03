@@ -15,6 +15,20 @@ considered and left alone; readers scanning only for the standard headings lose 
 
 ## [Unreleased]
 
+## [0.35.0] - 2026-11-03
+
+### Added
+- **`save_run` rejection notice** (ops-uluops-api analysis-never-loses-the-run spec v0.2.3 §3.5, phase R3). Since ops-api R2 a save with invalid analysis answers `201`, keeps the run, and lists each agent whose analysis it rejected in `analysisWrite.rejected[]`. That array sits inside a large JSON block, and the spec's perverse-outcome read named what a session then does: reads the success and moves on with the analysis lost (P1), or calls `save_run` again and creates a second run (P2). When `rejected` is non-empty, `save_run` now appends a plain-text block: the run is saved, which agents were rejected and why, do not call `save_run` again, repair with `update_run` on this run id, sending each rejected agent's complete set. Absent when nothing was rejected; present on a deduplicated replay too. Built through a new `responseNotices` handler option: computed from the SDK result, contained like `responseWarnings` (it runs after the write landed, so a throw is logged to stderr as `[mcp-tool-notice-error]`, never reported as a failed call).
+- `save_run` and `validate_run` descriptions document `analysisWrite.rejected[]` and `wouldReject[]`.
+
+### Changed
+- **`save_run` / `validate_run` analysis entries are no stricter than the server's save path** (Alex's ruling 2026-11-03 on spec §3.5). Three shapes the server stores were refused here: an empty or whitespace-only `agent_name` on a record or on a single-object summary (the server trims it and treats empty as absent, ops-api A4) and an empty `record_id` (the server's save path has no minimum). They now pass. The per-agent array form of `analysis_summary` now trims `agent_name` like the other two. Proof is derived, not hand-compared: `src/__tests__/fixtures/server-accepted-analysis-entries.json` was produced by running 61 candidate entries through ops-api's own `SaveRunSchema` + `toSaveRunInput` at `6ffedce8`; the 57 it accepted must all pass both tools (116 tests). On 0.34.1, 10 fail.
+- `@uluops/ops-sdk` 7.1.0 → **7.3.0** (exact). 7.1.0 stripped `analysisWrite.rejected`, `wouldReject` and the `rejections` / `rejectionsTotal` of `get_run_analysis`, so until this release those fields never reached a session. This server calls the SDK with `_skipClientValidation`, so 7.3.0's envelope-only validation changes nothing here: this server's own schema is the client-side check.
+
+### Not changed — recorded so the next reader does not re-derive it
+- **`update_run` and `preview_update_run` keep the strict entry rules** (`agent_name` trimmed and non-empty, `record_id` non-empty). The server's update path is strict (spec §3.7) and refuses an invalid update whole; an update creates no run, so a refusal here loses nothing and names the fix. The base schemas in `src/types/run-schemas.ts` are those; the save path uses the derived `SaveAnalysisRecordSchema` / `SaveAnalysisSummarySchema`.
+- **The typed tool schema stays** (spec OQ-6, "keep"): it is the generation guide for analysis entries, and an ops-mcp refusal is interactive. The envelope-only alternative is not built.
+
 ### Fixed
 - **`bin` path written as npm 11 expects (`dist/index.js`, was `./dist/index.js`).** npm 11.19.1 printed `"bin[uluops-ops-mcp]" script name dist/index.js was invalid and removed` when 0.34.1 was published. The warning is misleading: npm normalises the path itself, and the 0.34.1 registry manifest, its tarball and the global `uluops-ops-mcp` link all keep the bin. Nothing is broken for consumers. The change is `npm pkg fix`'s own correction, and it makes `npm publish --dry-run` stop warning (2 warning lines before, 0 after). It ships with the next real release, not as its own patch.
 

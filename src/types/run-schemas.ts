@@ -140,3 +140,37 @@ export const AnalysisRecordBaseSchema = z.object({
   severity: SeveritySchema.optional().nullable().describe('Severity when applicable'),
   data: z.record(z.string(), z.unknown()).describe('Full structured data for this record'),
 });
+
+/**
+ * SAVE-path variants (save_run, validate_run): no stricter than the server's save
+ * schemas (ops-uluops-api analysis-never-loses-the-run spec §3.5; Alex's ruling
+ * 2026-11-03 on R3).
+ *
+ * Since ops-api R2 the save path judges analysis per agent and keeps the run. Its
+ * `agentName` is trimmed and an empty or whitespace-only name counts as ABSENT (A4),
+ * so the run default applies; its `recordId` has no minimum (the save-path rule is
+ * tracker 1c1d9ea4's). The base schemas above refused both, so this server refused
+ * three entry shapes the save path stores. Derived proof, not a hand comparison:
+ * `__tests__/fixtures/server-accepted-analysis-entries.json` was produced by running
+ * candidate entries through the server's SaveRunSchema + toSaveRunInput, and the
+ * parity test requires every accepted entry to pass these schemas.
+ *
+ * The UPDATE path stays strict on the server (spec §3.7: trim().min(1) names,
+ * non-empty record_id), so update_run and preview_update_run keep the base schemas.
+ * The base-schema comment on `trim().min(1)` describes that path.
+ */
+const SaveAgentNameSchema = z
+  .string()
+  .trim()
+  .max(100)
+  .optional();
+
+export const SaveAnalysisRecordSchema = AnalysisRecordBaseSchema.extend({
+  agent_name: SaveAgentNameSchema.describe('Agent name — overrides the run-level default. Set it per record when a run carries records from more than one agent, or every record is attributed to the run definition instead. Empty counts as absent.'),
+  record_id: z.string().max(ANALYSIS_RECORD_ID_MAX_LENGTH).describe('Agent-local ID — short semantic slug (e.g. foundations-api-aristotle-20260626, max 100 chars). Do NOT embed session/agent UUIDs; use the finding name, not identifiers. Per-agent replace merge key; matching is case- and accent-insensitive. Give every record a non-empty id: update_run cannot match an empty one.'),
+});
+
+export const SaveAnalysisSummarySchema = AnalysisSummaryBaseSchema.extend({
+  agent_name: SaveAgentNameSchema.describe("Agent that produced this summary; required with an explicit type on multi-agent runs. Empty counts as absent."),
+});
+

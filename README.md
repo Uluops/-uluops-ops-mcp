@@ -71,6 +71,18 @@ components: missing measurements should not be invented as zero.
 SDK 6.5.2 also preserves the API's optional, nullable `modelRaw` alongside the
 normalized `model` in saved and retrieved agent snapshots.
 
+### Rejected analysis on `save_run` (0.35.0)
+
+Since ops-api's "analysis never loses the run" release (live 2026-11-03), invalid analysis no longer fails a save. The server keeps the run, its issues and every other agent's analysis, and rejects **one agent's analysis as a unit** (its records and summary together). The response's `analysisWrite.rejected[]` lists each rejected agent with `reason`, counts and `detail.issues`, and `save_run` adds a plain-text notice block before the untrusted-content notice:
+
+```text
+Run #7 is saved. The server rejected the analysis of: "agent-a" (entry_invalid, 1 issue; 2 records and 1 summary not stored). Do not call save_run again: that creates a second run. Add the corrected analysis to this run with update_run (run_id …), sending each rejected agent's complete record set and summary: none of its entries were stored. The issues are in analysisWrite.rejected[].detail.
+```
+
+The block is absent when nothing was rejected, and it also appears on a deduplicated replay, which carries the original save's `rejected[]`. `validate_run` returns `wouldReject[]`, the same prediction before anything is saved.
+
+**The tool schemas stay typed** (spec OQ-6, "keep"), as the generation guide for analysis entries, and are **no stricter than the server's save path**. A save-path `agent_name` that is empty or whitespace-only now passes and counts as absent, as the server treats it, and `record_id` has no minimum. `src/__tests__/save-schema-server-parity.test.ts` checks this against a fixture derived from the server's own schemas. `update_run` and `preview_update_run` keep the stricter entry rules: the server refuses an invalid update whole, and an update creates no run.
+
 ### Attribution warnings on `save_run` and `validate_run`
 
 The tracker credits a run to an agent version only when that agent's own

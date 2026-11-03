@@ -161,6 +161,14 @@ export function createToolHandler<TInput>(
      * warnings (dvc checklist X4-9).
      */
     responseWarnings?: (input: TInput) => string[];
+    /**
+     * Result-dependent notices, computed from what the SDK call RETURNED and appended as
+     * plain text blocks after any warnings, before the untrusted-content notice. Omitted
+     * when empty. Like responseWarnings, contained: it runs after the write landed, so a
+     * throw is logged, never reported as a failed call. Used for save_run's analysis
+     * rejection notice (analysis-never-loses-the-run R3).
+     */
+    responseNotices?: (result: unknown) => string[];
   }
 ): (args: unknown) => Promise<McpToolResponse> {
   const toolName = options?.toolName;
@@ -294,6 +302,15 @@ export function createToolHandler<TInput>(
         // from the caller's own request (perverse-outcome-detector P8).
         response.content.push({ type: 'text', text: JSON.stringify({ warnings, from: WARNINGS_SOURCE }) });
       }
+      let notices: string[] = [];
+      try {
+        notices = options?.responseNotices?.(envelope.data) ?? [];
+      } catch (noticeError) {
+        process.stderr.write(
+          `[mcp-tool-notice-error] tool=${toolName ?? 'unknown'} message=${redactCredentials(noticeError instanceof Error ? noticeError.message : String(noticeError)).slice(0, 200)}\n`
+        );
+      }
+      for (const notice of notices) response.content.push({ type: 'text', text: notice });
       // D16: the untrusted-content notice, last, on every success.
       response.content.push({ type: 'text', text: UNTRUSTED_CONTENT_NOTICE });
       return response;
