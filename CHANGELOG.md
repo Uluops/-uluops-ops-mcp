@@ -13,6 +13,11 @@ re-derive it`, `### Internal`). They record why a release looks the way it does 
 considered and left alone; readers scanning only for the standard headings lose nothing.
 (Stated here after consumer-validate run #13 flagged the unlabelled deviation from the claim above.)
 
+## [Unreleased]
+
+### Fixed
+- **`bin` path written as npm 11 expects (`dist/index.js`, was `./dist/index.js`).** npm 11.19.1 printed `"bin[uluops-ops-mcp]" script name dist/index.js was invalid and removed` when 0.34.1 was published. The warning is misleading: npm normalises the path itself, and the 0.34.1 registry manifest, its tarball and the global `uluops-ops-mcp` link all keep the bin. Nothing is broken for consumers. The change is `npm pkg fix`'s own correction, and it makes `npm publish --dry-run` stop warning (2 warning lines before, 0 after). It ships with the next real release, not as its own patch.
+
 ## [0.34.1] - 2026-11-02
 
 ### Changed
@@ -30,8 +35,6 @@ considered and left alone; readers scanning only for the standard headings lose 
 
 ### Why
 - **Release order:** publish after ops-api R0 is deployed. Before that, the descriptions describe an override the server does not yet do, and a conflict still returns `400`.
-
-## [Unreleased]
 
 ## [0.34.0] - 2026-10-25
 

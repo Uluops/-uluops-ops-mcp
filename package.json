@@ -6,7 +6,7 @@
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "bin": {
-    "uluops-ops-mcp": "./dist/index.js"
+    "uluops-ops-mcp": "dist/index.js"
   },
   "exports": {
     ".": {
