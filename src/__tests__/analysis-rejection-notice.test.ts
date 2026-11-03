@@ -174,7 +174,7 @@ describe('validate_run wouldReject notice (R3 review F4, S4)', () => {
     const { handler } = registerValidate(() => Promise.resolve(WOULD));
     const r = await handler(payload);
     expect(r.isError).toBeFalsy();
-    expect(JSON.parse(r.content[0]!.text).wouldReject).toEqual([REJECTED_A]);
+    expect((JSON.parse(r.content[0]?.text ?? '{}') as { wouldReject?: unknown }).wouldReject).toEqual([REJECTED_A]);
     const notice = r.content.find(c => c.text.includes('would reject the analysis of'))?.text;
     expect(notice).toContain(`${NOTICE_SOURCE} A save_run of this payload would reject the analysis of: "agent-a"`);
     expect(notice).toContain('Nothing has been saved.');
