@@ -7,7 +7,8 @@
  * two sides were known to bound differently, plus each enum value and section type)
  * were run through the server's own `SaveRunSchema` + `toSaveRunInput`, and only the
  * entries the server accepted were kept. Its `derivedFrom` names the ops-api commit.
- * Regenerate it when the server's save schemas change.
+ * Regenerate it with scripts/derive-server-accepted-entries.ts (instructions in its header)
+ * when the server's save schemas change; never hand-edit it.
  *
  * Negative controls:
  *   - on 0.34.1 (25b3120) three entries fail: an empty and a whitespace-only

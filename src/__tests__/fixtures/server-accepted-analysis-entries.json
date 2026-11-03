@@ -305,6 +305,64 @@
      }
     }
    }
+  },
+  {
+   "label": "agent_name padded to 103 chars, 100 after trim",
+   "entry": {
+    "record_type": "finding",
+    "record_id": "r-1",
+    "title": "t",
+    "data": {},
+    "agent_name": "  aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa "
+   }
+  },
+  {
+   "label": "agent_name 50 surrogate pairs (100 UTF-16 units)",
+   "entry": {
+    "record_type": "finding",
+    "record_id": "r-1",
+    "title": "t",
+    "data": {},
+    "agent_name": "😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀"
+   }
+  },
+  {
+   "label": "agent_name 51 surrogate pairs (102 UTF-16 units)",
+   "entry": {
+    "record_type": "finding",
+    "record_id": "r-1",
+    "title": "t",
+    "data": {},
+    "agent_name": "😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀"
+   }
+  },
+  {
+   "label": "record_id 50 surrogate pairs (100 UTF-16 units)",
+   "entry": {
+    "record_type": "finding",
+    "record_id": "😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀",
+    "title": "t",
+    "data": {}
+   }
+  },
+  {
+   "label": "unknown extra key",
+   "entry": {
+    "record_type": "finding",
+    "record_id": "r-1",
+    "title": "t",
+    "data": {},
+    "extra_key": "stripped"
+   }
+  },
+  {
+   "label": "title with newline and quotes",
+   "entry": {
+    "record_type": "finding",
+    "record_id": "r-1",
+    "title": "line1\n\"quoted\"",
+    "data": {}
+   }
   }
  ],
  "summaries": [
@@ -2065,12 +2123,28 @@
     "decision": "PASS",
     "exploration_maps": null
    }
+  },
+  {
+   "label": "agent_name padded to 103 chars, 100 after trim",
+   "entry": {
+    "decision": "PASS",
+    "agent_name": "  aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa "
+   }
+  },
+  {
+   "label": "unknown extra key",
+   "entry": {
+    "decision": "PASS",
+    "extra_key": "stripped"
+   }
   }
  ],
  "serverRejects": [
   "record: agent_name 101 chars",
   "record: record_id 101 chars",
   "record: record_type empty",
-  "summary: category_scores fractional score"
+  "record: agent_name null",
+  "summary: category_scores fractional score",
+  "summary: agent_name null"
  ]
 }

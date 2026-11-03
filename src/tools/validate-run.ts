@@ -18,6 +18,8 @@ import {
 } from '../types/run-schemas.js';
 import { createToolHandler } from '../utils/tool-handler.js';
 import { agentAttributionWarnings } from './agent-attribution-warnings.js';
+import { analysisNameWarnings } from './analysis-name-warnings.js';
+import { wouldRejectNotice } from './analysis-rejection-notice.js';
 
 // The save-path variants: no stricter than the server's save schemas (spec §3.5).
 const AnalysisRecordSchema = SaveAnalysisRecordSchema;
@@ -64,7 +66,7 @@ export function registerValidateRunTool(
 ): void {
   server.tool(
     'validate_run',
-    'Preview what save_run would do without modifying the database. Returns would_create, would_update, would_regress, would_create_analysis_records, would_create_analysis_summaries, and validation_errors. Accepts the same shape as save_run including optional analysis_records and analysis_summary so the dry-run faithfully reflects the full set of side effects. Preview here before save_run: a `warnings` block names agents whose version attribution would be lost, while it can still be fixed — a saved run cannot be relabelled. wouldReject[] lists the agents whose analysis a save of this payload would reject (same shape as save_run\'s analysisWrite.rejected[]): fix those entries before saving.' + RUN_MAP_CONTRACT + RUN_TOKEN_CONTRACT,
+    'Preview what save_run would do without modifying the database. Returns would_create, would_update, would_regress, would_create_analysis_records, would_create_analysis_summaries, and validation_errors. Accepts the same shape as save_run including optional analysis_records and analysis_summary so the dry-run faithfully reflects the full set of side effects. Preview here before save_run: a `warnings` block names agents whose version attribution would be lost, while it can still be fixed — a saved run cannot be relabelled. wouldReject[] (camelCase response key) lists the agents whose analysis a save of this payload would reject (same shape as save_run\'s analysisWrite.rejected[]), and a notice block names them: fix those entries before saving.' + RUN_MAP_CONTRACT + RUN_TOKEN_CONTRACT,
     ValidateRunInputSchema.shape,
     // `_skipClientValidation`, as save_run / update_run / preview_update_run
     // pass: the tool schema above is the client-side contract and the server
@@ -75,7 +77,12 @@ export function registerValidateRunTool(
     createToolHandler(
       ValidateRunInputSchema,
       (n, scope) => opsClient.runs.validate(n, { _skipClientValidation: true, ...scope }),
-      { toolName: 'validate_run', responseWarnings: (input) => agentAttributionWarnings(input, 'preview') }
+      {
+        toolName: 'validate_run',
+        responseWarnings: (input) => [...agentAttributionWarnings(input, 'preview'), ...analysisNameWarnings(input, 'preview')],
+        // R3 review F4: the prediction gets its own block, as save_run's rejection does.
+        responseNotices: wouldRejectNotice,
+      }
     )
   );
 }

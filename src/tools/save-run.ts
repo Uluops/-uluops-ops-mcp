@@ -20,6 +20,7 @@ import {
 import { createToolHandler } from '../utils/tool-handler.js';
 import { agentAttributionWarnings } from './agent-attribution-warnings.js';
 import { analysisRejectionNotice } from './analysis-rejection-notice.js';
+import { analysisNameWarnings } from './analysis-name-warnings.js';
 import { toolGuid } from '../utils/tool-schema.js';
 import { API_RAW_MARKDOWN_MAX_CHARS } from '../config/message-limits.js';
 
@@ -72,7 +73,7 @@ export function registerSaveRunTool(
 ): void {
   server.tool(
     'save_run',
-    'Save a run — the findings a definition (agent, workflow or pipeline) produced against a project. Auto-increments run number per project+workflow. Detects regressions and persistent issues. A project that does not exist is CREATED under the name given — check the spelling with list_projects first; a typo becomes a new project. Each agent\'s definition_version must be that agent\'s own, spliced from agent-metrics output; omit it when unknown, never copy the run\'s or look one up. Attribution cannot be changed after saving, so preview with validate_run first; a `warnings` block in the response names agents whose attribution was lost. Invalid analysis does not fail the save: the server keeps the run and rejects that one agent\'s analysis as a unit, listed in analysisWrite.rejected[] with the issues, and a notice block says so. The run is saved — do not call save_run again (that creates a second run); repair with update_run on this run, sending each rejected agent\'s complete records and summary.' + RUN_MAP_CONTRACT + RUN_TOKEN_CONTRACT,
+    'Save a run — the findings a definition (agent, workflow or pipeline) produced against a project. Auto-increments run number per project+workflow. Detects regressions and persistent issues. A project that does not exist is CREATED under the name given — check the spelling with list_projects first; a typo becomes a new project. Each agent\'s definition_version must be that agent\'s own, spliced from agent-metrics output; omit it when unknown, never copy the run\'s or look one up. Attribution cannot be changed after saving, so preview with validate_run first; a `warnings` block in the response names agents whose attribution was lost. Invalid analysis does not fail the save: the server keeps the run and rejects that one agent\'s analysis as a unit, listed in analysisWrite.rejected[] (camelCase response key) with the issues, and a notice block says so. The run is saved — do not call save_run again (that creates a second run); repair with update_run on this run, sending each rejected agent\'s complete records and summary.' + RUN_MAP_CONTRACT + RUN_TOKEN_CONTRACT,
     SaveRunInputSchema.shape,
     createToolHandler(
       SaveRunInputSchema,
@@ -80,7 +81,7 @@ export function registerSaveRunTool(
       {
         toolName: 'save_run',
         // X4-9: warn, never refuse or fill.
-        responseWarnings: (input) => agentAttributionWarnings(input, 'saved'),
+        responseWarnings: (input) => [...agentAttributionWarnings(input, 'saved'), ...analysisNameWarnings(input, 'saved')],
         // R3: a 201 can carry rejected analysis; say so in its own block (spec §3.5).
         responseNotices: analysisRejectionNotice,
         preProcess: (input) => ({
