@@ -451,7 +451,7 @@ units, which let a non-ASCII payload up to ~3x the stated size through.
 ### Core Tools (P0)
 | Tool | Description |
 |------|-------------|
-| `save_run` | Save validation pipeline output with issue correlation |
+| `save_run` | Save a run (the findings a definition produced) with issue correlation |
 | `query_issues` | Query issues with filtering by status, priority, validator |
 | `update_status` | Update issue status (completed, deferred, wontfix) |
 | `get_project_summary` | Get project overview with workflow and validator stats |
@@ -460,10 +460,10 @@ units, which let a non-ASCII payload up to ~3x the stated size through.
 ### Extended Tools (P1)
 | Tool | Description |
 |------|-------------|
-| `create_issue` | Create a user-submitted issue directly (outside validation runs) |
+| `create_issue` | Create a user-submitted issue directly (outside any run) |
 | `get_issue_details` | Full issue lifecycle with occurrences, notes, history |
 | `get_run_details` | Run information with all recommendations and stats |
-| `diff_runs` | Compare two validation runs (fixed, new, unchanged issues) |
+| `diff_runs` | Compare two runs (fixed, new, unchanged issues) |
 | `archive_runs` | Archive old runs without deletion |
 | `get_analytics` | Eight metrics; list metrics support negotiated `format=page` with totals and implementation metadata. Legacy shapes and limit20 default remain. |
 | `search_issues` | Search issues across projects with relevance ranking |

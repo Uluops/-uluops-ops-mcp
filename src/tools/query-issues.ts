@@ -2,7 +2,7 @@ import { DiscoveryPageShape, useDiscoveryPage } from '../utils/discovery-page.js
 /**
  * query_issues tool
  *
- * Query validation issues with flexible filtering.
+ * Query issues with flexible filtering.
  */
 
 import { z } from 'zod';

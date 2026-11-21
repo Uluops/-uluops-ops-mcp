@@ -1,7 +1,7 @@
 /**
  * diff_runs tool
  *
- * Compare two validation runs to see fixed, new, and unchanged issues.
+ * Compare two runs to see fixed, new, and unchanged issues.
  */
 
 import { z } from 'zod';

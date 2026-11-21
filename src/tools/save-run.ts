@@ -1,7 +1,7 @@
 /**
  * save_run tool
  *
- * Save validation pipeline output with automatic correlation.
+ * Save a run — the findings a definition produced — with automatic correlation.
  */
 
 import { runSummaryError, RUN_MAP_CONTRACT, RUN_TOKEN_CONTRACT } from './run-input-contract.js';
