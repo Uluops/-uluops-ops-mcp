@@ -236,7 +236,7 @@ describe('registerTaxonomyResource', () => {
     expect(name).toBe('taxonomy');
     expect(uri).toBe('validation://taxonomy');
     expect(metadata).toEqual({
-      description: 'Failure taxonomy schema for classifying validation issues',
+      description: 'Failure taxonomy schema for classifying findings',
       mimeType: 'application/json',
     });
   });

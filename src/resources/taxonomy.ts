@@ -58,7 +58,7 @@ export function registerTaxonomyResource(
     'taxonomy',
     'validation://taxonomy',
     {
-      description: 'Failure taxonomy schema for classifying validation issues',
+      description: 'Failure taxonomy schema for classifying findings',
       mimeType: 'application/json',
     },
     async () => {

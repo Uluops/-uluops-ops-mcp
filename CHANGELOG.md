@@ -18,6 +18,7 @@ considered and left alone; readers scanning only for the standard headings lose 
 ### Changed
 
 - Tool descriptions for `get_run_details` and `update_run` use *finding* instead of the wire key `recommendations` as prose (agents read these descriptions). The key and the `recommendations` parameter are unchanged; no schema, parameter or behaviour change.
+- The `taxonomy` resource description reads "Failure taxonomy schema for classifying findings" (was "…validation issues"; *validation* is the category UluOps retired). Description text only.
 
 ## [0.35.0] - 2026-11-03
 
