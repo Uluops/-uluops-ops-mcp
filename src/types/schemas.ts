@@ -199,6 +199,45 @@ export const TokenUsageSchema = z
 export type TokenUsage = z.infer<typeof TokenUsageSchema>;
 
 /**
+ * One artifact declaration (v0.36.0; effectiveness-analytics spec §4.2): what an
+ * agent instance reviewed, at which revision.
+ *
+ * **Loose on purpose, unlike every other object here.** The object is meant to be
+ * pasted verbatim from `ulu artifact describe`, which prints the API's camelCase
+ * (`kindSource`, `revisionOf`). A plain `z.object()` would strip those keys with a
+ * 201, and the artifact would reach the tracker without its revision: the
+ * strip-and-succeed failure the spec records for every save-path layer (§4.4).
+ * Loose keeps them; `normalizeKeys` then maps either spelling to camelCase. The
+ * snake_case fields are declared so the tool schema documents them. Validation
+ * of the whole object is the server's: ops-api's artifact object is strict, so a
+ * misspelt key (`hsah`) is a named 400, not a silent loss.
+ */
+export const ArtifactDeclarationSchema = z
+  .looseObject({
+    kind: z.enum(['spec', 'plan', 'code', 'test', 'docs', 'design', 'definition', 'data', 'config', 'analysis']).describe('What the artifact is'),
+    kind_source: z.enum(['caller', 'harness', 'model']).optional().describe('Who chose the kind (required by the server; `kindSource` accepted)'),
+    repo: z.string().min(1).max(255).describe('Canonical repo from `ulu artifact describe`: host/owner/name, local:<hex> or registry:<host>. Never hand-written'),
+    path: z.string().min(1).max(1000).describe('Repo-relative path'),
+    hash: z.string().regex(/^(?:sha256|tree):[0-9a-f]{64}$/).nullable().optional().describe('Revision at spawn, from `ulu artifact describe`. Never computed by the model'),
+    hash_error: z.string().max(500).nullable().optional().describe('Why hash is null (`hashError` accepted)'),
+    revision_of: z.string().max(1000).nullable().optional().describe('Predecessor path (`revisionOf` accepted)'),
+    revision_of_source: z.enum(['caller', 'convention']).nullable().optional().describe('`revisionOfSource` accepted'),
+    role: z.enum(['primary', 'context', 'modified']).describe('primary = judged; context = read only; modified = changed by an executor'),
+  })
+  .describe('An artifact object exactly as `ulu artifact describe` printed it: paste it verbatim, either key spelling. The server also requires kind_source (or kindSource), which that command always prints');
+export type ArtifactDeclarationInput = z.infer<typeof ArtifactDeclarationSchema>;
+export const ArtifactListSchema = z.array(ArtifactDeclarationSchema).max(50);
+
+/** Instance fields shared by save_run/validate_run agents and update_run agents (v0.36.0, spec §4.2, D23, D55, D58). */
+export const AgentInstanceFields = {
+  spawn_ordinal: toolInteger().nonnegative().max(1_000_000).optional().describe('Instance key when the harness has no agent_id: 0-based, in the order the instances started, unique in the run. Findings then name it as #<spawn_ordinal>. Not needed when agent_id is set'),
+  stage_role: z.enum(['review', 'support', 'execute', 'generate']).optional().describe('What the instance did. Only review instances take the run-level artifacts as their default'),
+  sees_peer_findings: z.boolean().optional().describe('True for a review stage that received earlier stages\' findings'),
+  threshold: z.number().min(0).max(100).optional().describe("The definition's own pass threshold, at most two decimals"),
+  artifacts: ArtifactListSchema.optional().describe("This instance's own artifacts, each pasted from `ulu artifact describe`"),
+};
+
+/**
  * Agent result schema for validation runs
  */
 export const AgentResultSchema = z
@@ -221,6 +260,7 @@ export const AgentResultSchema = z
       .max(50)
       .optional()
       .describe('Harness transcript/agent provenance id (e.g., a4f35bf2cacc5f3ac from agent-metrics) — joins this row to its buffer entry and transcript'),
+    ...AgentInstanceFields,
   })
   .describe('Results from a single agent');
 export type AgentResult = z.infer<typeof AgentResultSchema>;
@@ -275,6 +315,10 @@ export const RecommendationSchema = z
     // collapsing-pipeline signature (tracker issue 105c478f, 2026-09-11).
     // Guarded by the value-asserting tests in __tests__/schemas.test.ts and
     // __tests__/tool-handlers.test.ts; do not remove as unused.
+    // The raising instance and its artifact (v0.36.0, spec §4.2, D25, D55). Declared
+    // for the same reason as cluster_key below: undeclared, z.object() strips them.
+    agent_ref: z.string().min(1).max(50).optional().describe('The raising instance: its agent_id, or #<spawn_ordinal>. Without it a finding resolves by agent name only when the run has one instance of that name'),
+    artifact: toolInteger().nonnegative().optional().describe("Index into that instance's artifacts; defaults to its one primary artifact"),
     cluster_key: z
       .string()
       .min(1)

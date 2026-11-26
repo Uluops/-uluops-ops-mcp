@@ -7,7 +7,10 @@
 import { runSummaryError, RUN_MAP_CONTRACT, RUN_TOKEN_CONTRACT } from './run-input-contract.js';
 import { z } from 'zod';
 import type { OpsClient } from '@uluops/ops-sdk';
+import { OPS_MCP_WRITER_STAMP } from '../config/version.js';
+import { appendWriterStamp } from '@uluops/ops-sdk';
 import {
+  ArtifactListSchema,
   AgentResultSchema,
   RecommendationSchema,
   type McpServerToolRegistration,
@@ -40,6 +43,10 @@ export const ValidateRunInputSchema = z.object({
   recommendations: z.array(RecommendationSchema).default([]).describe('Array of issues/recommendations'),
   // Analysis-records preview (API v1.4.1+). Optional; mirrors save_run shape
   // so a dry-run can preview analysis persistence alongside recommendations.
+  // v0.36.0 (spec §4.2, D51, D56). writer: your own name@version stamp; ops-mcp and the SDK append theirs.
+  writer: z.string().min(1).max(150).optional().describe('Your own writer stamp (e.g. pdl-executor@2.3.0). ops-mcp appends ops-mcp@<version> and the SDK ops-sdk@<version>'),
+  purpose: z.enum(['organic', 'validation']).optional().describe('validation = a benchmark run; absent = organic'),
+  artifacts: ArtifactListSchema.optional().describe('Run-level artifacts, each pasted from `ulu artifact describe`: the default for every review instance that declares none'),
   analysis_records: z.array(AnalysisRecordSchema).max(100).optional().describe('Structured analysis records to preview (mirrors save_run shape)'),
   analysis_summary: z.union([
     AnalysisSummarySchema,
@@ -66,7 +73,7 @@ export function registerValidateRunTool(
 ): void {
   server.tool(
     'validate_run',
-    'Preview what save_run would do without modifying the database. Returns would_create, would_update, would_regress, would_create_analysis_records, would_create_analysis_summaries, and validation_errors. Accepts the same shape as save_run including optional analysis_records and analysis_summary so the dry-run faithfully reflects the full set of side effects. Preview here before save_run: a `warnings` block names agents whose version attribution would be lost, while it can still be fixed — a saved run cannot be relabelled. wouldReject[] (camelCase response key) lists the agents whose analysis a save of this payload would reject (same shape as save_run\'s analysisWrite.rejected[]), and a notice block names them: fix those entries before saving.' + RUN_MAP_CONTRACT + RUN_TOKEN_CONTRACT,
+    'Preview what save_run would do without modifying the database. Returns would_create, would_update, would_regress, would_create_analysis_records, would_create_analysis_summaries, and validation_errors. Accepts the same shape as save_run including optional analysis_records and analysis_summary so the dry-run faithfully reflects the full set of side effects. Preview here before save_run: a `warnings` block names agents whose version attribution would be lost, while it can still be fixed — a saved run cannot be relabelled. wouldReject[] (camelCase response key) lists the agents whose analysis a save of this payload would reject (same shape as save_run\'s analysisWrite.rejected[]), and a notice block names them: fix those entries before saving. Artifacts (what each agent reviewed): paste each object exactly as `ulu artifact describe <path> --kind <kind>` printed it, BEFORE the agent starts; never write repo, path or hash yourself and never compute a hash. If you cannot run that command, omit artifacts entirely rather than invent one; writer and purpose are optional too.' + RUN_MAP_CONTRACT + RUN_TOKEN_CONTRACT,
     ValidateRunInputSchema.shape,
     // `_skipClientValidation`, as save_run / update_run / preview_update_run
     // pass: the tool schema above is the client-side contract and the server
@@ -82,6 +89,8 @@ export function registerValidateRunTool(
         responseWarnings: (input) => [...agentAttributionWarnings(input, 'preview'), ...analysisNameWarnings(input, 'preview')],
         // R3 review F4: the prediction gets its own block, as save_run's rejection does.
         responseNotices: wouldRejectNotice,
+        // D56: the stamp save_run would send, so preview.artifacts.writer is what the save stores.
+        preProcess: (input) => ({ ...input, writer: appendWriterStamp(input.writer, OPS_MCP_WRITER_STAMP) }),
       }
     )
   );

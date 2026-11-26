@@ -7,7 +7,10 @@
 import { runSummaryError, RUN_MAP_CONTRACT, RUN_TOKEN_CONTRACT } from './run-input-contract.js';
 import { z } from 'zod';
 import type { OpsClient } from '@uluops/ops-sdk';
+import { OPS_MCP_WRITER_STAMP } from '../config/version.js';
+import { appendWriterStamp } from '@uluops/ops-sdk';
 import {
+  ArtifactListSchema,
   AgentResultSchema,
   RecommendationSchema,
   ValidationSummarySchema,
@@ -55,6 +58,10 @@ export const SaveRunInputSchema = z.object({
   definition_version: z.string().max(50).optional().describe('Definition version'),
   definition_hash: z.string().max(64).optional().describe('SHA-256 content hash of the definition'),
   definition_id: toolGuid().optional().describe('Registry definition UUID for direct identity linkage'),
+  // v0.36.0 (spec §4.2, D51, D56). writer: your own name@version stamp; ops-mcp and the SDK append theirs.
+  writer: z.string().min(1).max(150).optional().describe('Your own writer stamp (e.g. pdl-executor@2.3.0). ops-mcp appends ops-mcp@<version> and the SDK ops-sdk@<version>'),
+  purpose: z.enum(['organic', 'validation']).optional().describe('validation = a benchmark run; absent = organic'),
+  artifacts: ArtifactListSchema.optional().describe('Run-level artifacts, each pasted from `ulu artifact describe`: the default for every review instance that declares none'),
   analysis_records: z.array(AnalysisRecordSchema).max(100).optional().describe('Structured analysis records (v1.4.0)'),
   analysis_summary: z.union([
     AnalysisSummarySchema,
@@ -73,7 +80,7 @@ export function registerSaveRunTool(
 ): void {
   server.tool(
     'save_run',
-    'Save a run — the findings a definition (agent, workflow or pipeline) produced against a project. Auto-increments run number per project+workflow. Detects regressions and persistent issues. A project that does not exist is CREATED under the name given — check the spelling with list_projects first; a typo becomes a new project. Each agent\'s definition_version must be that agent\'s own, spliced from agent-metrics output; omit it when unknown, never copy the run\'s or look one up. Attribution cannot be changed after saving, so preview with validate_run first; a `warnings` block in the response names agents whose attribution was lost. Invalid analysis does not fail the save: the server keeps the run and rejects that one agent\'s analysis as a unit, listed in analysisWrite.rejected[] (camelCase response key) with the issues, and a notice block says so. The run is saved — do not call save_run again (that creates a second run); repair with update_run on this run, sending each rejected agent\'s complete records and summary.' + RUN_MAP_CONTRACT + RUN_TOKEN_CONTRACT,
+    'Save a run — the findings a definition (agent, workflow or pipeline) produced against a project. Auto-increments run number per project+workflow. Detects regressions and persistent issues. A project that does not exist is CREATED under the name given — check the spelling with list_projects first; a typo becomes a new project. Each agent\'s definition_version must be that agent\'s own, spliced from agent-metrics output; omit it when unknown, never copy the run\'s or look one up. Attribution cannot be changed after saving, so preview with validate_run first; a `warnings` block in the response names agents whose attribution was lost. Invalid analysis does not fail the save: the server keeps the run and rejects that one agent\'s analysis as a unit, listed in analysisWrite.rejected[] (camelCase response key) with the issues, and a notice block says so. The run is saved — do not call save_run again (that creates a second run); repair with update_run on this run, sending each rejected agent\'s complete records and summary. Artifacts (what each agent reviewed): paste each object exactly as `ulu artifact describe <path> --kind <kind>` printed it, BEFORE the agent starts; never write repo, path or hash yourself and never compute a hash. If you cannot run that command, omit artifacts entirely rather than invent one; writer and purpose are optional too.' + RUN_MAP_CONTRACT + RUN_TOKEN_CONTRACT,
     SaveRunInputSchema.shape,
     createToolHandler(
       SaveRunInputSchema,
@@ -87,6 +94,8 @@ export function registerSaveRunTool(
         preProcess: (input) => ({
           ...input,
           timestamp: input.timestamp ?? new Date().toISOString(),
+          // D56: this layer's stamp; the SDK appends ops-sdk@<version> after it.
+          writer: appendWriterStamp(input.writer, OPS_MCP_WRITER_STAMP),
         }),
       }
     )

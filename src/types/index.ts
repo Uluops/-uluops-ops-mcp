@@ -49,6 +49,9 @@ export {
   // Shared validation schemas
   TokenUsageSchema,
   AgentResultSchema,
+  ArtifactDeclarationSchema,
+  ArtifactListSchema,
+  AgentInstanceFields,
   RecommendationSchema,
   ValidationSummarySchema,
 } from './schemas.js';

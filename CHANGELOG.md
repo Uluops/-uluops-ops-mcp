@@ -15,8 +15,24 @@ considered and left alone; readers scanning only for the standard headings lose 
 
 ## [Unreleased]
 
+## [0.36.0] - 2026-11-26
+
+### Added
+
+- **Run artifacts on `save_run`, `validate_run` and `update_run`** (effectiveness-analytics spec v0.4.3 §4.2; checklist P3-3). ops-api b969e185 stores what each run's agent instances reviewed; until this release every field below was stripped here, with a 201:
+  - run level: `writer`, `purpose`, `artifacts`;
+  - each agent: `spawn_ordinal`, `stage_role`, `sees_peer_findings`, `threshold`, `artifacts` (update_run: the same, appended to the instance it names by `agent_id`);
+  - each finding: `agent_ref` (the raising instance) and `artifact` (an index into its artifacts).
+- **The artifact object accepts both key spellings.** It is meant to be pasted verbatim from `ulu artifact describe`, which prints camelCase (`kindSource`, `revisionOf`). It is a loose object, the one exception to this package's `z.object()` schemas, so those keys survive instead of being stripped; `normalizeKeys` maps either spelling. A misspelt key is refused by the server, whose artifact object is strict, with a named 400. `kind` and the `hash` form are checked here.
+- **Writer stamp** (D56; checklist P3-9). `save_run` and `validate_run` append `ops-mcp@<version>` to `writer`, and ops-sdk then appends its own, so a run saved through this server reads `<your stamp> ops-mcp@0.36.0 ops-sdk@7.4.0`.
+- **Tool-level guidance** (a model reads the descriptions, not the README). `save_run` and `validate_run` say to paste artifacts from `ulu artifact describe` before the agent starts, never to write `repo`, `path` or `hash` or compute a hash, and to omit artifacts rather than invent one when the command is unavailable. `update_run` says artifacts append and that an unmatched `agent_id` comes back as `warnings`. `spawn_ordinal` is 0-based in start order, and the artifact object says the server requires `kind_source`. *(Pre-publish dx-validator run, tracker `-uluops-ops-mcp` run #17.)*
+- **`update_run` returns `warnings`** beside the run when an entry's `agent_id` matched no instance and was applied to the run's `unmatched` placeholder (D64). Absent when there are none.
+- `get_run_details` returns the new read fields (`run.writer`, `run.purpose`, `run.artifacts`, each agent's instance fields and `artifacts`, each finding's `agentRef` / `artifactRef`) through ops-sdk 7.4.0, which no longer strips them.
+
 ### Changed
 
+- **`@uluops/ops-sdk` 7.3.0 → 7.4.0** (exact pin).
+- `maxArgsSize` reviewed against a worst-case artifact list, unchanged at 2 MB for `save_run`, `validate_run` and `update_run`. That equals ops-api's JSON body limit (`express.json({ limit: '2mb' })`), so this server refuses nothing the API would accept. A run at every list cap (50 run artifacts and 100 agents with 50 each, about 450 bytes per artifact) would be about 2.3 MB and exceed both; no harness writes runs that shape.
 - Tool descriptions for `get_run_details` and `update_run` use *finding* instead of the wire key `recommendations` as prose (agents read these descriptions). The key and the `recommendations` parameter are unchanged; no schema, parameter or behaviour change.
 - The `taxonomy` resource description reads "Failure taxonomy schema for classifying findings" (was "…validation issues"; *validation* is the category UluOps retired). Description text only.
 

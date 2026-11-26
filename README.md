@@ -73,6 +73,15 @@ components: missing measurements should not be invented as zero.
 SDK 6.5.2 also preserves the API's optional, nullable `modelRaw` alongside the
 normalized `model` in saved and retrieved agent snapshots.
 
+### What a run reviewed: artifacts (0.36.0)
+
+`save_run`, `validate_run` and `update_run` carry what each agent instance reviewed and at which revision (needs ops-api b969e185 or later). Get each artifact object from `ulu artifact describe <path> --kind <kind>` and **paste it verbatim**, in whichever key spelling it printed: never write `repo`, `path` or `hash` yourself, and never compute a hash. The tracker refuses a non-canonical value.
+
+- Run-level `artifacts` are the default for every agent whose `stage_role` is `review` and which declares none of its own. Per-agent `artifacts` override them.
+- Key each agent instance with `agent_id` (or `spawn_ordinal`), and name the raising instance on each finding with `agent_ref` (`agent_id`, or `#<spawn_ordinal>`) and `artifact` (an index into that instance's artifacts).
+- `writer` is your own `name@version`. This server appends `ops-mcp@<version>` and the SDK `ops-sdk@<version>`.
+- `get_run_details` reads all of it back. `update_run` appends, never alters, and returns `warnings` when an `agent_id` matched no instance.
+
 ### Rejected analysis on `save_run` (0.35.0)
 
 Since ops-api's "analysis never loses the run" release (live 2026-11-03), invalid analysis no longer fails a save. The server keeps the run, its issues and every other agent's analysis, and rejects **one agent's analysis as a unit** (its records and summary together). The response's `analysisWrite.rejected[]` lists each rejected agent with `reason`, counts and `detail.issues`, and `save_run` adds a plain-text notice block before the untrusted-content notice:

@@ -10,7 +10,7 @@ import { z } from 'zod';
 import type { OpsClient } from '@uluops/ops-sdk';
 import type { McpServerToolRegistration } from '../types/index.js';
 import { createToolHandler, mapContextData } from '../utils/tool-handler.js';
-import { RecommendationSchema } from '../types/schemas.js';
+import { AgentInstanceFields, ArtifactListSchema, RecommendationSchema } from '../types/schemas.js';
 import {
   AnalysisRecordBaseSchema,
   AnalysisSummaryBaseSchema,
@@ -42,6 +42,9 @@ const AgentUpdateSchema = z.object({
     .max(50)
     .optional()
     .describe('Harness transcript/agent provenance id (e.g., from agent-metrics extract)'),
+  // v0.36.0 (spec §4.2, D29, D55). Any of these makes the entry address its instance by
+  // agent_id alone, so agent_id is then required; each is set once; artifacts append.
+  ...AgentInstanceFields,
 });
 
 // agent_name moved into AnalysisRecordBaseSchema, so save_run and validate_run inherit it
@@ -63,6 +66,7 @@ export const UpdateRunInputSchema = z.object({
   // valid updates (2026-10-25 length audit).
   raw_markdown: z.string().max(API_RAW_MARKDOWN_MAX_CHARS).optional(),
   recommendations: z.array(RecommendationSchema).optional().describe('Array of issues/recommendations to correlate with this run'),
+  artifacts: ArtifactListSchema.optional().describe('Run-level artifacts to APPEND, each pasted from `ulu artifact describe`. Stored artifacts are never altered or removed'),
   analysis_records: z.array(AnalysisRecordSchema).max(100).optional().describe('Structured analysis records — PER-AGENT REPLACE (API 1a): for each agent named in this array, that agent\'s entire live record set is superseded and these rows written; agents not named are untouched, and nothing here can remove another agent\'s rows. Omitting a record an agent previously had retires it — send every record that agent should keep, and use preview_update_run first when unsure. Leaves analysis_summary untouched. agent_name/record_id matching is case- and accent-insensitive.'),
   analysis_summary: z.union([
     AnalysisSummarySchema,
@@ -79,7 +83,7 @@ export function registerUpdateRunTool(
 ): void {
   server.tool(
     'update_run',
-    'Enrich run telemetry, findings and analysis post-hoc. Read editCapabilities from get_run, get_latest_run or get_run_details first when available (camelCase API request keys; absence means unknown; writes recheck policy). Run identity and timestamp are immutable. Once averageScore or allGatesPassed is recorded, changing or clearing it is refused with FINALIZED_RUN_FIELD_IMMUTABLE; identical values may be echoed, including zero and false. Agent enrichment follows existing agent update restrictions. Also supports adding recommendations/issues, and PER-AGENT analysis writes after initial save — replace (default) or merge, via record_write_mode; writes supersede only the agents named in the payload and cannot remove another agent\'s rows (there is no delete endpoint). Analysis-bearing responses include the analysisWrite echo (a camelCase response key: superseded/created counts — supersededRecords 0 on an enrichment that expected to replace means the named agents had no live rows). Preview analysis writes with preview_update_run; metadata and quality edits are not previewed. Identify run by either run_id OR (project + run_number).' + RUN_MAP_CONTRACT,
+    'Enrich run telemetry, findings and analysis post-hoc. Read editCapabilities from get_run, get_latest_run or get_run_details first when available (camelCase API request keys; absence means unknown; writes recheck policy). Run identity and timestamp are immutable. Once averageScore or allGatesPassed is recorded, changing or clearing it is refused with FINALIZED_RUN_FIELD_IMMUTABLE; identical values may be echoed, including zero and false. Agent enrichment follows existing agent update restrictions. Also supports adding recommendations/issues, and PER-AGENT analysis writes after initial save — replace (default) or merge, via record_write_mode; writes supersede only the agents named in the payload and cannot remove another agent\'s rows (there is no delete endpoint). Analysis-bearing responses include the analysisWrite echo (a camelCase response key: superseded/created counts — supersededRecords 0 on an enrichment that expected to replace means the named agents had no live rows). Preview analysis writes with preview_update_run; metadata and quality edits are not previewed. Identify run by either run_id OR (project + run_number). Artifacts APPEND (run-level or to the instance an agent entry names by agent_id), pasted from `ulu artifact describe`, never invented. If an agent entry\'s agent_id matches no instance in the run, the entry is applied to the run\'s `unmatched` placeholder and the response carries a `warnings` block naming it: re-check the agent_id.' + RUN_MAP_CONTRACT,
     UpdateRunInputSchema.shape,
     createToolHandler(UpdateRunInputSchema, async (n, scope) => {
       // With-echo variants (F17): the §3.9 echo's counts are the success
@@ -90,7 +94,14 @@ export function registerUpdateRunTool(
       const result = typeof runId === 'string'
         ? await opsClient.runs.updateByIdWithEcho(runId, n, { _skipClientValidation: true, ...scope })
         : await opsClient.runs.updateWithEcho(n, { _skipClientValidation: true, ...scope });
-      return mapContextData(result, data => data.analysisWrite ? { ...data.run, analysisWrite: data.analysisWrite } : data.run);
+      // D64 warnings (v0.36.0): an entry whose agent_id matched no instance was applied to the
+      // run's `unmatched` placeholder. Returned beside the run, like analysisWrite, only when present.
+      return mapContextData(result, data => ({
+        ...data.run,
+        ...(data.analysisWrite && { analysisWrite: data.analysisWrite }),
+        // Read defensively: an ops-sdk before 7.4.0 returns no `warnings` key at all.
+        ...(((data as { warnings?: unknown[] }).warnings ?? []).length > 0 && { warnings: (data as { warnings: unknown[] }).warnings }),
+      }));
     }, { toolName: 'update_run' })
   );
 }
